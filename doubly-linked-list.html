@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doubly Linked List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All topics</a>
+      <p class="eyebrow">Each Node Points Both Ways</p>
+      <h1>Doubly&nbsp;Linked&nbsp;List</h1>
+    </div>
+    <p class="note">Every node keeps a pointer to its predecessor as well as its successor, and the list keeps a tail pointer too.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A doubly linked list adds one thing to a singly linked list: every node also stores a <b>prev</b>
+      pointer back to its predecessor, and the list itself keeps a maintained <b>tail</b> pointer. Those
+      two additions pay for themselves: inserting at the tail becomes O(1) instead of O(n), deleting a node
+      you already have a reference to needs no separate "find the previous node" walk, and you can walk the
+      list backward just as easily as forward — so reaching an arbitrary index can start from whichever end
+      is closer.</p>
+      <p>The cost is bookkeeping: every insert and delete has to keep <em>two</em> pointers consistent per
+      affected node instead of one, and each node spends a little more memory on the extra pointer.</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Insert Head</td><td>New node becomes the head</td><td><b>O(1)</b></td></tr>
+        <tr><td>Insert Tail</td><td>New node becomes the tail (tail pointer, no walk)</td><td><b>O(1)</b></td></tr>
+        <tr><td>Insert / Delete at Index</td><td>Walk from whichever end is closer</td><td>O(n)</td></tr>
+        <tr><td>Search</td><td>Walk from the head comparing values</td><td>O(n)</td></tr>
+      </table>
+
+      <p>This is what <code>LinkedList</code> is in most standard libraries (Java's <code>LinkedList</code>,
+      C++'s <code>std::list</code>), and it's the shape behind LRU caches, browser history with both back
+      and forward, and music-player "next/previous track" navigation.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; both ends, both directions</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="doubly-linked-list-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — insert or delete at an index near the tail and watch it walk backward instead
+    of forward.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function size(head){ var n=0,cur=head; while(cur){n++;cur=cur.next;} return n; }
+  function toStruct(head, activeId, activeRole){
+    var nodes=[], linkActive=[], cur=head, i=0, n=size(head);
+    while(cur){
+      var badges=[]; if(i===0) badges.push("HEAD"); if(i===n-1) badges.push("TAIL");
+      nodes.push({val:cur.val, role:(cur.id===activeId?activeRole:""), ptr:badges.join("/")});
+      if(cur.next) linkActive.push(cur.id===activeId || cur.next.id===activeId);
+      cur=cur.next; i++;
+    }
+    return {dir:"h", nullEnd:true, double:true, emptyText:"Empty list", nodes:nodes, linkActive:linkActive};
+  }
+
+  function scriptFrames(){
+    var nextId=0, head=null, tail=null, frames=[];
+    function node(v){ return {id:nextId++, val:v, prev:null, next:null}; }
+    function push(activeId,activeRole,narr){ frames.push({struct:toStruct(head,activeId,activeRole), narr:narr}); }
+    function insHead(v){
+      push(head?head.id:undefined,"right","Insert "+v+" at the head — O(1).");
+      var n=node(v); n.next=head; if(head) head.prev=n; head=n; if(!tail) tail=n;
+      push(n.id,"left head landed", v+" is the new head.");
+    }
+    function insTail(v){
+      push(tail?tail.id:undefined,"right","Insert "+v+" at the tail — O(1), no walk needed.");
+      var n=node(v); n.prev=tail; if(tail) tail.next=n; tail=n; if(!head) head=n;
+      push(n.id,"left head landed", v+" is the new tail.");
+    }
+    function delHead(){
+      var v=head.val;
+      push(head.id,"left head","Delete the head, "+v+".");
+      head=head.next; if(head) head.prev=null; else tail=null;
+      push(undefined,"", v+" removed.");
+    }
+    function delTail(){
+      var v=tail.val;
+      push(tail.id,"left head","Delete the tail, "+v+" — O(1) thanks to the tail pointer.");
+      tail=tail.prev; if(tail) tail.next=null; else head=null;
+      push(undefined,"", v+" removed.");
+    }
+    push(undefined,"","An empty list — HEAD and TAIL are both NULL.");
+    insHead(6); insTail(3); insTail(9); insHead(1);
+    delTail(); delHead(); delTail(); delHead();
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.sequence(document.getElementById("demoHost"), frame.struct);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

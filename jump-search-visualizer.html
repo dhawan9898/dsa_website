@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jump Search — step by step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Jump in Blocks &middot; Scan the Last One</p>
+      <h1>Jump&nbsp;Search</h1>
+    </div>
+    <p class="note">Requires sorted data. Leaps forward in fixed-size blocks to find where the target must live, then falls back to a plain scan inside just that block.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Set the array &amp; target</h2><span class="sub">2 &ndash; 16 numbers, sorted automatically</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld">
+          <span>Numbers, separated by commas</span>
+          <input type="text" id="input" value="3, 8, 12, 19, 25, 34, 47, 61, 72, 84, 98" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="fld narrow">
+          <span>Target value</span>
+          <input type="number" id="target" value="72">
+        </label>
+        <button id="load">Use these</button>
+        <button id="rand">Random</button>
+      </div>
+      <p class="hint" id="hint">Press Play to watch the search, or step through one action at a time.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Working array</h2><span class="sub">block-sized jumps, then a short scan</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> block-boundary probe</span>
+        <span class="key"><i class="swatch right"></i> linear scan within the block</span>
+        <span class="key"><i class="swatch dim"></i> ruled out</span>
+        <span class="key"><i class="swatch found"></i> match found</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Load an array to begin.</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    A block size of about √n balances the two phases: jumping costs at most √n probes, and the final scan
+    inside one block costs at most √n more — O(√n) total, worse than binary search's O(log n) but with
+    fewer, cheaper long-range jumps, which mattered more on the tape and disk drives it was designed for.
+  </footer>
+</div>
+
+<script src="shared/engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function build(input, target){
+    var a=input.slice(), n=a.length, frames=[], cmp=0;
+    var blockSize=Math.max(1,Math.floor(Math.sqrt(n)));
+    function roles(){ return new Array(n).fill(""); }
+    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,block:blockSize}); }
+
+    push(roles(),"start","Jump search only works on sorted data. It jumps forward in fixed-size blocks of "+blockSize+" (about √"+n+") to find the block that could contain the target, "+target+", then scans that block one element at a time.");
+
+    var step=blockSize, prev=0;
+    while(true){
+      var probe=Math.min(step,n)-1;
+      var r=roles();
+      for(var k=0;k<prev;k++) r[k]="dim";
+      r[probe]="left head";
+      cmp++;
+      var passedTarget=a[probe]>=target;
+      var reachedEnd=step>=n;
+      push(r,"jump","Jump to index "+probe+" (end of the block starting at "+prev+"): value is "+a[probe]+". "+
+        (passedTarget ? "That's ≥ the target, so the target, if present, is in this block."
+                      : (reachedEnd ? "Reached the end of the array without passing the target." : "Still less than the target — jump forward another block.")));
+      if(passedTarget || reachedEnd) break;
+      prev=step;
+      step+=blockSize;
+    }
+
+    var hi=Math.min(step,n);
+    var r2=roles();
+    for(var k2=0;k2<prev;k2++) r2[k2]="dim";
+    for(var k3=hi;k3<n;k3++) r2[k3]="dim";
+    push(r2,"block-found","Search the block from index "+prev+" to "+(hi-1)+" one element at a time.");
+
+    for(var i=prev;i<hi;i++){
+      var r3=roles();
+      for(var k4=0;k4<prev;k4++) r3[k4]="dim";
+      for(var k5=hi;k5<n;k5++) r3[k5]="dim";
+      for(var k6=prev;k6<i;k6++) r3[k6]="dim";
+      r3[i]="right head";
+      cmp++;
+      var match=a[i]===target;
+      push(r3,"compare","Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match ? "Yes — found it." : "No — keep scanning."));
+      if(match){
+        var rf=roles();
+        for(var k7=0;k7<n;k7++) if(k7!==i) rf[k7]="dim";
+        rf[i]="found";
+        push(rf,"found","Found "+target+" at index "+i+" after "+cmp+" comparison"+(cmp===1?"":"s")+".");
+        return frames;
+      }
+    }
+    var rNo=roles();
+    for(var k8=0;k8<n;k8++) rNo[k8]="dim";
+    push(rNo,"not-found","Scanned the whole block without finding "+target+" — it isn't present. "+cmp+" comparisons made.");
+    return frames;
+  }
+
+  Viz.init({
+    defaultInput: "3, 8, 12, 19, 25, 34, 47, 61, 72, 84, 98",
+    defaultTarget: 72,
+    minN:2, maxN:16,
+    needsTarget: true,
+    sortRequired: true,
+    build: build,
+    statLabels: [{key:"cmp",label:"Comparisons"},{key:"block",label:"Block size"}]
+  });
+})();
+</script>
+</body>
+</html>

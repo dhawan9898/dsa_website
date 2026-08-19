@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bubble Sort — step by step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Compare &middot; Swap &middot; Repeat</p>
+      <h1>Bubble&nbsp;Sort</h1>
+    </div>
+    <p class="note">The simplest sort there is: walk the array, swap any neighbours that are out of order, and repeat until a full pass makes no swaps.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Set the array</h2><span class="sub">2 &ndash; 16 numbers</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld">
+          <span>Numbers, separated by commas</span>
+          <input type="text" id="input" value="38, 27, 43, 3, 9, 82, 10" autocomplete="off" spellcheck="false">
+        </label>
+        <button id="load">Use this array</button>
+        <button id="rand">Random</button>
+      </div>
+      <p class="hint" id="hint">Press Play to watch the sort, or step through one comparison at a time.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Working array</h2><span class="sub">neighbours swap until sorted</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> pointer j</span>
+        <span class="key"><i class="swatch right"></i> pointer j+1</span>
+        <span class="key"><i class="swatch sorted"></i> settled into final position</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Load an array to begin.</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Every pass drags the largest remaining value to its resting place at the far end, one swap at a time &mdash;
+    that's why the sorted region grows from the right. If a whole pass goes by with no swaps, the array was
+    already sorted and the algorithm stops early.
+  </footer>
+</div>
+
+<script src="shared/engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function build(input){
+    var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0;
+    function roles(){ return new Array(n).fill(""); }
+    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp}); }
+
+    push(roles(),"start","Bubble sort repeatedly walks the array, swapping neighbours that are out of order. Each full pass pushes the largest remaining value to the end.");
+
+    for(var i=0;i<n-1;i++){
+      var swappedThisPass=false;
+      for(var j=0;j<n-1-i;j++){
+        var r=roles();
+        r[j]="left head"; r[j+1]="right head";
+        for(var k=n-i;k<n;k++) r[k]="sorted";
+        cmp++;
+        var willSwap=a[j]>a[j+1];
+        push(r,"compare","Compare neighbours at "+j+" and "+(j+1)+": "+a[j]+" and "+a[j+1]+". "+
+          (willSwap ? "Out of order, so swap them." : "Already in order, so leave them."));
+        if(willSwap){
+          var tmp=a[j]; a[j]=a[j+1]; a[j+1]=tmp; swp++; swappedThisPass=true;
+          var r2=roles();
+          r2[j]="left head landed"; r2[j+1]="right head landed";
+          for(var k2=n-i;k2<n;k2++) r2[k2]="sorted";
+          push(r2,"swap","Swapped: "+a[j]+" now sits before "+a[j+1]+".");
+        }
+      }
+      var rEnd=roles();
+      for(var k3=n-1-i;k3<n;k3++) rEnd[k3]="sorted";
+      push(rEnd,"pass-done","Pass "+(i+1)+" complete. The largest unsorted value has bubbled up into place at index "+(n-1-i)+".");
+      if(!swappedThisPass){
+        push(new Array(n).fill("sorted"),"done",
+          "No swaps happened this pass, so the array is already sorted. Stopping early after "+(i+1)+" pass"+(i===0?"":"es")+".");
+        return frames;
+      }
+    }
+    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.");
+    return frames;
+  }
+
+  Viz.init({
+    defaultInput: "38, 27, 43, 3, 9, 82, 10",
+    minN:2, maxN:16,
+    build: build,
+    statLabels: [{key:"cmp",label:"Comparisons"},{key:"swp",label:"Swaps"}]
+  });
+})();
+</script>
+</body>
+</html>

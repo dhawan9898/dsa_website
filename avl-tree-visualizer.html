@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVL Tree Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="avl-tree.html">&larr; AVL Tree notes</a>
+      <p class="eyebrow">Self-Balancing &middot; Never O(n)</p>
+      <h1>AVL&nbsp;Tree&nbsp;Visualizer</h1>
+    </div>
+    <p class="note">Every node shows its balance factor. Whenever one strays past &plusmn;1, a rotation fixes it immediately.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Operate on the tree</h2><span class="sub">no duplicates</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld narrow"><span>Value</span><input type="number" id="val" value="25"></label>
+        <button id="btnInsert" class="primary">Insert</button>
+        <button id="btnDelete">Delete</button>
+        <button id="btnSearch">Search</button>
+      </div>
+      <p class="hint" id="hint">Try inserting 10, 20, 30 in order — a plain BST would go lopsided; watch this one rotate to stay balanced.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The tree</h2><span class="sub">label under each node is its balance factor</span></div>
+    <div class="panel-body">
+      <div class="scroller">
+        <div class="treewrap" id="treeWrap">
+          <svg class="links" id="treeLinks"></svg>
+          <div id="treeNodes"></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="key"><i class="swatch right"></i> node being walked past</span>
+        <span class="key"><i class="swatch left"></i> node just landed on / matched</span>
+        <span class="key"><i class="swatch pivot"></i> unbalanced — about to rotate</span>
+        <span class="key"><i class="swatch sorted"></i> new top of a subtree after rotating</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Balance factor is height(left) minus height(right). The moment any node's balance factor leaves
+    [-1, +1], one of four fixes applies — left-left and right-right need a single rotation, left-right and
+    right-left need two — restoring O(log n) height and guaranteeing it stays that way.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function h(n){ return n?n.height:0; }
+  function updateHeight(n){ n.height = 1+Math.max(h(n.left), h(n.right)); }
+  function balanceFactor(n){ return h(n.left)-h(n.right); }
+  function rotateRight(y){ var x=y.left, t2=x.right; x.right=y; y.left=t2; updateHeight(y); updateHeight(x); return x; }
+  function rotateLeft(x){ var y=x.right, t2=y.left; y.left=x; x.right=t2; updateHeight(x); updateHeight(y); return y; }
+
+  function toTreeNode(n, activeId, activeRole){
+    if(!n) return null;
+    var bf=balanceFactor(n);
+    return {
+      id:n.id, val:n.val, role:n.id===activeId?activeRole:"", label:(bf>0?"+":"")+bf,
+      left: toTreeNode(n.left,activeId,activeRole), right: toTreeNode(n.right,activeId,activeRole)
+    };
+  }
+
+  function rebalanceAfter(node, setter, frames, ctx){
+    updateHeight(node);
+    var bf=balanceFactor(node), result=node;
+    if(bf>1){
+      if(balanceFactor(node.left)>=0){
+        frames.push(ctx.frame(node.id,"pivot","unbalanced","Node "+node.val+" is left-left unbalanced (balance factor "+bf+") — rotate right."));
+        result=rotateRight(node);
+      } else {
+        frames.push(ctx.frame(node.id,"pivot","unbalanced","Node "+node.val+" is left-right unbalanced (balance factor "+bf+") — rotate left at "+node.left.val+", then right at "+node.val+"."));
+        node.left=rotateLeft(node.left);
+        result=rotateRight(node);
+      }
+      frames.push(ctx.frame(result.id,"sorted landed","rotated", result.val+" is the new top of this subtree."));
+    } else if(bf<-1){
+      if(balanceFactor(node.right)<=0){
+        frames.push(ctx.frame(node.id,"pivot","unbalanced","Node "+node.val+" is right-right unbalanced (balance factor "+bf+") — rotate left."));
+        result=rotateLeft(node);
+      } else {
+        frames.push(ctx.frame(node.id,"pivot","unbalanced","Node "+node.val+" is right-left unbalanced (balance factor "+bf+") — rotate right at "+node.right.val+", then left at "+node.val+"."));
+        node.right=rotateRight(node.right);
+        result=rotateLeft(node);
+      }
+      frames.push(ctx.frame(result.id,"sorted landed","rotated", result.val+" is the new top of this subtree."));
+    }
+    setter(result);
+  }
+
+  function opInsert(state, val){
+    var oc=(state.opsCount||0)+1, frames=[];
+    var idBox={n:state.nextId||0};
+    var ctx={ dup:false, frame:function(activeId,activeRole,phase,narr){
+      return {struct:{root: toTreeNode(state.root, activeId, activeRole)}, phase:phase, narr:narr, ops:oc};
+    }};
+    function makeNode(v){ return {id:idBox.n++, val:v, left:null, right:null, height:1}; }
+
+    frames.push(ctx.frame(state.root?state.root.id:undefined, "right", "insert-start",
+      "Insert "+val+" using ordinary BST rules, then rebalance on the way back up if needed."));
+
+    function insertNode(node, setter){
+      if(!node){
+        var n=makeNode(val);
+        frames.push(ctx.frame(n.id,"left head landed","inserted", val+" placed here as a new leaf."));
+        setter(n);
+        return;
+      }
+      frames.push(ctx.frame(node.id,"right","walk", val<node.val ? (val+" < "+node.val+" — go left.") : (val+" > "+node.val+" — go right.")));
+      if(val===node.val){ ctx.dup=true; return; }
+      if(val<node.val) insertNode(node.left, function(n){ node.left=n; });
+      else insertNode(node.right, function(n){ node.right=n; });
+      if(ctx.dup) return;
+      rebalanceAfter(node, setter, frames, ctx);
+    }
+
+    if(!state.root){
+      var n=makeNode(val);
+      frames.push(ctx.frame(n.id,"left head landed","inserted", val+" is the root."));
+      state.root=n;
+    } else {
+      insertNode(state.root, function(n){ state.root=n; });
+      if(ctx.dup) return {error: val+" is already in the tree — this AVL tree doesn't store duplicates."};
+    }
+    return {frames:frames, state:{root:state.root, opsCount:oc, nextId:idBox.n}};
+  }
+
+  function opDelete(state, val){
+    if(!state.root) return {error:"The tree is empty — nothing to delete."};
+    var oc=(state.opsCount||0)+1, frames=[];
+    var ctx={ notFound:false, frame:function(activeId,activeRole,phase,narr){
+      return {struct:{root: toTreeNode(state.root, activeId, activeRole)}, phase:phase, narr:narr, ops:oc};
+    }};
+    frames.push(ctx.frame(state.root.id,"right","delete-start","Delete "+val+": find it using ordinary BST rules, then rebalance on the way back up."));
+
+    function deleteNode(node, setter){
+      if(!node){ ctx.notFound=true; return; }
+      if(val<node.val){
+        frames.push(ctx.frame(node.id,"right","walk", val+" < "+node.val+" — go left."));
+        deleteNode(node.left, function(n){ node.left=n; });
+        if(ctx.notFound) return;
+        rebalanceAfter(node, setter, frames, ctx);
+      } else if(val>node.val){
+        frames.push(ctx.frame(node.id,"right","walk", val+" > "+node.val+" — go right."));
+        deleteNode(node.right, function(n){ node.right=n; });
+        if(ctx.notFound) return;
+        rebalanceAfter(node, setter, frames, ctx);
+      } else {
+        frames.push(ctx.frame(node.id,"left head","delete-found","Found "+val+"."));
+        if(!node.left || !node.right){
+          var child=node.left||node.right;
+          if(!child){
+            frames.push(ctx.frame(node.id,"","deleted", val+" was a leaf — remove it."));
+            setter(null);
+          } else {
+            frames.push(ctx.frame(child.id,"sorted landed","deleted", val+" has one child ("+child.val+") — it moves up."));
+            setter(child);
+          }
+        } else {
+          frames.push(ctx.frame(node.right.id,"right","successor-walk",
+            val+" has two children — find its in-order successor: the smallest value in its right subtree."));
+          var succVal;
+          (function removeMin(n, setter2){
+            if(!n.left){
+              succVal=n.val;
+              frames.push(ctx.frame(n.id,"left head","successor-found","Successor is "+n.val+"."));
+              setter2(n.right);
+              return;
+            }
+            frames.push(ctx.frame(n.left.id,"right","successor-walk","Keep going left to "+n.left.val+"."));
+            removeMin(n.left, function(x){ n.left=x; });
+            rebalanceAfter(n, setter2, frames, ctx);
+          })(node.right, function(x){ node.right=x; });
+          node.val=succVal;
+          frames.push(ctx.frame(node.id,"sorted landed","deleted", val+" is replaced by "+succVal+"."));
+          rebalanceAfter(node, setter, frames, ctx);
+          return;
+        }
+      }
+    }
+
+    deleteNode(state.root, function(n){ state.root=n; });
+    if(ctx.notFound) return {error: val+" isn't in the tree."};
+    return {frames:frames, state:{root:state.root, opsCount:oc, nextId:state.nextId}};
+  }
+
+  function opSearch(state, val){
+    if(!state.root) return {error:"The tree is empty — nothing to search."};
+    var oc=(state.opsCount||0)+1, frames=[];
+    function frame(activeId,activeRole,phase,narr){
+      return {struct:{root: toTreeNode(state.root, activeId, activeRole)}, phase:phase, narr:narr, ops:oc};
+    }
+    var cur=state.root;
+    while(cur){
+      if(val===cur.val){
+        frames.push(frame(cur.id,"found","found","Compare "+val+" with "+cur.val+" — equal. Found it."));
+        return {frames:frames, state:{root:state.root, opsCount:oc, nextId:state.nextId}};
+      }
+      frames.push(frame(cur.id,"left head","compare",
+        val<cur.val ? ("Compare "+val+" with "+cur.val+": smaller — go left.") : ("Compare "+val+" with "+cur.val+": larger — go right.")));
+      cur = val<cur.val ? cur.left : cur.right;
+    }
+    frames.push(frame(undefined,"","not-found", val+" isn't in the tree — hit an empty spot."));
+    return {frames:frames, state:{root:state.root, opsCount:oc, nextId:state.nextId}};
+  }
+
+  function init(){
+    var idBox={n:0};
+    function makeNode(v){ return {id:idBox.n++, val:v, left:null, right:null, height:1}; }
+    var state={root:null, opsCount:0, nextId:0};
+    var frames=[];
+    function frame(activeId,activeRole,phase,narr){
+      return {struct:{root: toTreeNode(state.root, activeId, activeRole)}, phase:phase, narr:narr, ops:0};
+    }
+    [30,15,45,10,20,40,50,5].forEach(function(v){
+      if(!state.root){ state.root=makeNode(v); return; }
+      (function ins(node, setter){
+        if(!node){ setter(makeNode(v)); return; }
+        if(v<node.val) ins(node.left, function(n){ node.left=n; });
+        else ins(node.right, function(n){ node.right=n; });
+        updateHeight(node);
+        var bf=balanceFactor(node), result=node;
+        if(bf>1){ result = balanceFactor(node.left)>=0 ? rotateRight(node) : (node.left=rotateLeft(node.left), rotateRight(node)); }
+        else if(bf<-1){ result = balanceFactor(node.right)<=0 ? rotateLeft(node) : (node.right=rotateRight(node.right), rotateLeft(node)); }
+        setter(result);
+      })(state.root, function(n){ state.root=n; });
+    });
+    frames.push(frame(undefined,"","start",
+      "An AVL tree is a binary search tree that rebalances itself after every insert and delete, so its height always stays O(log n) (seeded here with 8 values).", 0));
+    return {state:{root:state.root, opsCount:0, nextId:idBox.n}, frames:frames};
+  }
+  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      insert: { btn:"btnInsert", enterOn:"val", run: function(state){
+        var v=num("val"); if(!isFinite(v)) return {error:"Enter a value."}; return opInsert(state,v);
+      }},
+      del: { btn:"btnDelete", run: function(state){
+        var v=num("val"); if(!isFinite(v)) return {error:"Enter a value."}; return opDelete(state,v);
+      }},
+      search: { btn:"btnSearch", run: function(state){
+        var v=num("val"); if(!isFinite(v)) return {error:"Enter a value."}; return opSearch(state,v);
+      }}
+    },
+    renderExtra: function(frame){ DSRender.tree(document.getElementById("treeNodes"), document.getElementById("treeLinks"), frame.struct.root, {}); },
+    statLabels: [{key:"ops",label:"Operations"}]
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Structures &amp; Algorithms — an archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+  .algo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .algo-card{display:block;border:1px solid var(--rule);background:#fff;padding:14px 15px;
+    text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s}
+  .algo-card:hover{border-color:var(--stamp);transform:translateY(-2px)}
+  .algo-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;
+    font-size:22px;letter-spacing:.02em;text-transform:uppercase;margin:0 0 6px}
+  .algo-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;
+    color:var(--ink-soft);margin:0 0 10px}
+  .badges{display:flex;flex-wrap:wrap;gap:6px 12px;font-family:"IBM Plex Mono",monospace;
+    font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  .badges b{color:var(--ink);font-weight:600}
+  .algo-card.built h3::after{content:" ●";color:var(--seal);font-size:12px;vertical-align:super}
+  .intro{font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;color:var(--ink-soft);margin:0 0 18px;max-width:70ch}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <p class="eyebrow">An Illustrated Field Guide</p>
+      <h1>Data&nbsp;Structures&nbsp;&amp;&nbsp;Algorithms</h1>
+    </div>
+    <p class="note">Every entry runs the real thing on your input, one step at a time, and narrates what it's doing and why.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Data Structures</h2><span class="sub">11 structures</span></div>
+    <div class="panel-body">
+      <p class="intro">Each one gets notes, a looping demo you can just watch, and an interactive visualizer with Insert/Delete/Search-style buttons that animate exactly what happens underneath.</p>
+      <div class="algo-grid">
+
+        <a class="algo-card" href="stack.html">
+          <h3>Stack</h3>
+          <p>Push and pop from one end only — Last In, First Out.</p>
+          <div class="badges"><span>Push/Pop <b>O(1)</b></span><span>Search O(n)</span></div>
+        </a>
+
+        <a class="algo-card" href="queue.html">
+          <h3>Queue</h3>
+          <p>Enqueue at the rear, dequeue from the front — First In, First Out.</p>
+          <div class="badges"><span>Enqueue/Dequeue <b>O(1)</b></span></div>
+        </a>
+
+        <a class="algo-card" href="circular-queue.html">
+          <h3>Circular Queue</h3>
+          <p>A fixed-size buffer where front and rear wrap back to index 0.</p>
+          <div class="badges"><span>Enqueue/Dequeue <b>O(1)</b></span><span>Fixed capacity</span></div>
+        </a>
+
+        <a class="algo-card" href="deque.html">
+          <h3>Deque</h3>
+          <p>Insert and delete at either end — front or rear, always O(1).</p>
+          <div class="badges"><span>Both ends <b>O(1)</b></span></div>
+        </a>
+
+        <a class="algo-card" href="linked-list.html">
+          <h3>Singly Linked List</h3>
+          <p>A chain of nodes, each holding a value and a pointer to the next.</p>
+          <div class="badges"><span>Insert Head <b>O(1)</b></span><span>Search O(n)</span></div>
+        </a>
+
+        <a class="algo-card" href="doubly-linked-list.html">
+          <h3>Doubly Linked List</h3>
+          <p>Every node points both ways, and a tail pointer is kept too.</p>
+          <div class="badges"><span>Head/Tail <b>O(1)</b></span><span>Search O(n)</span></div>
+        </a>
+
+        <a class="algo-card" href="binary-search-tree.html">
+          <h3>Binary Search Tree</h3>
+          <p>Left is always smaller, right is always larger, at every node.</p>
+          <div class="badges"><span>Avg <b>O(log n)</b></span><span>Worst O(n)</span></div>
+        </a>
+
+        <a class="algo-card" href="avl-tree.html">
+          <h3>AVL Tree</h3>
+          <p>A self-balancing BST that rotates after every change — never O(n).</p>
+          <div class="badges"><span>Guaranteed <b>O(log n)</b></span></div>
+        </a>
+
+        <a class="algo-card" href="priority-queue.html">
+          <h3>Priority Queue</h3>
+          <p>A binary heap — the highest-priority value always sits at the root.</p>
+          <div class="badges"><span>Insert/Extract <b>O(log n)</b></span><span>Peek O(1)</span></div>
+        </a>
+
+        <a class="algo-card" href="hash-table.html">
+          <h3>Hash Table</h3>
+          <p>Hash a key straight to a bucket index; collisions chain together.</p>
+          <div class="badges"><span>Avg <b>O(1)</b></span><span>Worst O(n)</span></div>
+        </a>
+
+        <a class="algo-card" href="graph.html">
+          <h3>Graph</h3>
+          <p>Vertices and edges, explored with breadth-first or depth-first search.</p>
+          <div class="badges"><span>Traverse <b>O(V + E)</b></span></div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Sorting</h2><span class="sub">8 algorithms</span></div>
+    <div class="panel-body">
+      <p class="intro">Each comparison, swap, and write happens on screen, in order, with a running log underneath — press Play or step through by hand.</p>
+      <div class="algo-grid">
+
+        <a class="algo-card" href="bubble-sort-visualizer.html">
+          <h3>Bubble Sort</h3>
+          <p>Swap out-of-order neighbours, over and over, until a full pass makes no swaps.</p>
+          <div class="badges"><span>Avg <b>O(n&sup2;)</b></span><span>Space <b>O(1)</b></span><span><b>Stable</b></span></div>
+        </a>
+
+        <a class="algo-card" href="selection-sort-visualizer.html">
+          <h3>Selection Sort</h3>
+          <p>Scan the unsorted remainder for its smallest value, then swap it to the front.</p>
+          <div class="badges"><span>Avg <b>O(n&sup2;)</b></span><span>Space <b>O(1)</b></span><span><b>Not stable</b></span></div>
+        </a>
+
+        <a class="algo-card" href="insertion-sort-visualizer.html">
+          <h3>Insertion Sort</h3>
+          <p>Grow a sorted prefix one value at a time, walking each new value left into place.</p>
+          <div class="badges"><span>Avg <b>O(n&sup2;)</b></span><span>Space <b>O(1)</b></span><span><b>Stable</b></span></div>
+        </a>
+
+        <a class="algo-card" href="merge-sort-visualizer.html">
+          <h3>Merge Sort</h3>
+          <p>Split the array in half recursively, then zip each pair of sorted halves back together.</p>
+          <div class="badges"><span>Avg <b>O(n log n)</b></span><span>Space <b>O(n)</b></span><span><b>Stable</b></span></div>
+        </a>
+
+        <a class="algo-card" href="quick-sort-visualizer.html">
+          <h3>Quick Sort</h3>
+          <p>Pick a pivot, partition everything else around it, then recurse on each side.</p>
+          <div class="badges"><span>Avg <b>O(n log n)</b></span><span>Space <b>O(log n)</b></span><span><b>Not stable</b></span></div>
+        </a>
+
+        <a class="algo-card" href="heap-sort-visualizer.html">
+          <h3>Heap Sort</h3>
+          <p>Arrange the array into a max-heap, then repeatedly pull the largest value from the root.</p>
+          <div class="badges"><span>Avg <b>O(n log n)</b></span><span>Space <b>O(1)</b></span><span><b>Not stable</b></span></div>
+        </a>
+
+        <a class="algo-card" href="shell-sort-visualizer.html">
+          <h3>Shell Sort</h3>
+          <p>Insertion sort with far-apart comparisons first, shrinking the gap down to 1.</p>
+          <div class="badges"><span>Avg <b>O(n&sup1;&middot;&sup3;&#8776;)</b></span><span>Space <b>O(1)</b></span><span><b>Not stable</b></span></div>
+        </a>
+
+        <a class="algo-card" href="counting-sort-visualizer.html">
+          <h3>Counting Sort</h3>
+          <p>Count each value's occurrences, accumulate positions, then place every value directly.</p>
+          <div class="badges"><span>Avg <b>O(n + k)</b></span><span>Space <b>O(n + k)</b></span><span><b>Stable</b></span></div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Searching</h2><span class="sub">3 algorithms</span></div>
+    <div class="panel-body">
+      <p class="intro">Give it an array and a target value, then watch how each strategy narrows down where that value could be.</p>
+      <div class="algo-grid">
+
+        <a class="algo-card" href="linear-search-visualizer.html">
+          <h3>Linear Search</h3>
+          <p>Check every index in order until the target turns up. Needs no particular ordering.</p>
+          <div class="badges"><span>Avg <b>O(n)</b></span><span>Space <b>O(1)</b></span><span>Any order</span></div>
+        </a>
+
+        <a class="algo-card" href="binary-search-visualizer.html">
+          <h3>Binary Search</h3>
+          <p>Compare against the middle of the range and discard the half that can't contain it.</p>
+          <div class="badges"><span>Avg <b>O(log n)</b></span><span>Space <b>O(1)</b></span><span>Needs sorted</span></div>
+        </a>
+
+        <a class="algo-card" href="jump-search-visualizer.html">
+          <h3>Jump Search</h3>
+          <p>Leap forward in fixed-size blocks, then scan the one block the target must be in.</p>
+          <div class="badges"><span>Avg <b>O(&radic;n)</b></span><span>Space <b>O(1)</b></span><span>Needs sorted</span></div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Algorithm pages build the full sequence of steps up front and play it back. Data structure pages work a
+    little differently — the structure stays alive between operations, so you can push, then pop, then
+    search, and watch each one act on whatever the last operation left behind. Same playback controls,
+    same narration log, throughout.
+  </footer>
+</div>
+
+</body>
+</html>

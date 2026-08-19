@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deque Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="deque.html">&larr; Deque notes</a>
+      <p class="eyebrow">Double-Ended Queue</p>
+      <h1>Deque&nbsp;Visualizer</h1>
+    </div>
+    <p class="note">Insert and delete at either end — a deque can act as a stack, a queue, or both at once.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Operate on the deque</h2><span class="sub">front is on the left</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld narrow">
+          <span>Value</span>
+          <input type="number" id="val" value="5">
+        </label>
+        <button id="btnInsertFront" class="primary">Insert Front</button>
+        <button id="btnInsertRear" class="primary">Insert Rear</button>
+        <button id="btnDeleteFront">Delete Front</button>
+        <button id="btnDeleteRear">Delete Rear</button>
+      </div>
+      <p class="hint" id="hint">Insert and delete at whichever end you like — both ends are always O(1).</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The deque</h2><span class="sub">left to right</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="dequeHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> item being inserted / deleted</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Restrict a deque to only Insert Rear and Delete Front and you have a queue; restrict it to only
+    Insert Rear and Delete Rear and you have a stack. Sliding-window algorithms and browser tab history
+    (back and forward) both lean on having both ends available at once.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+  var MAX=12;
+
+  function cellsFor(items, hi, hiRole){
+    return items.map(function(v,i){
+      var badges=[];
+      if(i===0) badges.push("FRONT");
+      if(i===items.length-1) badges.push("REAR");
+      return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
+    });
+  }
+  function frame(items, hi, hiRole, phase, narr, ops){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, phase:phase, narr:narr, ops:ops};
+  }
+
+  function opInsertFront(state, val){
+    if(state.items.length>=MAX) return {error:"Deque is full — only "+MAX+" items fit in this view."};
+    var items=state.items.slice(), oc=state.opsCount||0, frames=[];
+    frames.push(frame(items, undefined, "", "insert-front-start", "Insert "+val+" at the front.", oc));
+    items.unshift(val); oc++;
+    frames.push(frame(items, 0, "left head landed", "inserted", val+" is now at the front.", oc));
+    return {frames:frames, state:{items:items, opsCount:oc}};
+  }
+  function opInsertRear(state, val){
+    if(state.items.length>=MAX) return {error:"Deque is full — only "+MAX+" items fit in this view."};
+    var items=state.items.slice(), oc=state.opsCount||0, frames=[];
+    frames.push(frame(items, undefined, "", "insert-rear-start", "Insert "+val+" at the rear.", oc));
+    items.push(val); oc++;
+    frames.push(frame(items, items.length-1, "left head landed", "inserted", val+" is now at the rear.", oc));
+    return {frames:frames, state:{items:items, opsCount:oc}};
+  }
+  function opDeleteFront(state){
+    if(!state.items.length) return {error:"The deque is empty — nothing to delete."};
+    var items=state.items.slice(), oc=(state.opsCount||0)+1, frames=[];
+    var v=items[0];
+    frames.push(frame(items, 0, "left head", "delete-front-start", "Delete the front item, "+v+".", oc));
+    items.shift();
+    frames.push(frame(items, undefined, "", "deleted", v+" removed from the front.", oc));
+    return {frames:frames, state:{items:items, opsCount:oc}};
+  }
+  function opDeleteRear(state){
+    if(!state.items.length) return {error:"The deque is empty — nothing to delete."};
+    var items=state.items.slice(), oc=(state.opsCount||0)+1, frames=[];
+    var v=items[items.length-1];
+    frames.push(frame(items, items.length-1, "left head", "delete-rear-start", "Delete the rear item, "+v+".", oc));
+    items.pop();
+    frames.push(frame(items, undefined, "", "deleted", v+" removed from the rear.", oc));
+    return {frames:frames, state:{items:items, opsCount:oc}};
+  }
+
+  function init(){
+    var items=[7,3,9];
+    return {
+      state:{items:items, opsCount:0},
+      frames:[frame(items, undefined, "", "start",
+        "A deque starts empty (seeded here with a few values). Unlike a stack or queue, both ends are open for insertion and deletion.", 0)]
+    };
+  }
+
+  function readVal(){
+    var v=Number(document.getElementById("val").value);
+    return isFinite(v) ? v : null;
+  }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      insertFront: { btn:"btnInsertFront", enterOn:"val", run: function(state){
+        var v=readVal(); if(v===null) return {error:"Enter a number to insert."}; return opInsertFront(state, v);
+      }},
+      insertRear: { btn:"btnInsertRear", run: function(state){
+        var v=readVal(); if(v===null) return {error:"Enter a number to insert."}; return opInsertRear(state, v);
+      }},
+      deleteFront: { btn:"btnDeleteFront", run: function(state){ return opDeleteFront(state); } },
+      deleteRear: { btn:"btnDeleteRear", run: function(state){ return opDeleteRear(state); } }
+    },
+    renderExtra: function(frame){ DSRender.slots(document.getElementById("dequeHost"), frame.struct.cells); },
+    statLabels: [{key:"ops",label:"Operations"}]
+  });
+})();
+</script>
+</body>
+</html>

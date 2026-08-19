@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hash Table</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All topics</a>
+      <p class="eyebrow">Hash &middot; Bucket &middot; Chain</p>
+      <h1>Hash&nbsp;Table</h1>
+    </div>
+    <p class="note">Turns a key into an array index with a hash function, giving average O(1) insert, delete, and search.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A hash table runs every key through a <b>hash function</b> that turns it into a number, then uses
+      that number (modulo the table's capacity) as an index straight into an array of <b>buckets</b>. If the
+      hash function spreads keys evenly, most buckets end up with zero or one entries, and looking a key up
+      is just "compute its hash, jump to that bucket" — O(1) on average, no searching required.</p>
+      <p>Two different keys can hash to the same bucket — a <b>collision</b> — and with enough keys, they
+      will. This visualizer resolves collisions with <b>chaining</b>: each bucket holds a small linked list,
+      and a colliding key just gets appended to it. (The alternative, <b>open addressing</b>, probes for a
+      different empty slot elsewhere in the array instead.)</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>Average</th><th>Worst case</th></tr>
+        <tr><td>Insert</td><td><b>O(1)</b></td><td>O(n) — one giant chain</td></tr>
+        <tr><td>Delete</td><td><b>O(1)</b></td><td>O(n)</td></tr>
+        <tr><td>Search</td><td><b>O(1)</b></td><td>O(n)</td></tr>
+      </table>
+
+      <p>This is the mechanism behind every language's built-in dictionary/map/object type (Python's
+      <code>dict</code>, JavaScript's <code>Object</code>/<code>Map</code>, Java's <code>HashMap</code>) and
+      behind database indexes built for fast exact-match lookups.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; inserts, a collision, then a delete</span></div>
+    <div class="panel-body">
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 4px">Buckets</p>
+      <div class="scroller"><div class="array-row" id="demoBuckets"></div></div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Chain at the active bucket</p>
+      <div class="scroller"><div id="demoChain"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="hash-table-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — insert a few keys and watch two of them collide into the same bucket.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+  var CAP=8;
+  function hash(key){ var s=0; for(var i=0;i<key.length;i++) s+=key.charCodeAt(i); return s%CAP; }
+  function bucketCells(buckets, activeIdx, activeRole){
+    return buckets.map(function(chain,i){ return {val:chain.length, role:i===activeIdx?activeRole:(chain.length?"":"dim")}; });
+  }
+  function chainStruct(chain, activeRole, activeKey){
+    return {dir:"v", nullEnd:true, emptyText:"Empty bucket", nodes:chain.map(function(k){ return {val:k, role:(k===activeKey?activeRole:"")}; })};
+  }
+
+  function scriptFrames(){
+    var buckets=[]; for(var i=0;i<CAP;i++) buckets.push([]);
+    var frames=[];
+    function push(idx, activeRole, key, narr){
+      frames.push({struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx]||[], activeRole, key)}, narr:narr});
+    }
+    function insert(key){
+      var idx=hash(key);
+      push(idx,"","", "Hash \""+key+"\" — lands on bucket "+idx+".");
+      if(buckets[idx].length) push(idx,"",key, "Collision — chain onto bucket "+idx+".");
+      buckets[idx].push(key);
+      push(idx,"left head landed",key, "\""+key+"\" added to bucket "+idx+".");
+    }
+    function del(key){
+      var idx=hash(key);
+      push(idx,"left head",key, "Delete \""+key+"\" — found in bucket "+idx+".");
+      buckets[idx].splice(buckets[idx].indexOf(key),1);
+      push(idx,"",key, "\""+key+"\" removed from bucket "+idx+".");
+    }
+    push(undefined,"","", "An empty table, "+CAP+" buckets.");
+    insert("cat"); insert("dog"); insert("act"); insert("sun");
+    del("dog");
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 1000,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoBuckets"), frame.struct.buckets);
+      DSRender.sequence(document.getElementById("demoChain"), frame.struct.chain);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

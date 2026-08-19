@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doubly Linked List Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="doubly-linked-list.html">&larr; Doubly Linked List notes</a>
+      <p class="eyebrow">Each Node Points Both Ways</p>
+      <h1>Doubly&nbsp;Linked&nbsp;List</h1>
+    </div>
+    <p class="note">A tail pointer and prev links mean tail insertion is O(1) and deletion never needs a separate walk to find "the node before" — this visualizer picks whichever end is closer.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Operate on the list</h2><span class="sub">indices are 0-based</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld narrow"><span>Value</span><input type="number" id="vHead" value="5"></label>
+        <button id="btnInsertHead" class="primary">Insert Head</button>
+        <label class="fld narrow"><span>Value</span><input type="number" id="vTail" value="5"></label>
+        <button id="btnInsertTail" class="primary">Insert Tail</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="fld narrow"><span>Index</span><input type="number" id="idxIns" value="1" min="0"></label>
+        <label class="fld narrow"><span>Value</span><input type="number" id="valIns" value="5"></label>
+        <button id="btnInsertIndex" class="primary">Insert at Index</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="fld narrow"><span>Index</span><input type="number" id="idxDel" value="0" min="0"></label>
+        <button id="btnDelete">Delete at Index</button>
+        <label class="fld narrow"><span>Value</span><input type="number" id="searchVal" value="7"></label>
+        <button id="btnSearch">Search</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="fld narrow"><span>Index</span><input type="number" id="idxUpd" value="0" min="0"></label>
+        <label class="fld narrow"><span>New value</span><input type="number" id="valUpd" value="99"></label>
+        <button id="btnUpdate">Update at Index</button>
+      </div>
+      <p class="hint" id="hint">Try Insert/Delete at an index near the end — watch it walk backward from TAIL instead of forward from HEAD.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The list</h2><span class="sub">HEAD on the left, TAIL on the right</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div id="listHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch right"></i> node being walked past</span>
+        <span class="key"><i class="swatch left"></i> node being inserted / deleted / updated / matched</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Two extra pointers per node (prev, and a maintained tail) buy real advantages: O(1) tail insertion,
+    O(1) deletion once you've found the node (no trailing "previous" pointer needed), and — as this
+    visualizer shows — a choice of which end to walk from when reaching an arbitrary index.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function makeNode(val,id){ return {id:id, val:val, prev:null, next:null}; }
+  function size(state){ var n=0,cur=state.head; while(cur){n++;cur=cur.next;} return n; }
+
+  function toStruct(state, activeId, activeRole){
+    var nodes=[], linkActive=[], cur=state.head, i=0, n=size(state);
+    while(cur){
+      var badges=[]; if(i===0) badges.push("HEAD"); if(i===n-1) badges.push("TAIL");
+      nodes.push({val:cur.val, role:(cur.id===activeId?activeRole:""), ptr:badges.join("/")});
+      if(cur.next) linkActive.push(cur.id===activeId || cur.next.id===activeId);
+      cur=cur.next; i++;
+    }
+    return {dir:"h", nullEnd:true, double:true, emptyText:"Empty list — HEAD and TAIL are both NULL", nodes:nodes, linkActive:linkActive};
+  }
+  function frame(state, activeId, activeRole, phase, narr, ops){
+    return {struct:toStruct(state,activeId,activeRole), phase:phase, narr:narr, ops:ops};
+  }
+
+  function opInsertHead(state,val){
+    var oc=(state.opsCount||0)+1, nextId=state.nextId||0, frames=[];
+    frames.push(frame(state, undefined, "", "insert-head-start", "Insert "+val+" at the head — O(1): rewire two pointers, no walk.", oc));
+    var node=makeNode(val,nextId++);
+    node.next=state.head;
+    if(state.head) state.head.prev=node;
+    var newTail=state.tail||node;
+    var newState={head:node, tail:newTail, opsCount:oc, nextId:nextId};
+    frames.push(frame(newState, node.id, "left head landed", "inserted", val+" is the new head.", oc));
+    return {frames:frames, state:newState};
+  }
+  function opInsertTail(state,val){
+    var oc=(state.opsCount||0)+1, nextId=state.nextId||0, frames=[];
+    frames.push(frame(state, undefined, "", "insert-tail-start", "Insert "+val+" at the tail — O(1) here, because a tail pointer is maintained. No walk needed.", oc));
+    var node=makeNode(val,nextId++);
+    node.prev=state.tail;
+    if(state.tail) state.tail.next=node;
+    var newHead=state.head||node;
+    var newState={head:newHead, tail:node, opsCount:oc, nextId:nextId};
+    frames.push(frame(newState, node.id, "left head landed", "inserted", val+" is the new tail.", oc));
+    return {frames:frames, state:newState};
+  }
+  function opInsertAtIndex(state,val,idx){
+    var n=size(state);
+    if(!isFinite(idx)||idx<0||idx>n) return {error:"Index must be between 0 and "+n+"."};
+    if(idx===0) return opInsertHead(state,val);
+    if(idx===n) return opInsertTail(state,val);
+    var oc=(state.opsCount||0)+1, nextId=state.nextId||0, frames=[];
+    var fwd=idx-1, back=n-1-idx, before;
+    if(fwd<=back){
+      frames.push(frame(state, state.head.id, "right", "insert-index-start",
+        "Insert "+val+" at index "+idx+": "+fwd+" step"+(fwd===1?"":"s")+" forward from HEAD is closer than "+back+" back from TAIL.", oc));
+      var cur=state.head, i=0;
+      while(i<fwd){ cur=cur.next; i++; frames.push(frame(state,cur.id,"right","walk","Step forward to index "+i+" ("+cur.val+").",oc)); }
+      before=cur;
+    } else {
+      frames.push(frame(state, state.tail.id, "right", "insert-index-start",
+        "Insert "+val+" at index "+idx+": "+back+" step"+(back===1?"":"s")+" backward from TAIL is closer than "+fwd+" forward from HEAD.", oc));
+      var curB=state.tail, iB=n-1;
+      while(iB>idx){ curB=curB.prev; iB--; frames.push(frame(state,curB.id,"right","walk","Step backward to index "+iB+" ("+curB.val+").",oc)); }
+      before=curB.prev;
+    }
+    var node=makeNode(val,nextId++);
+    node.prev=before; node.next=before.next;
+    before.next.prev=node; before.next=node;
+    var newState={head:state.head, tail:state.tail, opsCount:oc, nextId:nextId};
+    frames.push(frame(newState, node.id, "left head landed", "inserted", val+" now sits between "+before.val+" and "+node.next.val+".", oc));
+    return {frames:frames, state:newState};
+  }
+  function opDeleteAtIndex(state, idx){
+    var n=size(state);
+    if(!n) return {error:"The list is empty — nothing to delete."};
+    if(!isFinite(idx)||idx<0||idx>=n) return {error:"Index must be between 0 and "+(n-1)+"."};
+    var oc=(state.opsCount||0)+1, frames=[];
+    if(idx===0){
+      frames.push(frame(state, state.head.id, "left head", "delete-start", "Delete index 0, the head.", oc));
+      var v=state.head.val, newHead=state.head.next;
+      if(newHead) newHead.prev=null;
+      var newState={head:newHead, tail:newHead?state.tail:null, opsCount:oc, nextId:state.nextId};
+      frames.push(frame(newState, undefined, "", "deleted", v+" removed. "+(newHead?("New head is "+newHead.val+"."):"The list is now empty."), oc));
+      return {frames:frames, state:newState};
+    }
+    if(idx===n-1){
+      frames.push(frame(state, state.tail.id, "left head", "delete-start", "Delete index "+idx+", the tail — O(1), no walk needed.", oc));
+      var v2=state.tail.val, newTail=state.tail.prev;
+      if(newTail) newTail.next=null;
+      var newState2={head:newTail?state.head:null, tail:newTail, opsCount:oc, nextId:state.nextId};
+      frames.push(frame(newState2, undefined, "", "deleted", v2+" removed. "+(newTail?("New tail is "+newTail.val+"."):"The list is now empty."), oc));
+      return {frames:frames, state:newState2};
+    }
+    var fwd=idx, back=n-1-idx, target;
+    if(fwd<=back){
+      frames.push(frame(state, state.head.id, "right", "delete-start", "Delete index "+idx+": walk forward from HEAD.", oc));
+      var cur=state.head, i=0;
+      while(i<idx){ cur=cur.next; i++; frames.push(frame(state,cur.id,"right","walk","Step forward to index "+i+" ("+cur.val+").",oc)); }
+      target=cur;
+    } else {
+      frames.push(frame(state, state.tail.id, "right", "delete-start", "Delete index "+idx+": walk backward from TAIL.", oc));
+      var curB=state.tail, iB=n-1;
+      while(iB>idx){ curB=curB.prev; iB--; frames.push(frame(state,curB.id,"right","walk","Step backward to index "+iB+" ("+curB.val+").",oc)); }
+      target=curB;
+    }
+    frames.push(frame(state, target.id, "left head", "delete-target",
+      "Found index "+idx+": "+target.val+". Its own prev and next pointers are enough to splice it out — no trailing 'previous' node needed.", oc));
+    var p=target.prev, nx=target.next;
+    p.next=nx; nx.prev=p;
+    var newState3={head:state.head, tail:state.tail, opsCount:oc, nextId:state.nextId};
+    frames.push(frame(newState3, undefined, "", "deleted", target.val+" removed. "+p.val+" and "+nx.val+" now link directly to each other.", oc));
+    return {frames:frames, state:newState3};
+  }
+  function opSearch(state, val){
+    if(!state.head) return {error:"The list is empty — nothing to search."};
+    var oc=(state.opsCount||0)+1, frames=[];
+    var cur=state.head, i=0, found=false;
+    while(cur){
+      var isMatch=cur.val===val;
+      frames.push(frame(state, cur.id, "left head", isMatch?"found":"compare",
+        "Check index "+i+": is "+cur.val+" equal to "+val+"? "+(isMatch?"Yes — found it.":"No — follow next."), oc));
+      if(isMatch){ found=true; break; }
+      cur=cur.next; i++;
+    }
+    if(!found) frames.push(frame(state, undefined, "", "not-found", val+" was never found — reached NULL.", oc));
+    return {frames:frames, state:{head:state.head, tail:state.tail, opsCount:oc, nextId:state.nextId}};
+  }
+  function opUpdateAtIndex(state, idx, val){
+    var n=size(state);
+    if(!n) return {error:"The list is empty — nothing to update."};
+    if(!isFinite(idx)||idx<0||idx>=n) return {error:"Index must be between 0 and "+(n-1)+"."};
+    var oc=(state.opsCount||0)+1, frames=[];
+    var fwd=idx, back=n-1-idx, cur;
+    if(fwd<=back){
+      frames.push(frame(state, state.head.id, "right", "walk-start", "Walk forward from HEAD to index "+idx+".", oc));
+      cur=state.head; var i=0;
+      while(i<idx){ cur=cur.next; i++; frames.push(frame(state,cur.id,"right","walk","Step forward to index "+i+" ("+cur.val+").",oc)); }
+    } else {
+      frames.push(frame(state, state.tail.id, "right", "walk-start", "Walk backward from TAIL to index "+idx+".", oc));
+      cur=state.tail; var iB=n-1;
+      while(iB>idx){ cur=cur.prev; iB--; frames.push(frame(state,cur.id,"right","walk","Step backward to index "+iB+" ("+cur.val+").",oc)); }
+    }
+    var oldVal=cur.val;
+    cur.val=val;
+    frames.push(frame(state, cur.id, "left head landed", "updated", "Index "+idx+" changes from "+oldVal+" to "+val+".", oc));
+    return {frames:frames, state:{head:state.head, tail:state.tail, opsCount:oc, nextId:state.nextId}};
+  }
+
+  function init(){
+    var nextId=0;
+    function node(v){ return {id:nextId++, val:v, prev:null, next:null}; }
+    var n1=node(10), n2=node(25), n3=node(7);
+    n1.next=n2; n2.prev=n1; n2.next=n3; n3.prev=n2;
+    var state={head:n1, tail:n3, opsCount:0, nextId:nextId};
+    return {state:state, frames:[frame(state, undefined, "", "start",
+      "A doubly linked list starts as a chain (seeded here with three nodes), each holding both a next and a prev pointer, plus a maintained tail pointer.", 0)]};
+  }
+  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      insertHead: { btn:"btnInsertHead", enterOn:"vHead", run: function(state){
+        var v=num("vHead"); if(!isFinite(v)) return {error:"Enter a value."}; return opInsertHead(state,v);
+      }},
+      insertTail: { btn:"btnInsertTail", enterOn:"vTail", run: function(state){
+        var v=num("vTail"); if(!isFinite(v)) return {error:"Enter a value."}; return opInsertTail(state,v);
+      }},
+      insertIndex: { btn:"btnInsertIndex", run: function(state){
+        var v=num("valIns"), idx=num("idxIns");
+        if(!isFinite(v)) return {error:"Enter a value."};
+        return opInsertAtIndex(state,v,idx);
+      }},
+      del: { btn:"btnDelete", run: function(state){ return opDeleteAtIndex(state, num("idxDel")); } },
+      search: { btn:"btnSearch", enterOn:"searchVal", run: function(state){
+        var v=num("searchVal"); if(!isFinite(v)) return {error:"Enter a value to search for."}; return opSearch(state,v);
+      }},
+      update: { btn:"btnUpdate", run: function(state){
+        var v=num("valUpd"), idx=num("idxUpd");
+        if(!isFinite(v)) return {error:"Enter a new value."};
+        return opUpdateAtIndex(state, idx, v);
+      }}
+    },
+    renderExtra: function(frame){ DSRender.sequence(document.getElementById("listHost"), frame.struct); },
+    statLabels: [{key:"ops",label:"Operations"}]
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heap Sort — step by step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+  /* ---- heap tree, page-specific (mirrors merge-sort's recursion-tree pattern) ---- */
+  .heapwrap{position:relative;width:max-content;min-width:100%;padding:10px 4px 4px}
+  #hlinks{position:absolute;inset:0;pointer-events:none;overflow:visible}
+  #hlinks path{fill:none;stroke:var(--faint);stroke-width:1.5;transition:stroke .25s,stroke-width .25s}
+  #hlinks path.active{stroke:var(--stamp);stroke-width:2.5}
+  #hlinks path.settled{stroke:var(--seal)}
+  .hnode{display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+  .hkids{display:flex;gap:18px;padding-top:30px;align-items:flex-start}
+  .hbox{padding:2px}
+  .hbox .cell{width:var(--cw);height:var(--cw)}
+  .hidx{font-family:"IBM Plex Mono",monospace;font-size:9px;color:var(--ink-soft);margin-top:4px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Heapify &middot; Extract Max &middot; Sift Down</p>
+      <h1>Heap&nbsp;Sort</h1>
+    </div>
+    <p class="note">Arranges the array into a max-heap, then repeatedly pulls the largest value from the root and re-heapifies what's left.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Set the array</h2><span class="sub">2 &ndash; 16 numbers</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld">
+          <span>Numbers, separated by commas</span>
+          <input type="text" id="input" value="38, 27, 43, 3, 9, 82, 10" autocomplete="off" spellcheck="false">
+        </label>
+        <button id="load">Use this array</button>
+        <button id="rand">Random</button>
+      </div>
+      <p class="hint" id="hint">Press Play to watch the sort, or step through one comparison at a time.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Working array</h2><span class="sub">the heap, stored flat</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> parent / current largest</span>
+        <span class="key"><i class="swatch right"></i> child being compared</span>
+        <span class="key"><i class="swatch sorted"></i> in final sorted position</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Heap tree</h2><span class="sub">index i's children live at 2i+1 and 2i+2</span></div>
+    <div class="panel-body">
+      <div class="scroller">
+        <div class="heapwrap" id="heapTreeWrap">
+          <svg id="hlinks"></svg>
+          <div id="heapTree"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Load an array to begin.</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Building the heap and repeatedly extracting its root both boil down to the same operation &mdash; sift-down &mdash;
+    which is why heap sort needs no extra memory: the sorted output grows at the end of the very array
+    the heap lives in.
+  </footer>
+</div>
+
+<script src="shared/engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var Tree={boxEls:{},cellEls:{},links:[],n:0};
+  function div(c){ var d=document.createElement("div"); d.className=c; return d; }
+
+  function rebuildTree(n){
+    Tree.boxEls={}; Tree.cellEls={}; Tree.links=[]; Tree.n=n;
+    var host=document.getElementById("heapTree");
+    host.innerHTML="";
+    (function place(idx,parent){
+      var wrap=div("hnode");
+      var box=div("hbox");
+      var cell=div("cell"); cell.textContent="·";
+      box.appendChild(cell);
+      wrap.appendChild(box);
+      var lab=div("hidx"); lab.textContent="i"+idx;
+      wrap.appendChild(lab);
+      Tree.boxEls[idx]=box; Tree.cellEls[idx]=cell;
+      var l=2*idx+1, r=2*idx+2, kids=[];
+      if(l<n) kids.push(l);
+      if(r<n) kids.push(r);
+      if(kids.length){
+        var kidsWrap=div("hkids");
+        kids.forEach(function(k){ place(k,kidsWrap); Tree.links.push({p:idx,c:k}); });
+        wrap.appendChild(kidsWrap);
+      }
+      parent.appendChild(wrap);
+    })(0,host);
+    drawLinks();
+  }
+
+  function drawLinks(){
+    var svg=document.getElementById("hlinks"), wrapEl=document.getElementById("heapTreeWrap");
+    if(!wrapEl) return;
+    if(!Tree.links.length){ svg.innerHTML=""; return; }
+    var base=wrapEl.getBoundingClientRect();
+    svg.setAttribute("viewBox","0 0 "+wrapEl.offsetWidth+" "+wrapEl.offsetHeight);
+    svg.setAttribute("width",wrapEl.offsetWidth);
+    svg.setAttribute("height",wrapEl.offsetHeight);
+    var out="";
+    for(var q=0;q<Tree.links.length;q++){
+      var L=Tree.links[q];
+      var pb=Tree.boxEls[L.p].getBoundingClientRect(), cb=Tree.boxEls[L.c].getBoundingClientRect();
+      var x1=pb.left+pb.width/2-base.left, y1=pb.bottom-base.top;
+      var x2=cb.left+cb.width/2-base.left, y2=cb.top-base.top;
+      var my=y1+(y2-y1)/2;
+      out+='<path data-p="'+L.p+'" data-c="'+L.c+'" d="M'+x1+' '+y1+' V'+my+' H'+x2+' V'+y2+'"></path>';
+    }
+    svg.innerHTML=out;
+  }
+
+  function renderExtra(frame){
+    for(var idx=0; idx<Tree.n; idx++){
+      var cell=Tree.cellEls[idx]; if(!cell) continue;
+      var v=frame.array[idx];
+      cell.textContent=(v===null||v===undefined)?"·":v;
+      cell.className="cell"+(frame.roles[idx]?" "+frame.roles[idx]:"");
+    }
+    var paths=document.getElementById("hlinks").querySelectorAll("path");
+    for(var q=0;q<paths.length;q++){
+      var p=paths[q], pi=Number(p.getAttribute("data-p")), ci=Number(p.getAttribute("data-c"));
+      var rp=frame.roles[pi]||"", rc=frame.roles[ci]||"", cls="";
+      if(rp.indexOf("head")>=0 || rc.indexOf("head")>=0) cls="active";
+      else if(rc.indexOf("sorted")>=0) cls="settled";
+      p.setAttribute("class",cls);
+    }
+  }
+
+  var rt;
+  window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(drawLinks,120); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(drawLinks);
+
+  function build(input){
+    var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0, finalized=new Array(n).fill(false);
+    rebuildTree(n);
+
+    function roles(){
+      var r=new Array(n).fill("");
+      for(var idx=0; idx<n; idx++) if(finalized[idx]) r[idx]="sorted";
+      return r;
+    }
+    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp}); }
+
+    push(roles(),"start","Heap sort first arranges the array into a max-heap — a binary tree, stored flat in the array, where every parent is at least as large as its children — then repeatedly moves the largest value to the end.");
+
+    function siftDown(root,size){
+      var largest=root, left=2*root+1, right=2*root+2;
+      if(left<size){
+        var r1=roles(); r1[largest]="left head"; r1[left]="right head";
+        cmp++;
+        var leftBigger=a[left]>a[largest];
+        push(r1,"compare","Compare parent "+a[largest]+" (index "+largest+") with its left child "+a[left]+" (index "+left+"). "+
+          (leftBigger ? "The child is larger." : "The parent stays the largest so far."));
+        if(leftBigger) largest=left;
+      }
+      if(right<size){
+        var r2=roles(); r2[largest]="left head"; r2[right]="right head";
+        cmp++;
+        var rightBigger=a[right]>a[largest];
+        push(r2,"compare","Compare the current largest "+a[largest]+" (index "+largest+") with the right child "+a[right]+" (index "+right+"). "+
+          (rightBigger ? "The child is larger." : "The current value stays largest."));
+        if(rightBigger) largest=right;
+      }
+      if(largest!==root){
+        var tmp=a[root]; a[root]=a[largest]; a[largest]=tmp; swp++;
+        var r3=roles(); r3[root]="right head landed"; r3[largest]="left head landed";
+        push(r3,"sift","Swap "+a[root]+" and "+a[largest]+": the larger child rises to index "+root+". Keep sifting down from index "+largest+".");
+        siftDown(largest,size);
+      }
+    }
+
+    push(roles(),"heapify-start","Build the max-heap first: work from the last parent node up to the root, sifting each one down into place.");
+    for(var i=Math.floor(n/2)-1;i>=0;i--) siftDown(i,n);
+    push(roles(),"heapify-done","The array is now a max-heap: index 0 holds the largest value, "+a[0]+".");
+
+    for(var end=n-1; end>0; end--){
+      var tmp2=a[0]; a[0]=a[end]; a[end]=tmp2; swp++;
+      finalized[end]=true;
+      var r4=roles(); r4[end]="sorted landed"; r4[0]="left head landed";
+      push(r4,"extract","Move the heap's largest value, "+a[end]+", from the root to index "+end+" — its final sorted position.");
+      siftDown(0,end);
+    }
+    finalized[0]=true;
+    push(roles(),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.");
+    return frames;
+  }
+
+  Viz.init({
+    defaultInput: "38, 27, 43, 3, 9, 82, 10",
+    minN:2, maxN:16,
+    build: build,
+    renderExtra: renderExtra,
+    statLabels: [{key:"cmp",label:"Comparisons"},{key:"swp",label:"Swaps"}]
+  });
+})();
+</script>
+</body>
+</html>

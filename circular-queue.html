@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circular Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All topics</a>
+      <p class="eyebrow">Fixed Capacity &middot; Wraps Around</p>
+      <h1>Circular&nbsp;Queue</h1>
+    </div>
+    <p class="note">A fixed-size buffer that treats its last index and its first index as neighbours.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A plain array-backed queue has a problem: after enough enqueues and dequeues, the front pointer
+      creeps rightward and the slots behind it just sit there wasted, unusable, even though the queue isn't
+      full. A <b>circular queue</b> fixes this by wrapping <code>front</code> and <code>rear</code> back to
+      index 0 with a modulo (<code>(i + 1) % capacity</code>) once they reach the last slot — the array
+      behaves like a ring instead of a dead-ending line.</p>
+      <p>The trade-off is a fixed capacity, decided up front, and a little index arithmetic on every
+      operation to detect "full" versus "empty" (both can otherwise look identical: front equals rear).</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Enqueue</td><td>Place a value one slot past rear, wrapping if needed</td><td><b>O(1)</b></td></tr>
+        <tr><td>Dequeue</td><td>Remove the value at front, wrapping if needed</td><td><b>O(1)</b></td></tr>
+        <tr><td>Peek / Front</td><td>Look at the front value without removing it</td><td><b>O(1)</b></td></tr>
+      </table>
+
+      <p>This is the shape behind ring buffers used in streaming audio/video pipelines, keyboard input
+      buffers, and fixed-size producer/consumer queues where capacity is deliberately capped.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; fills, wraps, drains</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="circular-queue-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — enqueue past the last index and watch REAR reappear at 0.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+  var CAP=6;
+
+  function cellsFor(buf, front, rear, count, hi, hiRole){
+    var out=[];
+    for(var i=0;i<CAP;i++){
+      var badges=[];
+      if(count>0 && i===front) badges.push("FRONT");
+      if(count>0 && i===rear) badges.push("REAR");
+      out.push({
+        val: buf[i],
+        role: (i===hi ? hiRole : (buf[i]===null ? "dim" : "")),
+        ptr: badges.join("/")
+      });
+    }
+    return out;
+  }
+  function frame(state, hi, hiRole, narr){
+    return {struct:{cells:cellsFor(state.buf,state.front,state.rear,state.count,hi,hiRole)}, narr:narr};
+  }
+
+  function scriptFrames(){
+    var buf=new Array(CAP).fill(null), front=-1, rear=-1, count=0, frames=[];
+    function state(){ return {buf:buf,front:front,rear:rear,count:count}; }
+    function enqueue(v){
+      frames.push(frame(state(), undefined, "", "Enqueue "+v+"."));
+      if(count===0){ front=0; rear=0; } else { rear=(rear+1)%CAP; }
+      buf[rear]=v; count++;
+      frames.push(frame(state(), rear, "left head landed", v+" placed at index "+rear+(rear===0&&count>1?" — wrapped around!":".")));
+    }
+    function dequeue(){
+      var v=buf[front];
+      frames.push(frame(state(), front, "left head", "Dequeue "+v+" from index "+front+"."));
+      buf[front]=null;
+      if(count===1){ front=-1; rear=-1; } else { front=(front+1)%CAP; }
+      count--;
+      frames.push(frame(state(), undefined, "", v+" removed."));
+    }
+    frames.push(frame(state(), undefined, "", "An empty ring buffer, capacity "+CAP+"."));
+    enqueue(4); enqueue(7); enqueue(2); enqueue(9);
+    dequeue(); dequeue();
+    enqueue(5); enqueue(1);
+    dequeue(); dequeue(); dequeue(); dequeue();
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hash Table Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+  .subrow-label{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px}
+  .subrow-label:first-child{margin-top:0}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="hash-table.html">&larr; Hash Table notes</a>
+      <p class="eyebrow">Hash &middot; Bucket &middot; Chain</p>
+      <h1>Hash&nbsp;Table&nbsp;Visualizer</h1>
+    </div>
+    <p class="note">Every key hashes to a bucket index; collisions just chain onto that bucket as a small linked list.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Operate on the table</h2><span class="sub">8 buckets &middot; text keys</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld"><span>Key</span><input type="text" id="key" value="fox" autocomplete="off" spellcheck="false"></label>
+        <button id="btnInsert" class="primary">Insert</button>
+        <button id="btnDelete">Delete</button>
+        <button id="btnSearch">Search</button>
+      </div>
+      <p class="hint" id="hint">Try keys that hash to the same bucket (their character codes sum to the same value mod 8) to see chaining.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The table</h2><span class="sub">bucket index = hash(key) mod 8</span></div>
+    <div class="panel-body">
+      <p class="subrow-label">Buckets — chain length per index</p>
+      <div class="scroller"><div class="array-row" id="bucketHost"></div></div>
+      <p class="subrow-label">Chain at the active bucket</p>
+      <div class="scroller"><div id="chainHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> bucket / key involved in this step</span>
+        <span class="key"><i class="swatch dim"></i> empty bucket</span>
+        <span class="key"><i class="swatch found"></i> search match</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    With a good hash function spreading keys evenly across buckets, each chain stays short — close to
+    n/capacity keys — so insert, delete, and search are all O(1) on average. A bad hash function (or too
+    many keys for too few buckets) collapses that average toward O(n): one long chain to walk.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+  var CAP=8;
+  function hash(key){ var s=0; for(var i=0;i<key.length;i++) s+=key.charCodeAt(i); return s%CAP; }
+
+  function bucketCells(buckets, activeIdx, activeRole){
+    return buckets.map(function(chain,i){
+      return { val: chain.length, role: i===activeIdx ? activeRole : (chain.length?"":"dim") };
+    });
+  }
+  function chainStruct(chain, activeRole, activeKey){
+    return {
+      dir:"v", nullEnd:true, emptyText:"Empty bucket",
+      nodes: chain.map(function(k){ return {val:k, role:(k===activeKey?activeRole:"")}; })
+    };
+  }
+
+  function opInsert(state, key){
+    if(!key) return {error:"Enter a key to insert."};
+    var oc=(state.opsCount||0)+1;
+    var buckets=state.buckets.map(function(b){ return b.slice(); });
+    var idx=hash(key), frames=[];
+    function frame(activeRole, phase, narr){
+      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key)}, phase:phase, narr:narr, ops:oc};
+    }
+    frames.push(frame("", "hash", "Hash \""+key+"\": sum its character codes and take mod "+CAP+" — lands on bucket "+idx+"."));
+    if(buckets[idx].indexOf(key)>=0) return {error:"\""+key+"\" is already in the table (bucket "+idx+")."};
+    var collision=buckets[idx].length>0;
+    if(collision){
+      frames.push(frame("", "collision", "Bucket "+idx+" already holds "+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+" — a collision. Chain \""+key+"\" onto the end."));
+    }
+    buckets[idx].push(key);
+    frames.push(frame("left head landed", "inserted", "\""+key+"\" added to bucket "+idx+"."+(collision?" Chain length is now "+buckets[idx].length+".":"")));
+    return {frames:frames, state:{buckets:buckets, opsCount:oc}};
+  }
+  function opDelete(state, key){
+    if(!key) return {error:"Enter a key to delete."};
+    var oc=(state.opsCount||0)+1;
+    var buckets=state.buckets.map(function(b){ return b.slice(); });
+    var idx=hash(key), frames=[];
+    function frame(activeRole, phase, narr){
+      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key)}, phase:phase, narr:narr, ops:oc};
+    }
+    frames.push(frame("", "hash", "Hash \""+key+"\": lands on bucket "+idx+". Search that bucket's chain for it."));
+    var pos=buckets[idx].indexOf(key);
+    if(pos<0) return {error:"\""+key+"\" isn't in the table."};
+    frames.push(frame("left head", "found", "Found \""+key+"\" in bucket "+idx+"."));
+    buckets[idx].splice(pos,1);
+    frames.push(frame("", "deleted", "\""+key+"\" removed from bucket "+idx+"."+(buckets[idx].length ? (" "+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+" remain in the chain.") : " The bucket is now empty.")));
+    return {frames:frames, state:{buckets:buckets, opsCount:oc}};
+  }
+  function opSearch(state, key){
+    if(!key) return {error:"Enter a key to search for."};
+    var oc=(state.opsCount||0)+1;
+    var buckets=state.buckets.map(function(b){ return b.slice(); });
+    var idx=hash(key), frames=[];
+    function frame(activeRole, phase, narr){
+      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key)}, phase:phase, narr:narr, ops:oc};
+    }
+    frames.push(frame("", "hash", "Hash \""+key+"\": lands on bucket "+idx+"."));
+    var found=buckets[idx].indexOf(key)>=0;
+    if(found) frames.push(frame("found", "found", "\""+key+"\" found in bucket "+idx+"."));
+    else frames.push(frame("", "not-found", "\""+key+"\" isn't in bucket "+idx+"'s chain ("+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+") — not present."));
+    return {frames:frames, state:{buckets:buckets, opsCount:oc}};
+  }
+
+  function init(){
+    var buckets=[]; for(var i=0;i<CAP;i++) buckets.push([]);
+    ["cat","dog","ax","sun"].forEach(function(k){ buckets[hash(k)].push(k); });
+    var state={buckets:buckets, opsCount:0};
+    return {state:state, frames:[{
+      struct:{buckets:bucketCells(buckets,undefined,""), chain:chainStruct([],"")},
+      phase:"start", narr:"A hash table hashes each key to a bucket index, then chains colliding keys together in that bucket as a small linked list (seeded here with 4 keys).", ops:0
+    }]};
+  }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      insert: { btn:"btnInsert", enterOn:"key", run: function(state){ return opInsert(state, document.getElementById("key").value.trim()); } },
+      del: { btn:"btnDelete", run: function(state){ return opDelete(state, document.getElementById("key").value.trim()); } },
+      search: { btn:"btnSearch", run: function(state){ return opSearch(state, document.getElementById("key").value.trim()); } }
+    },
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("bucketHost"), frame.struct.buckets);
+      DSRender.sequence(document.getElementById("chainHost"), frame.struct.chain);
+    },
+    statLabels: [{key:"ops",label:"Operations"}]
+  });
+})();
+</script>
+</body>
+</html>

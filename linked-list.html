@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singly Linked List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All topics</a>
+      <p class="eyebrow">Each Node Points To The Next</p>
+      <h1>Singly&nbsp;Linked&nbsp;List</h1>
+    </div>
+    <p class="note">A chain of nodes, each holding a value and a pointer to the next one — or NULL if it's the last.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>An array stores its elements in one contiguous block of memory, so inserting in the middle means
+      shifting everything after it. A linked list gives up that contiguity: every node is its own small
+      object, wherever it happens to live in memory, holding a <b>value</b> and a <b>pointer to the next
+      node</b>. Insertion and deletion become a matter of rewiring a couple of pointers — no shifting at
+      all — but you lose O(1) random access: to reach node k you must walk k pointers from the head, one
+      at a time.</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Insert Head</td><td>New node becomes the head</td><td><b>O(1)</b></td></tr>
+        <tr><td>Insert Tail</td><td>Walk to the end, attach a new node</td><td>O(n)</td></tr>
+        <tr><td>Insert at Index</td><td>Walk to the node before it, splice in</td><td>O(n)</td></tr>
+        <tr><td>Delete at Index</td><td>Walk to the node before it, skip past the target</td><td>O(n)</td></tr>
+        <tr><td>Search</td><td>Walk from the head comparing values</td><td>O(n)</td></tr>
+      </table>
+
+      <p>Used wherever insertions and deletions dominate over random lookups: implementing stacks and
+      queues, adjacency lists for graphs, and the underlying node chain inside a hash table's chaining
+      buckets (see the Hash Table page).</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; insert, walk, delete</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="linked-list-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — insert at the head (instant) versus the tail (a full walk), then delete from
+    the middle and watch only the pointers change.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function toStruct(head, activeId, activeRole){
+    var nodes=[], linkActive=[], cur=head, i=0;
+    while(cur){
+      nodes.push({val:cur.val, role:(cur.id===activeId?activeRole:""), ptr:(i===0?"HEAD":"")});
+      if(cur.next) linkActive.push(cur.id===activeId);
+      cur=cur.next; i++;
+    }
+    return {dir:"h", nullEnd:true, emptyText:"Empty list", nodes:nodes, linkActive:linkActive};
+  }
+
+  function scriptFrames(){
+    var nextId=0, head=null, frames=[];
+    function node(v){ return {id:nextId++, val:v, next:null}; }
+    function push(activeId,activeRole,narr){ frames.push({struct:toStruct(head,activeId,activeRole), narr:narr}); }
+    function insHead(v){
+      push(undefined,"","Insert "+v+" at the head.");
+      var n=node(v); n.next=head; head=n;
+      push(n.id,"left head landed", v+" is the new head.");
+    }
+    function insTail(v){
+      push(head?head.id:undefined,"right","Insert "+v+" at the tail — walk to the end first.");
+      if(!head){ head=node(v); push(head.id,"left head landed", v+" is the only node now."); return; }
+      var cur=head;
+      while(cur.next){ cur=cur.next; push(cur.id,"right","Step to "+cur.val+"."); }
+      var n=node(v); cur.next=n;
+      push(n.id,"left head landed", v+" attached after "+cur.val+".");
+    }
+    function delHead(){
+      var v=head.val;
+      push(head.id,"left head","Delete the head, "+v+".");
+      head=head.next;
+      push(undefined,"", v+" removed."+(head?" New head is "+head.val+".":" List is empty."));
+    }
+    push(undefined,"","An empty list — HEAD is NULL.");
+    insHead(6); insTail(3); insTail(9); insHead(1);
+    delHead(); delHead(); delHead(); delHead();
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.sequence(document.getElementById("demoHost"), frame.struct);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

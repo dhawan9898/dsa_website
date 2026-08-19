@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Priority Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All topics</a>
+      <p class="eyebrow">Binary Heap &middot; Root Is Always Next</p>
+      <h1>Priority&nbsp;Queue</h1>
+    </div>
+    <p class="note">A queue where what comes out next isn't who arrived first, but whoever has the highest priority.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A priority queue always hands back its highest-priority element first, regardless of insertion
+      order. The standard way to build one is a <b>binary heap</b>: a complete binary tree (every level full
+      except possibly the last, filled left to right) where every parent outranks its children — a
+      <b>max-heap</b> keeps the largest value at the root, a <b>min-heap</b> the smallest.</p>
+      <p>Because it's always complete, a heap can be stored compactly in a plain array with no pointers at
+      all: node <code>i</code>'s children live at <code>2i+1</code> and <code>2i+2</code>, and its parent at
+      <code>(i-1)/2</code>. Insert appends a new leaf and <b>sifts it up</b> past any parent it outranks;
+      extracting the root moves the last leaf into its place and <b>sifts it down</b> past whichever child
+      outranks it, exactly the mechanics behind <a href="heap-sort-visualizer.html">heap sort</a>.</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Insert</td><td>Append a leaf, sift it up</td><td><b>O(log n)</b></td></tr>
+        <tr><td>Extract</td><td>Remove the root, move the last leaf there, sift it down</td><td><b>O(log n)</b></td></tr>
+        <tr><td>Peek</td><td>Look at the root without removing it</td><td><b>O(1)</b></td></tr>
+      </table>
+
+      <p>Used for Dijkstra's and Prim's algorithms (always expand the cheapest known option next), OS task
+      schedulers, and event simulations that need to process the next-soonest event regardless of when it
+      was scheduled.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; insert, then extract the max</span></div>
+    <div class="panel-body">
+      <div class="scroller">
+        <div class="treewrap" id="demoWrap">
+          <svg class="links" id="demoLinks"></svg>
+          <div id="demoHost"></div>
+        </div>
+      </div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="priority-queue-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — insert a handful of values, then extract repeatedly and watch them come back
+    out largest-first.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function toTreeFromHeap(heap, activeIdx, activeRole, otherIdx){
+    function build(i){
+      if(i>=heap.length) return null;
+      var role = i===activeIdx ? activeRole : (i===otherIdx?"right":"");
+      return { id:i, val:heap[i], role:role, left:build(2*i+1), right:build(2*i+2) };
+    }
+    return build(0);
+  }
+
+  function scriptFrames(){
+    var heap=[], frames=[];
+    function push(activeIdx, activeRole, narr, otherIdx){ frames.push({struct:{root:toTreeFromHeap(heap,activeIdx,activeRole,otherIdx)}, narr:narr}); }
+    function insert(v){
+      heap.push(v);
+      var i=heap.length-1;
+      push(i,"left head landed","Insert "+v+" at index "+i+".");
+      while(i>0){
+        var p=Math.floor((i-1)/2);
+        if(heap[i]>heap[p]){
+          push(i,"right","Sift up past "+heap[p]+".",p);
+          var t=heap[i]; heap[i]=heap[p]; heap[p]=t; i=p;
+          push(i,"left head landed", v+" now at index "+i+".");
+        } else { push(i,"left head","Settled."); break; }
+      }
+    }
+    function extract(){
+      var top=heap[0];
+      push(0,"left head","Extract the max, "+top+".");
+      var last=heap.pop();
+      if(!heap.length){ push(undefined,"", top+" removed — heap empty."); return; }
+      heap[0]=last;
+      push(0,"left head landed", "Move last leaf "+last+" to root, sift down.");
+      var i=0;
+      while(true){
+        var l=2*i+1,r=2*i+2,best=i;
+        if(l<heap.length && heap[l]>heap[best]) best=l;
+        if(r<heap.length && heap[r]>heap[best]) best=r;
+        if(best===i){ push(i,"left head landed","Settled."); break; }
+        push(best,"right","Swap up past "+heap[i]+".",i);
+        var t=heap[i]; heap[i]=heap[best]; heap[best]=t; i=best;
+        push(i,"left head landed", last+" now at index "+i+".");
+      }
+    }
+    push(undefined,"","An empty max-heap.");
+    insert(40); insert(70); insert(20); insert(90); insert(55);
+    extract(); extract();
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.tree(document.getElementById("demoHost"), document.getElementById("demoLinks"), frame.struct.root, {});
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

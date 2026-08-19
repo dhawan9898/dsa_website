@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All topics</a>
+      <p class="eyebrow">Vertices &middot; Edges &middot; Traversal</p>
+      <h1>Graph</h1>
+    </div>
+    <p class="note">A set of vertices, connected by edges — the shape underneath maps, networks, dependencies, and relationships.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A graph is just <b>vertices</b> (the dots) and <b>edges</b> (the connections between them). That's
+      a deliberately loose definition — trees, linked lists, and grids are all special-case graphs. Edges
+      can be <b>directed</b> (one-way, like a "follows" relationship) or <b>undirected</b> (two-way, like a
+      "friends with" relationship, the kind used on this page), and can carry weights (like distance or
+      cost) or not.</p>
+      <p>The two fundamental ways to explore a graph from a starting vertex are <b>breadth-first search
+      (BFS)</b> and <b>depth-first search (DFS)</b>. Both visit every reachable vertex exactly once, in
+      O(V + E) time — the difference is purely the order:</p>
+      <ul>
+        <li><b>BFS</b> uses a queue: visit the start, then all its neighbours, then all of <em>their</em>
+        unvisited neighbours, spreading outward one full "ring" at a time. In an unweighted graph, this is
+        also how you find the shortest path.</li>
+        <li><b>DFS</b> uses a stack (or recursion): commit to one neighbour, then one of <em>its</em>
+        neighbours, as deep as possible, only backtracking when it hits a dead end.</li>
+      </ul>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>Time</th></tr>
+        <tr><td>Add vertex</td><td><b>O(1)</b></td></tr>
+        <tr><td>Add / remove edge</td><td><b>O(1)</b></td></tr>
+        <tr><td>BFS / DFS (whole graph)</td><td>O(V + E)</td></tr>
+      </table>
+
+      <p>This is the model behind road-network routing, social-network "friends of friends," dependency
+      graphs (build systems, package managers), and the web itself — pages as vertices, links as edges.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; BFS, then DFS, from the same vertex</span></div>
+    <div class="panel-body">
+      <div class="graphwrap" id="demoWrap">
+        <svg class="links" id="demoLinks"></svg>
+        <div id="demoHost"></div>
+      </div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="graph-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — build a small graph, then run BFS and DFS from the same vertex and compare the
+    order in the commentary log.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"},{id:4,val:"E"},{id:5,val:"F"}];
+  var edges=[{from:0,to:1},{from:0,to:2},{from:1,to:3},{from:2,to:3},{from:3,to:4},{from:4,to:5},{from:2,to:5}];
+  var adj={}; nodes.forEach(function(n){adj[n.id]=[];});
+  edges.forEach(function(e){ adj[e.from].push(e.to); adj[e.to].push(e.from); });
+  Object.keys(adj).forEach(function(k){ adj[k].sort(function(a,b){return a-b;}); });
+  function valOf(id){ return nodes.filter(function(n){return n.id===id;})[0].val; }
+
+  function struct(nodeRoles, edgeActiveSet){
+    return {
+      nodes: nodes.map(function(n){ return {id:n.id, val:n.val, role:nodeRoles[n.id]||""}; }),
+      edges: edges.map(function(e){
+        var k1=e.from+":"+e.to, k2=e.to+":"+e.from;
+        return {from:e.from, to:e.to, active: !!(edgeActiveSet && (edgeActiveSet[k1]||edgeActiveSet[k2]))};
+      })
+    };
+  }
+  function visitedRoles(visited, currentId){
+    var roles={};
+    Object.keys(visited).forEach(function(idStr){ var id=Number(idStr); roles[id]=(id===currentId)?"left head landed":"sorted"; });
+    return roles;
+  }
+
+  function scriptFrames(){
+    var frames=[];
+    function push(nodeRoles, edgeSet, narr){ frames.push({struct:struct(nodeRoles,edgeSet), narr:narr}); }
+    push({},{}, "A small graph, 6 vertices.");
+
+    // BFS from A
+    (function(){
+      var visited={}, order=[], queue=[0];
+      visited[0]=true;
+      push(visitedRoles(visited,0), {}, "BFS from A: enqueue it.");
+      while(queue.length){
+        var cur=queue.shift();
+        order.push(valOf(cur));
+        push(visitedRoles(visited,cur), {}, "Dequeue "+valOf(cur)+" — order so far: ["+order.join(", ")+"].");
+        adj[cur].forEach(function(nb){
+          if(!visited[nb]){ visited[nb]=true; queue.push(nb); var e={}; e[cur+":"+nb]=true; push(visitedRoles(visited,nb), e, "Discover "+valOf(nb)+", enqueue it."); }
+        });
+      }
+      push(visitedRoles(visited), {}, "BFS order: ["+order.join(", ")+"].");
+    })();
+
+    // DFS from A
+    (function(){
+      var visited={}, order=[];
+      push({}, {}, "Now DFS from A, for comparison.");
+      (function visit(id, parent){
+        visited[id]=true; order.push(valOf(id));
+        var e={}; if(parent!==undefined) e[parent+":"+id]=true;
+        push(visitedRoles(visited,id), e, "Visit "+valOf(id)+" — order so far: ["+order.join(", ")+"].");
+        adj[id].forEach(function(nb){ if(!visited[nb]) visit(nb,id); });
+      })(0, undefined);
+      push(visitedRoles(visited), {}, "DFS order: ["+order.join(", ")+"] — same vertices, different order than BFS.");
+    })();
+
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 1000,
+    renderExtra: function(frame){
+      DSRender.graph(document.getElementById("demoHost"), document.getElementById("demoLinks"), frame.struct, {});
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

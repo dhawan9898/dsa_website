@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stack Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="stack.html">&larr; Stack notes</a>
+      <p class="eyebrow">Last In &middot; First Out</p>
+      <h1>Stack&nbsp;Visualizer</h1>
+    </div>
+    <p class="note">Push adds to the top, pop removes from the top &mdash; nothing else is ever touched.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Operate on the stack</h2><span class="sub">top is on the right</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld narrow">
+          <span>Value</span>
+          <input type="number" id="val" value="5">
+        </label>
+        <button id="btnPush" class="primary">Push</button>
+        <button id="btnPop">Pop</button>
+        <button id="btnPeek">Peek</button>
+      </div>
+      <p class="hint" id="hint">Push a value, then pop it back off — the last thing in is always the first thing out.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The stack</h2><span class="sub">vertical, bottom to top</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row vert" id="stackHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch right"></i> current top</span>
+        <span class="key"><i class="swatch left"></i> item being pushed / popped / peeked</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Every operation only ever touches the top element, which is what makes push and pop O(1) &mdash; no
+    shifting, no searching. Function call stacks, undo history, and "back" buttons in a browser are all
+    real-world stacks.
+  </footer>
+</div>
+
+<script src="shared/ds-render.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+  var MAX=12;
+
+  function cellsFor(items, hi, hiRole){
+    return items.map(function(v,i){
+      return {
+        val:v,
+        role: i===hi ? hiRole : (i===items.length-1 ? "right" : ""),
+        ptr: i===items.length-1 ? "TOP" : ""
+      };
+    });
+  }
+  function frame(items, hi, hiRole, phase, narr, ops){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, phase:phase, narr:narr, ops:ops};
+  }
+
+  function opPush(state, val){
+    if(state.items.length>=MAX) return {error:"Stack is full — only "+MAX+" items fit in this view."};
+    var items=state.items.slice(), oc=state.opsCount||0, frames=[];
+    frames.push(frame(items, undefined, "", "push-start",
+      "Push "+val+": a stack only allows inserting at the top, so "+val+" goes above whatever is already there.", oc));
+    items.push(val); oc++;
+    frames.push(frame(items, items.length-1, "left head landed", "pushed",
+      val+" is now on top, at position "+(items.length-1)+".", oc));
+    return {frames:frames, state:{items:items, opsCount:oc}};
+  }
+  function opPop(state){
+    if(!state.items.length) return {error:"The stack is empty — nothing to pop."};
+    var items=state.items.slice(), oc=(state.opsCount||0)+1, frames=[];
+    var top=items[items.length-1];
+    frames.push(frame(items, items.length-1, "left head", "pop-start",
+      "Pop: remove the top item, "+top+", at position "+(items.length-1)+". A stack can only ever remove from the top.", oc));
+    items.pop();
+    frames.push(frame(items, undefined, "", "popped",
+      top+" removed. "+(items.length ? ("New top is "+items[items.length-1]+".") : "The stack is now empty."), oc));
+    return {frames:frames, state:{items:items, opsCount:oc}};
+  }
+  function opPeek(state){
+    if(!state.items.length) return {error:"The stack is empty — nothing to peek at."};
+    var items=state.items.slice(), oc=(state.opsCount||0)+1;
+    var top=items[items.length-1];
+    return {frames:[frame(items, items.length-1, "left head", "peek",
+      "Peek: look at the top item without removing it — it's "+top+".", oc)], state:{items:items, opsCount:oc}};
+  }
+
+  function init(){
+    var items=[7,3,9];
+    return {
+      state:{items:items, opsCount:0},
+      frames:[frame(items, undefined, "", "start",
+        "A stack starts empty (seeded here with a few values). The last value pushed is always the first one popped — Last In, First Out.", 0)]
+    };
+  }
+  function renderExtra(frame){
+    DSRender.slots(document.getElementById("stackHost"), frame.struct.cells);
+  }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      push: { btn:"btnPush", enterOn:"val", run: function(state){
+        var v=Number(document.getElementById("val").value);
+        if(!isFinite(v)) return {error:"Enter a number to push."};
+        return opPush(state, v);
+      }},
+      pop: { btn:"btnPop", run: function(state){ return opPop(state); } },
+      peek: { btn:"btnPeek", run: function(state){ return opPeek(state); } }
+    },
+    renderExtra: renderExtra,
+    statLabels: [{key:"ops",label:"Operations"}]
+  });
+})();
+</script>
+</body>
+</html>
