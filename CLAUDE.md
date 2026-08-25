@@ -10,6 +10,7 @@ A dependency-free static website: an illustrated field guide to data structures 
 
 - Serve locally: `python3 -m http.server` from the repo root (or open the `.html` files directly — everything is relative paths; the only external resource is Google Fonts).
 - Verification is manual: open the changed page in a browser, load an input, and play/step/scrub through the frames.
+- Deployed via `.github/workflows/pages.yml` (GitHub Pages, no build step — the whole repo root is uploaded as-is on every push to `main`).
 
 ## Architecture
 
