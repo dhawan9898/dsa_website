@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">First In &middot; First Out</p>
+      <h1>Queue</h1>
+    </div>
+    <p class="note">A collection where you add at one end (the rear) and remove from the other (the front).</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A queue models a line of people: new arrivals join at the <b>rear</b>, and whoever has been
+      waiting longest leaves from the <b>front</b>. That's <b>First In, First Out (FIFO)</b> — the mirror
+      image of a stack's LIFO rule.</p>
+      <p>Like a stack, every operation touches only one end, so enqueue and dequeue are both O(1) with the
+      right underlying structure (a linked list, or an array with tracked front/rear indices).</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Enqueue</td><td>Add a value at the rear</td><td><b>O(1)</b></td></tr>
+        <tr><td>Dequeue</td><td>Remove and return the front value</td><td><b>O(1)</b></td></tr>
+        <tr><td>Peek / Front</td><td>Look at the front value without removing it</td><td><b>O(1)</b></td></tr>
+      </table>
+
+      <p>Used anywhere work needs to be handled in arrival order: print spoolers, task/job schedulers, message
+      queues between services, and breadth-first search (which explores nodes in the order it discovers them).</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; enqueue, dequeue</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="queue-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — enqueue a few values, then dequeue, and watch which one comes back first.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function cellsFor(items, hi, hiRole){
+    return items.map(function(v,i){
+      var badges=[];
+      if(i===0) badges.push("FRONT");
+      if(i===items.length-1) badges.push("REAR");
+      return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
+    });
+  }
+  function frame(items, hi, hiRole, narr){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr};
+  }
+
+  function scriptFrames(){
+    var items=[], frames=[];
+    function enqueue(v){
+      frames.push(frame(items, undefined, "", "Enqueue "+v+" at the rear."));
+      items.push(v);
+      frames.push(frame(items, items.length-1, "left head landed", v+" joins the back of the line."));
+    }
+    function dequeue(){
+      var front=items[0];
+      frames.push(frame(items, 0, "left head", "Dequeue the front item, "+front+"."));
+      items.shift();
+      frames.push(frame(items, undefined, "", front+" removed."+(items.length?" New front is "+items[0]+".":" Queue is empty.")));
+    }
+    frames.push(frame(items, undefined, "", "An empty queue — nothing to dequeue yet."));
+    enqueue(4); enqueue(7); enqueue(2);
+    dequeue();
+    enqueue(9);
+    dequeue(); dequeue(); dequeue();
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

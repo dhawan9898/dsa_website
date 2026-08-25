@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Double-Ended Queue</p>
+      <h1>Deque</h1>
+    </div>
+    <p class="note">A queue with both ends open for business — insert and delete at the front or the rear.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A deque ("deck", short for double-ended queue) generalizes both the stack and the queue: it
+      supports inserting and deleting at <b>both</b> ends, each in O(1). Use only the rear for insertion and
+      the front for removal and it behaves exactly like a queue; use only one end for both and it behaves
+      exactly like a stack.</p>
+      <p>Real implementations back a deque with a doubly linked list, or a resizable circular buffer —
+      never a plain array, since inserting at the front of a plain array would mean shifting every other
+      element down.</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Insert Front</td><td>Add a value at the front</td><td><b>O(1)</b></td></tr>
+        <tr><td>Insert Rear</td><td>Add a value at the rear</td><td><b>O(1)</b></td></tr>
+        <tr><td>Delete Front</td><td>Remove the front value</td><td><b>O(1)</b></td></tr>
+        <tr><td>Delete Rear</td><td>Remove the rear value</td><td><b>O(1)</b></td></tr>
+      </table>
+
+      <p>Sliding-window algorithms (like the classic "maximum in every window of size k") are the textbook
+      use case: values get added at the rear and dropped from either end as the window slides. Browser
+      history and undo/redo stacks that also support "redo forward" reach for the same shape.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; both ends in play</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="deque-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — insert at both ends, then delete from both, in any order you like.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function cellsFor(items, hi, hiRole){
+    return items.map(function(v,i){
+      var badges=[];
+      if(i===0) badges.push("FRONT");
+      if(i===items.length-1) badges.push("REAR");
+      return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
+    });
+  }
+  function frame(items, hi, hiRole, narr){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr};
+  }
+
+  function scriptFrames(){
+    var items=[], frames=[];
+    function insFront(v){
+      frames.push(frame(items, undefined, "", "Insert "+v+" at the front."));
+      items.unshift(v);
+      frames.push(frame(items, 0, "left head landed", v+" is now at the front."));
+    }
+    function insRear(v){
+      frames.push(frame(items, undefined, "", "Insert "+v+" at the rear."));
+      items.push(v);
+      frames.push(frame(items, items.length-1, "left head landed", v+" is now at the rear."));
+    }
+    function delFront(){
+      var v=items[0];
+      frames.push(frame(items, 0, "left head", "Delete the front item, "+v+"."));
+      items.shift();
+      frames.push(frame(items, undefined, "", v+" removed from the front."));
+    }
+    function delRear(){
+      var v=items[items.length-1];
+      frames.push(frame(items, items.length-1, "left head", "Delete the rear item, "+v+"."));
+      items.pop();
+      frames.push(frame(items, undefined, "", v+" removed from the rear."));
+    }
+    frames.push(frame(items, undefined, "", "An empty deque — both ends are open."));
+    insRear(4); insFront(7); insRear(2); insFront(9);
+    delFront(); delRear(); delFront(); delRear();
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

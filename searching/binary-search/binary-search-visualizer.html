@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Binary Search — step by step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Halve the Range Every Step</p>
+      <h1>Binary&nbsp;Search</h1>
+    </div>
+    <p class="note">Requires sorted data. Compares the target to the middle of the current range and throws away the half that can't possibly contain it — again and again.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Set the array &amp; target</h2><span class="sub">2 &ndash; 16 numbers, sorted automatically</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld">
+          <span>Numbers, separated by commas</span>
+          <input type="text" id="input" value="3, 8, 12, 19, 25, 34, 47, 61, 98" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="fld narrow">
+          <span>Target value</span>
+          <input type="number" id="target" value="47">
+        </label>
+        <button id="load">Use these</button>
+        <button id="rand">Random</button>
+      </div>
+      <p class="hint" id="hint">Press Play to watch the search, or step through one comparison at a time.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Working array</h2><span class="sub">the active range shrinks by half each step</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> middle of the current range</span>
+        <span class="key"><i class="swatch right"></i> low / high bound</span>
+        <span class="key"><i class="swatch dim"></i> eliminated</span>
+        <span class="key"><i class="swatch found"></i> match found</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Load an array to begin.</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Every comparison discards roughly half of what's left, so a sorted array of a million elements takes at
+    most about twenty comparisons to search — O(log n) instead of linear search's O(n). The trade-off is the
+    sorted-order requirement itself.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function build(input, target){
+    var a=input.slice(), n=a.length, frames=[], cmp=0;
+    function roles(){ return new Array(n).fill(""); }
+    function dimOutside(r,lo,hi){
+      for(var k=0;k<lo;k++) r[k]="dim";
+      for(var k2=hi+1;k2<n;k2++) r[k2]="dim";
+    }
+    function push(r,phase,narr,range){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,range:range}); }
+
+    push(roles(),"start","Binary search only works on sorted data. Each step compares the target, "+target+", to the middle of the current range and throws away the half that can't contain it.",n);
+
+    var lo=0, hi=n-1;
+    while(lo<=hi){
+      var range=hi-lo+1;
+      var mid=Math.floor((lo+hi)/2);
+      var r=roles();
+      dimOutside(r,lo,hi);
+      r[mid]="left head";
+      if(lo!==mid) r[lo]="right";
+      if(hi!==mid) r[hi]="right";
+      cmp++;
+      if(a[mid]===target){
+        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). Equal — this is it.",range);
+        var rf=roles(); dimOutside(rf,lo,hi); rf[mid]="found";
+        push(rf,"found","Found "+target+" at index "+mid+" after "+cmp+" comparison"+(cmp===1?"":"s")+".",1);
+        return frames;
+      } else if(a[mid]<target){
+        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). "+target+" is larger, so it can only be to the right — eliminate indices "+lo+"–"+mid+".",range);
+        lo=mid+1;
+      } else {
+        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). "+target+" is smaller, so it can only be to the left — eliminate indices "+mid+"–"+hi+".",range);
+        hi=mid-1;
+      }
+    }
+    var rNo=roles();
+    for(var k3=0;k3<n;k3++) rNo[k3]="dim";
+    push(rNo,"not-found","The range is empty and "+target+" was never seen — it isn't present. "+cmp+" comparisons made.",0);
+    return frames;
+  }
+
+  Viz.init({
+    defaultInput: "3, 8, 12, 19, 25, 34, 47, 61, 98",
+    defaultTarget: 47,
+    minN:2, maxN:16,
+    needsTarget: true,
+    sortRequired: true,
+    build: build,
+    statLabels: [{key:"cmp",label:"Comparisons"},{key:"range",label:"Range size"}]
+  });
+})();
+</script>
+</body>
+</html>
