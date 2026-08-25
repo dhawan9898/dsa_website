@@ -100,6 +100,11 @@
 (function(){
   "use strict";
 
+  var INIT_CODE=[
+    "void initStack(Stack *s) {",
+    "  s->top = -1;   // -1 means empty",
+    "}"
+  ];
   var PUSH_CODE=[
     "void push(Stack *s, int val) {",
     "  if (s->top == MAX - 1) return;   // full",
@@ -139,7 +144,7 @@
       items.pop();
       frames.push(frame(items, undefined, "", top+" removed."+(items.length?" New top is "+items[items.length-1]+".":" Stack is empty."), POP_CODE, 2));
     }
-    frames.push(frame(items, undefined, "", "An empty stack — nothing to pop yet."));
+    frames.push(frame(items, undefined, "", "Create the stack: an empty array plus one index, top, starting at -1.", INIT_CODE, 1));
     push(4); push(7); push(2);
     pop();
     push(9);

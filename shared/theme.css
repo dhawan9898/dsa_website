@@ -171,6 +171,12 @@ input[type=range]{accent-color:var(--stamp);width:150px}
 .seq-arrow.active.horiz::after{border-left-color:var(--stamp)}
 .seq-arrow.active.horiz.back::before{border-right-color:var(--stamp)}
 .seq-arrow.active.vert::after{border-top-color:var(--stamp)}
+.seq-arrow.landed{animation:arrowLand .32s var(--ease)}
+@keyframes arrowLand{
+  0%{opacity:0;transform:scale(.4)}
+  60%{opacity:1;transform:scale(1.15)}
+  100%{opacity:1;transform:scale(1)}
+}
 .seq-null{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--faint);
   align-self:center;margin:0 6px 20px;letter-spacing:.08em;text-transform:uppercase}
 .seq-row.seq-v .seq-null{margin:3px 0}

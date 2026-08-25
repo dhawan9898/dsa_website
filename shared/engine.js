@@ -31,6 +31,11 @@
            Renders into #codeHost if the page has one; omit on frames where no
            particular line applies (e.g. a "start"/"done" summary frame) and
            the panel just keeps showing the code with nothing highlighted.
+   - moves: optional [{from,to}, ...] — slots that exchanged values this frame.
+           The array/roles above are already the correct end state; `moves`
+           just tells the renderer which cells to visually slide into that
+           state (FLIP technique) instead of popping straight there. Omit on
+           frames with no movement (comparisons, summaries).
    ========================================================================== */
 (function(window){
   "use strict";
@@ -40,9 +45,10 @@
 
   var S = { frames:[], cur:0, playing:false, timer:null, cfg:null, statEls:{}, codeArr:null, codeEls:null };
 
-  function renderArray(host, arr, roles){
+  function renderArray(host, arr, roles, moves){
     if(!host) return;
     host.innerHTML="";
+    var cells=[];
     for(var i=0;i<arr.length;i++){
       var item=div("array-item");
       var cls="cell"+(roles && roles[i] ? " "+roles[i] : "");
@@ -53,6 +59,28 @@
       var idx=div("array-idx"); idx.textContent=i;
       item.appendChild(idx);
       host.appendChild(item);
+      cells.push(c);
+    }
+    // FLIP: `moves` names which slots swapped values this frame. The DOM above
+    // is already built in its final (correct) layout; snap each moved cell back
+    // to where it visually was, then release it next frame so its existing
+    // `transform` transition animates it sliding into its real resting slot.
+    if(moves && moves.length && cells.length>1){
+      var step=cells[1].parentNode.offsetLeft-cells[0].parentNode.offsetLeft;
+      var targets=[];
+      moves.forEach(function(m){
+        var el=cells[m.to];
+        if(!el || m.from===m.to) return;
+        el.style.transition="none";
+        el.style.transform="translateX("+((m.from-m.to)*step)+"px)";
+        targets.push(el);
+      });
+      if(targets.length){
+        host.offsetHeight; // flush layout so the browser registers the start position
+        requestAnimationFrame(function(){
+          targets.forEach(function(el){ el.style.transition=""; el.style.transform=""; });
+        });
+      }
     }
   }
 
@@ -108,7 +136,7 @@
 
   function render(){
     var f=S.frames[S.cur]; if(!f) return;
-    renderArray($("arrayHost"), f.array, f.roles);
+    renderArray($("arrayHost"), f.array, f.roles, f.moves);
 
     var narr=$("narr"); if(narr) narr.textContent=f.narr||"";
     renderCode($("codeHost"), f.code, f.codeLine);

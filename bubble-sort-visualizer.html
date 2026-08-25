@@ -110,7 +110,7 @@
   function build(input){
     var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0;
     function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr,codeLine){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,code:CODE,codeLine:codeLine}); }
+    function push(r,phase,narr,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,code:CODE,codeLine:codeLine,moves:moves}); }
 
     push(roles(),"start","Bubble sort repeatedly walks the array, swapping neighbours that are out of order. Each full pass pushes the largest remaining value to the end.",0);
 
@@ -127,9 +127,10 @@
         if(willSwap){
           var tmp=a[j]; a[j]=a[j+1]; a[j+1]=tmp; swp++; swappedThisPass=true;
           var r2=roles();
-          r2[j]="left head landed"; r2[j+1]="right head landed";
+          r2[j]="left head"; r2[j+1]="right head";
           for(var k2=n-i;k2<n;k2++) r2[k2]="sorted";
-          push(r2,"swap","Swapped: "+a[j]+" now sits before "+a[j+1]+".",[5,8]);
+          push(r2,"swap","Swapped: "+a[j]+" now sits before "+a[j+1]+".",[5,8],
+            [{from:j,to:j+1},{from:j+1,to:j}]);
         }
       }
       var rEnd=roles();

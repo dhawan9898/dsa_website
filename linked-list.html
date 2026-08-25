@@ -34,6 +34,20 @@
       all — but you lose O(1) random access: to reach node k you must walk k pointers from the head, one
       at a time.</p>
 
+      <p><b>Implementation:</b> every node is a tiny two-field struct — a value and a <code>next</code>
+      pointer to the following node (<code>NULL</code> for the last one). The list itself is just a single
+      <code>head</code> pointer into this chain; there's no fixed size and no capacity to run out of.
+      Creating a node means allocating it on the heap (see the code panel below) — unlike the array-backed
+      <a href="stack.html">Stack</a>, which reserves all its memory up front, a linked list grows one
+      allocation at a time, exactly when it needs to.</p>
+
+      <p><b>When it breaks:</b> mis-ordering the pointer rewiring is the classic bug — set <code>head</code>
+      to the new node before saving its <code>next</code> link to the old head, and you silently orphan the
+      rest of the list (nothing points to it anymore, but it's still sitting in memory — a leak). Delete a
+      node without freeing it and you leak that memory too; keep using a pointer after freeing it and you
+      get a dangling-pointer bug, reading or writing memory that's no longer yours. None of these crash
+      predictably — they're the kind of bug that only shows up as corruption somewhere else, later.</p>
+
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
         <tr><td>Insert Head</td><td>New node becomes the head</td><td><b>O(1)</b></td></tr>
@@ -58,6 +72,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertHead() / insertTail() / deleteHead()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
       <a class="cta" href="linked-list-visualizer.html">Open the interactive visualizer &rarr;</a>
     </div>
@@ -76,40 +97,74 @@
 (function(){
   "use strict";
 
-  function toStruct(head, activeId, activeRole){
-    var nodes=[], linkActive=[], cur=head, i=0;
+  var INIT_CODE=[
+    "void initList(List *l) {",
+    "  l->head = NULL;",
+    "}"
+  ];
+  var INSERT_HEAD_CODE=[
+    "void insertHead(List *l, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val;",
+    "  n->next = l->head;",
+    "  l->head = n;",
+    "}"
+  ];
+  var INSERT_TAIL_CODE=[
+    "void insertTail(List *l, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->next = NULL;",
+    "  if (!l->head) { l->head = n; return; }",
+    "  Node *cur = l->head;",
+    "  while (cur->next) cur = cur->next;",
+    "  cur->next = n;",
+    "}"
+  ];
+  var DELETE_HEAD_CODE=[
+    "void deleteHead(List *l) {",
+    "  Node *old = l->head;",
+    "  l->head = old->next;",
+    "  free(old);",
+    "}"
+  ];
+
+  function toStruct(head, activeId, activeRole, linkLandedId){
+    var nodes=[], linkActive=[], linkLanded=[], cur=head, i=0;
     while(cur){
       nodes.push({val:cur.val, role:(cur.id===activeId?activeRole:""), ptr:(i===0?"HEAD":"")});
-      if(cur.next) linkActive.push(cur.id===activeId);
+      linkActive.push(cur.id===activeId);
+      linkLanded.push(cur.id===linkLandedId);
       cur=cur.next; i++;
     }
-    return {dir:"h", nullEnd:true, emptyText:"Empty list", nodes:nodes, linkActive:linkActive};
+    return {dir:"h", nullEnd:true, emptyText:"Empty list", nodes:nodes, linkActive:linkActive, linkLanded:linkLanded};
   }
 
   function scriptFrames(){
     var nextId=0, head=null, frames=[];
     function node(v){ return {id:nextId++, val:v, next:null}; }
-    function push(activeId,activeRole,narr){ frames.push({struct:toStruct(head,activeId,activeRole), narr:narr}); }
+    function push(activeId,activeRole,narr,code,codeLine,linkLandedId){
+      frames.push({struct:toStruct(head,activeId,activeRole,linkLandedId), narr:narr, code:code, codeLine:codeLine});
+    }
     function insHead(v){
-      push(undefined,"","Insert "+v+" at the head.");
+      push(undefined,"","Insert "+v+" at the head: allocate a new node.",INSERT_HEAD_CODE,[1,3]);
       var n=node(v); n.next=head; head=n;
-      push(n.id,"left head landed", v+" is the new head.");
+      push(n.id,"left head landed", v+" is the new head.",INSERT_HEAD_CODE,4,n.id);
     }
     function insTail(v){
-      push(head?head.id:undefined,"right","Insert "+v+" at the tail — walk to the end first.");
-      if(!head){ head=node(v); push(head.id,"left head landed", v+" is the only node now."); return; }
+      push(head?head.id:undefined,"right","Insert "+v+" at the tail — walk to the end first.",INSERT_TAIL_CODE,4);
+      if(!head){ head=node(v); push(head.id,"left head landed", v+" is the only node now.",INSERT_TAIL_CODE,3,head.id); return; }
       var cur=head;
-      while(cur.next){ cur=cur.next; push(cur.id,"right","Step to "+cur.val+"."); }
+      while(cur.next){ cur=cur.next; push(cur.id,"right","Step to "+cur.val+".",INSERT_TAIL_CODE,5); }
       var n=node(v); cur.next=n;
-      push(n.id,"left head landed", v+" attached after "+cur.val+".");
+      push(n.id,"left head landed", v+" attached after "+cur.val+".",INSERT_TAIL_CODE,6,cur.id);
     }
     function delHead(){
       var v=head.val;
-      push(head.id,"left head","Delete the head, "+v+".");
+      push(head.id,"left head","Delete the head, "+v+".",DELETE_HEAD_CODE,[1,2]);
       head=head.next;
-      push(undefined,"", v+" removed."+(head?" New head is "+head.val+".":" List is empty."));
+      push(undefined,"", v+" removed."+(head?" New head is "+head.val+".":" List is empty."),DELETE_HEAD_CODE,3);
     }
-    push(undefined,"","An empty list — HEAD is NULL.");
+    push(undefined,"","Create the list: just a HEAD pointer, starting at NULL.",INIT_CODE,1);
     insHead(6); insTail(3); insTail(9); insHead(1);
     delHead(); delHead(); delHead(); delHead();
     return frames;
