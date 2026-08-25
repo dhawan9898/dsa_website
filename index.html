@@ -11,8 +11,11 @@
 <style>
   .algo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
   .algo-card{display:block;border:1px solid var(--rule);background:#fff;padding:14px 15px;
-    text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s}
-  .algo-card:hover{border-color:var(--stamp);transform:translateY(-2px)}
+    text-decoration:none;color:var(--ink);opacity:1;
+    transition:border-color .15s var(--ease),transform .15s var(--ease),
+      box-shadow .15s var(--ease),opacity .5s var(--ease)}
+  .algo-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .js-reveal .algo-card:not(.in){opacity:0}
   .algo-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;
     font-size:22px;letter-spacing:.02em;text-transform:uppercase;margin:0 0 6px}
   .algo-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;
@@ -208,5 +211,6 @@
   </footer>
 </div>
 
+<script src="shared/motion.js"></script>
 </body>
 </html>
