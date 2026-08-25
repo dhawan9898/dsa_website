@@ -30,7 +30,9 @@ There are three page types, wired to three shared files in `shared/`:
 
 The header comments of `shared/engine.js`, `shared/ds-engine.js`, and `shared/ds-render.js` are the authoritative config/contract docs — read them before touching a page.
 
-**The one exception:** `merge-sort-visualizer.html` is fully self-contained (its own inline CSS and engine, no `shared/` references). It is the original page the shared theme and engine were extracted from. Don't refactor it to the shared files unless asked; conversely, don't copy it as a template for new pages — copy a page that already uses `shared/`.
+Every page also loads `shared/motion.js`, a fourth shared file that is independent of the playback engines: it toggles a `.scrolled` class on the sticky masthead and fades/staggers `.panel`/`.algo-card` elements into view as they scroll into the viewport (see its header comment for the FOUC-safe approach). It's pure progressive enhancement — no page depends on it for correctness.
+
+**The one exception:** `merge-sort-visualizer.html` is fully self-contained (its own inline CSS and engine, no `shared/` references). It is the original page the shared theme and engine were extracted from. Don't refactor it to the shared files unless asked; conversely, don't copy it as a template for new pages — copy a page that already uses `shared/`. Its inline `<style>`/`<script>` mirror the motion conventions below by hand (sticky masthead listener, `--ease`, view-transitions) since it can't load `shared/motion.js` — keep the two in sync if you change one.
 
 ### DSRender renderers (`shared/ds-render.js`)
 
@@ -50,6 +52,7 @@ The engines look up fixed element ids — pages just supply matching markup: `pl
 - **Cell roles** are combinable class strings on `.cell`: `left`, `right`, `head`, `sorted`, `spent`, `pivot`, `dim`, `found`, `landed` (e.g. `"left head landed"`). `landed` triggers the drop-in animation. Include a `.legend` panel explaining the roles a page uses.
 - **Narration teaches.** Every frame's `narr` is a full sentence saying what happened *and why* ("Out of order, so swap them."), in the same plain, second-person voice as existing pages. Phases are short kebab-case tags (`compare`, `pass-done`, `push-start`).
 - **Page skeleton** is identical everywhere: masthead (with `masthead-nav` back-link, `eyebrow`, `h1`, `note`) → panels (controls, visual(s), "Running commentary") → footer with a takeaway. Copy the closest existing page rather than writing from scratch.
+- **Motion:** all easing uses the `--ease` token (`cubic-bezier(.16,1,.3,1)`, an "ease-out-expo" feel) rather than bare durations. `shared/theme.css` declares `@view-transition{navigation:auto}`, which gives same-origin link navigation a native crossfade in supporting browsers — no JS, no-op elsewhere. `.masthead` is `position:sticky` and collapses (smaller `h1`, tighter padding, translucent blur) when `shared/motion.js` adds `.scrolled`. Scroll-reveal is opt-in via a `.js-reveal` class that `motion.js` adds to `<html>` only if it actually runs, so `.panel`/`.algo-card` elements are fully visible with no JS at all; never rely on `.js-reveal` state for anything but visual polish. Everything above respects `prefers-reduced-motion` (see the media query in each stylesheet) — extend that block, don't bypass it, if you add new animations.
 
 ### Adding a topic
 

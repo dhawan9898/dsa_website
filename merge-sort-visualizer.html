@@ -21,28 +21,55 @@
   --cw:clamp(24px,5.2vw,44px);
   --tcw:clamp(19px,3.4vw,32px);
   --gap:4px;
+  --ease:cubic-bezier(.16,1,.3,1);
 }
+
+@view-transition{
+  navigation:auto;
+}
+::view-transition-old(root),
+::view-transition-new(root){
+  animation-duration:.5s;
+  animation-timing-function:var(--ease);
+}
+
 *{box-sizing:border-box}
 html,body{margin:0}
+html{scroll-behavior:smooth}
 body{
   background:var(--paper);color:var(--ink);
   font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.5;
   -webkit-font-smoothing:antialiased;
+  animation:pageIn .55s var(--ease) both;
+}
+@keyframes pageIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:none}
 }
 .wrap{max-width:1080px;margin:0 auto;padding:0 20px 72px}
 
 /* ---------- masthead ---------- */
-.masthead{background:var(--ink);color:var(--paper);margin-bottom:26px;border-bottom:6px double var(--seal)}
+.masthead{background:var(--ink);color:var(--paper);margin-bottom:26px;border-bottom:6px double var(--seal);
+  position:sticky;top:0;z-index:50;
+  transition:background-color .4s var(--ease),box-shadow .4s var(--ease)}
+.masthead.scrolled{background:rgba(28,43,36,.92);box-shadow:0 10px 30px -14px rgba(0,0,0,.45);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
 .masthead-inner{max-width:1080px;margin:0 auto;padding:22px 20px 20px;
-  display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 28px;justify-content:space-between}
+  display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 28px;justify-content:space-between;
+  transition:padding .35s var(--ease)}
+.masthead.scrolled .masthead-inner{padding-top:13px;padding-bottom:11px}
 .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.22em;
   text-transform:uppercase;color:#9DB79F;margin:0 0 2px}
 h1{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:800;
-  font-size:clamp(46px,9vw,86px);line-height:.84;letter-spacing:.01em;margin:0;text-transform:uppercase}
+  font-size:clamp(46px,9vw,86px);line-height:.84;letter-spacing:.01em;margin:0;text-transform:uppercase;
+  transition:font-size .35s var(--ease)}
+.masthead.scrolled h1{font-size:clamp(28px,5vw,42px)}
 .masthead p.note{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:#9DB79F;
-  margin:0;max-width:30ch;line-height:1.6;text-align:right}
+  margin:0;max-width:30ch;line-height:1.6;text-align:right;transition:opacity .3s var(--ease)}
+.masthead.scrolled p.note{opacity:0}
 .masthead-nav{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
-  text-transform:uppercase;color:#9DB79F;text-decoration:none;margin:0 0 10px;border-bottom:1px solid transparent}
+  text-transform:uppercase;color:#9DB79F;text-decoration:none;margin:0 0 10px;border-bottom:1px solid transparent;
+  transition:color .15s var(--ease),border-color .15s var(--ease)}
 .masthead-nav:hover{color:var(--paper);border-color:var(--paper)}
 
 /* ---------- panels ---------- */
@@ -64,11 +91,15 @@ input[type=text]{font-family:"IBM Plex Mono",monospace;font-size:15px;padding:9p
   border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:0;width:100%}
 button{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.09em;text-transform:uppercase;
   padding:9px 13px;border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);
-  cursor:pointer;border-radius:0;transition:background .12s,color .12s}
+  cursor:pointer;border-radius:0;
+  transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease),
+    transform .12s var(--ease),box-shadow .2s var(--ease)}
 button:hover{background:var(--ink);color:var(--paper)}
+button:active{transform:scale(.96)}
 button.primary{background:var(--ink);color:var(--paper)}
-button.primary:hover{background:var(--stamp);border-color:var(--stamp)}
+button.primary:hover{background:var(--stamp);border-color:var(--stamp);box-shadow:0 8px 20px -10px rgba(190,58,29,.6)}
 button:disabled{opacity:.35;cursor:not-allowed}
+button:disabled:active{transform:none}
 :focus-visible{outline:3px solid var(--stamp);outline-offset:2px}
 .hint{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-soft);margin:9px 0 0}
 .hint.bad{color:var(--stamp)}
@@ -85,7 +116,7 @@ input[type=range]{accent-color:var(--stamp);width:150px}
 .cell{border:1px solid var(--rule);background:#fff;display:flex;align-items:center;justify-content:center;
   font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:clamp(11px,2.4vw,15px);
   height:var(--cw);width:var(--cw);
-  transition:background .22s,color .22s,border-color .22s,transform .22s}
+  transition:background .22s var(--ease),color .22s var(--ease),border-color .22s var(--ease),transform .22s var(--ease)}
 .cell.left{border-color:var(--stamp);color:var(--stamp)}
 .cell.right{border-color:var(--plot);color:var(--plot)}
 .cell.head{transform:translateY(-4px);font-weight:600}
@@ -189,6 +220,7 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
   .cell.head,.tcell.readL,.tcell.readR{transform:none}
+  ::view-transition-old(root),::view-transition-new(root){animation:none!important}
 }
 </style>
 </head>
@@ -607,6 +639,21 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
   window.addEventListener("resize",function(){clearTimeout(rt);rt=setTimeout(drawLinks,120);});
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(drawLinks);
   window.addEventListener("load",drawLinks);
+
+  (function stickyMasthead(){
+    var m=document.querySelector(".masthead");
+    if(!m) return;
+    var ticking=false;
+    function update(){
+      ticking=false;
+      if(window.scrollY>8) m.classList.add("scrolled");
+      else m.classList.remove("scrolled");
+    }
+    window.addEventListener("scroll",function(){
+      if(!ticking){ window.requestAnimationFrame(update); ticking=true; }
+    },{passive:true});
+    update();
+  })();
 
   load();
 })();
