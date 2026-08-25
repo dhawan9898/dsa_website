@@ -82,8 +82,10 @@
     for(var j=0;j<S.codeEls.length;j++){
       S.codeEls[j].className="code-line"+(active.indexOf(j)>=0?" active":"");
     }
-    if(active.length && S.codeEls[active[0]] && S.codeEls[active[0]].scrollIntoView){
-      S.codeEls[active[0]].scrollIntoView({block:"nearest"});
+    if(active.length && S.codeEls[active[0]]){
+      var hostR=host.getBoundingClientRect(), lineR=S.codeEls[active[0]].getBoundingClientRect();
+      if(lineR.top<hostR.top) host.scrollTop+=(lineR.top-hostR.top);
+      else if(lineR.bottom>hostR.bottom) host.scrollTop+=(lineR.bottom-hostR.bottom);
     }
   }
 
