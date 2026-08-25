@@ -26,8 +26,13 @@
        statLabels: [{key:"ops", label:"Operations"}]   // 'phase' is automatic
      });
 
-   A frame is a plain object: { struct, narr, phase, <statKeys>... } where
-   `struct` is whatever shape the page's chosen DSRender function expects.
+   A frame is a plain object: { struct, narr, phase, code, codeLine, <statKeys>... }
+   where `struct` is whatever shape the page's chosen DSRender function expects.
+   `code` (optional array of C source lines, e.g. a shared `var PUSH_CODE=[...]`
+   an op defines once) and `codeLine` (index into it, or [start,end] for a block)
+   render into #codeHost when present — see shared/engine.js's header for the
+   exact same contract, shared verbatim between both engines. Omit on frames
+   where no particular line applies; the panel just keeps its last state.
 
    For the non-interactive notes-page demo:
 
@@ -38,7 +43,38 @@
 
   function $(id){ return document.getElementById(id); }
 
-  var S = { frames:[], cur:0, playing:false, timer:null, cfg:null, state:null, statEls:{} };
+  var S = { frames:[], cur:0, playing:false, timer:null, cfg:null, state:null, statEls:{}, codeArr:null, codeEls:null };
+
+  function codeLineSet(codeLine){
+    if(codeLine===undefined || codeLine===null) return [];
+    if(typeof codeLine==="number") return [codeLine];
+    var out=[]; for(var i=codeLine[0]; i<=codeLine[1]; i++) out.push(i);
+    return out;
+  }
+
+  function renderCode(host, code, codeLine){
+    if(!host) return;
+    if(code && code!==S.codeArr){
+      host.innerHTML="";
+      S.codeArr=code;
+      S.codeEls=[];
+      for(var i=0;i<code.length;i++){
+        var line=document.createElement("div"); line.className="code-line";
+        line.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
+        line.lastChild.textContent=code[i];
+        host.appendChild(line);
+        S.codeEls.push(line);
+      }
+    }
+    if(!S.codeEls) return;
+    var active=codeLineSet(codeLine);
+    for(var j=0;j<S.codeEls.length;j++){
+      S.codeEls[j].className="code-line"+(active.indexOf(j)>=0?" active":"");
+    }
+    if(active.length && S.codeEls[active[0]] && S.codeEls[active[0]].scrollIntoView){
+      S.codeEls[active[0]].scrollIntoView({block:"nearest"});
+    }
+  }
 
   function buildStatsHost(){
     var host=$("statsHost");
@@ -65,6 +101,7 @@
   function render(){
     var f=S.frames[S.cur]; if(!f) return;
     var narr=$("narr"); if(narr) narr.textContent=f.narr||"";
+    renderCode($("codeHost"), f.code, f.codeLine);
 
     for(var key in S.statEls){
       var val = key==="phase" ? String(f.phase||"").replace(/-/g," ") : (f[key]===undefined?0:f[key]);
@@ -184,7 +221,9 @@
       var frames=cfg.frames, i=0;
       var speedMs=cfg.intervalMs||900;
       function step(){
-        cfg.renderExtra(frames[i], {cur:i, frames:frames});
+        var f=frames[i];
+        cfg.renderExtra(f, {cur:i, frames:frames});
+        renderCode($("codeHost"), f.code, f.codeLine);
         i=(i+1)%frames.length;
       }
       step();

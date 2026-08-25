@@ -213,6 +213,18 @@ input[type=range]{accent-color:var(--stamp);width:150px}
 .cta:hover{background:var(--stamp);border-color:var(--stamp);transform:translateY(-2px);box-shadow:0 10px 24px -12px rgba(190,58,29,.55)}
 .cta:active{transform:translateY(0) scale(.98)}
 
+/* ---------- code panel: C source with the active line highlighted ---------- */
+.code-panel{font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;
+  border:1px solid var(--rule);background:#fff;padding:4px 0;max-height:340px;
+  overflow-y:auto;overflow-x:auto}
+.code-line{display:flex;gap:14px;padding:1px 14px;border-left:4px solid transparent;
+  transition:background .2s var(--ease),border-color .2s var(--ease)}
+.code-ln{flex:0 0 22px;text-align:right;color:#B9C4B4}
+.code-src{white-space:pre;color:var(--ink-soft)}
+.code-line.active{background:rgba(190,58,29,.07);border-color:var(--stamp)}
+.code-line.active .code-src{color:var(--ink);font-weight:500}
+.code-line.active .code-ln{color:var(--stamp);font-weight:600}
+
 /* ---------- commentary ---------- */
 .narr{font-family:"IBM Plex Mono",monospace;font-size:14px;line-height:1.6;
   border-left:4px solid var(--stamp);padding:6px 0 6px 12px;margin:0 0 14px;min-height:2.6em}

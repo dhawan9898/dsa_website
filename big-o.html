@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Big-O Notation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+  .growth-row{display:flex;align-items:center;gap:10px;margin:8px 0;
+    font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+  .growth-label{flex:0 0 90px;color:var(--ink-soft)}
+  .growth-bar-wrap{flex:1 1 auto;background:#EDF0E8;height:16px}
+  .growth-bar{background:var(--stamp);height:100%}
+  .growth-count{flex:0 0 76px;text-align:right;color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="index.html">&larr; All topics</a>
+      <p class="eyebrow">Growth Rate &middot; Worst Case</p>
+      <h1>Big-O&nbsp;Notation</h1>
+    </div>
+    <p class="note">How to read every O(...) badge on this site — what it measures, why constants drop out, and which shape each class belongs to.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Big-O notation describes how an algorithm's running time (or memory use) grows as its input size,
+      <b>n</b>, grows — not how many milliseconds it takes on any one machine. "O(n&sup2;)" doesn't mean
+      "this takes n&sup2; seconds"; it means "double the input, and expect roughly <em>four times</em> the
+      work." That's what every badge on this site — O(1), O(log n), O(n log n) — is reporting.</p>
+
+      <p>Two simplifications make this useful instead of exact. First, <b>constants drop out</b>: an
+      algorithm that does 3n + 5 operations is still O(n), because what dominates once n is huge is the n,
+      not the 3 or the 5. Second, <b>only the fastest-growing term survives</b>: O(n&sup2; + n) is just
+      O(n&sup2;), since the n&sup2; term swamps the n term as n grows. Big-O is deliberately a blunt
+      instrument — it answers "does this get dramatically worse with more data?", not "exactly how many
+      nanoseconds?".</p>
+
+      <p>Most badges on this site report <b>worst case</b> — the guarantee that holds no matter what input
+      you throw at it. A few are labelled "average" instead, because their worst case is rare but real: a
+      hash table where every key collides into one bucket, or quicksort handed an already-sorted array with
+      a naive pivot, both degrade to O(n) or worse. "Average" isn't a loophole — it's an honest label on a
+      slower path that's still there.</p>
+
+      <table class="notes-table">
+        <tr><th>Class</th><th>Name</th><th>Example on this site</th></tr>
+        <tr><td><b>O(1)</b></td><td>Constant</td><td><a href="stack.html">Stack</a> push/pop, <a href="hash-table.html">hash table</a> lookup (average)</td></tr>
+        <tr><td><b>O(log n)</b></td><td>Logarithmic</td><td><a href="binary-search-visualizer.html">Binary search</a>, <a href="avl-tree.html">AVL tree</a> operations</td></tr>
+        <tr><td>O(n)</td><td>Linear</td><td><a href="linear-search-visualizer.html">Linear search</a>, walking a <a href="linked-list.html">linked list</a></td></tr>
+        <tr><td>O(n log n)</td><td>Linearithmic</td><td><a href="merge-sort-visualizer.html">Merge sort</a>, <a href="heap-sort-visualizer.html">heap sort</a></td></tr>
+        <tr><td>O(n&sup2;)</td><td>Quadratic</td><td><a href="bubble-sort-visualizer.html">Bubble</a>, <a href="selection-sort-visualizer.html">selection</a>, and <a href="insertion-sort-visualizer.html">insertion sort</a></td></tr>
+      </table>
+
+      <p>The chart below makes the gap concrete: watch O(n&sup2;) rocket away from the rest as n grows,
+      while O(log n) barely moves at all. That gap is the entire reason algorithm choice matters more than
+      micro-optimizing the code inside the loop — a better-chosen algorithm beats a faster-written bad one
+      every time n gets large enough.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; operation count as n grows</span></div>
+    <div class="panel-body">
+      <div id="growthHost"></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <footer>
+    Next: every data structure and algorithm page on this site states its complexity as a badge — come
+    back here any time one doesn't make sense.
+  </footer>
+</div>
+
+<script src="shared/motion.js"></script>
+<script src="shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CLASSES=[
+    {key:"O(1)",        fn:function(n){ return 1; }},
+    {key:"O(log n)",    fn:function(n){ return Math.ceil(Math.log2(n)); }},
+    {key:"O(n)",        fn:function(n){ return n; }},
+    {key:"O(n log n)",  fn:function(n){ return Math.ceil(n*Math.log2(n)); }},
+    {key:"O(n²)",  fn:function(n){ return n*n; }}
+  ];
+  var NS=[2,4,8,16,32];
+  var MAXOPS=32*32;
+
+  function scriptFrames(){
+    return NS.map(function(n){
+      var rows=CLASSES.map(function(c){ return {key:c.key, ops:c.fn(n)}; });
+      var parts=rows.map(function(r){ return r.key+" does "+r.ops+" op"+(r.ops===1?"":"s"); });
+      return {n:n, rows:rows, narr:"At n = "+n+": "+parts.join(", ")+"."};
+    });
+  }
+
+  function renderGrowth(frame){
+    var host=document.getElementById("growthHost");
+    host.innerHTML="";
+    frame.rows.forEach(function(r){
+      var row=document.createElement("div"); row.className="growth-row";
+      var label=document.createElement("span"); label.className="growth-label"; label.textContent=r.key;
+      var wrap=document.createElement("div"); wrap.className="growth-bar-wrap";
+      var bar=document.createElement("div"); bar.className="growth-bar";
+      bar.style.width=Math.max(1.5,(r.ops/MAXOPS)*100)+"%";
+      wrap.appendChild(bar);
+      var count=document.createElement("span"); count.className="growth-count";
+      count.textContent=r.ops+" op"+(r.ops===1?"":"s");
+      row.appendChild(label); row.appendChild(wrap); row.appendChild(count);
+      host.appendChild(row);
+    });
+    document.getElementById("demoNarr").textContent=frame.narr;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 1500,
+    renderExtra: renderGrowth
+  });
+})();
+</script>
+</body>
+</html>

@@ -21,10 +21,16 @@
        renderExtra: function(frame, ctx){ ... } // optional page-specific visual
      });
 
-   A frame is a plain object: { array, roles, narr, phase, <statKeys>..., extra }
+   A frame is a plain object: { array, roles, narr, phase, code, codeLine, <statKeys>... }
    - array: current array state (values, or null for an empty slot)
    - roles: array parallel to `array`, each entry a space-separated class
             string (e.g. "left head") or "" / null / undefined
+   - code: optional array of C source lines (a shared `var CODE=[...]` the page
+           defines once and every frame references — not copied per frame)
+   - codeLine: optional index into `code`, or [start,end] to highlight a block.
+           Renders into #codeHost if the page has one; omit on frames where no
+           particular line applies (e.g. a "start"/"done" summary frame) and
+           the panel just keeps showing the code with nothing highlighted.
    ========================================================================== */
 (function(window){
   "use strict";
@@ -32,7 +38,7 @@
   function $(id){ return document.getElementById(id); }
   function div(cls){ var d=document.createElement("div"); d.className=cls; return d; }
 
-  var S = { frames:[], cur:0, playing:false, timer:null, cfg:null, statEls:{} };
+  var S = { frames:[], cur:0, playing:false, timer:null, cfg:null, statEls:{}, codeArr:null, codeEls:null };
 
   function renderArray(host, arr, roles){
     if(!host) return;
@@ -47,6 +53,37 @@
       var idx=div("array-idx"); idx.textContent=i;
       item.appendChild(idx);
       host.appendChild(item);
+    }
+  }
+
+  function codeLineSet(codeLine){
+    if(codeLine===undefined || codeLine===null) return [];
+    if(typeof codeLine==="number") return [codeLine];
+    var out=[]; for(var i=codeLine[0]; i<=codeLine[1]; i++) out.push(i);
+    return out;
+  }
+
+  function renderCode(host, code, codeLine){
+    if(!host) return;
+    if(code && code!==S.codeArr){
+      host.innerHTML="";
+      S.codeArr=code;
+      S.codeEls=[];
+      for(var i=0;i<code.length;i++){
+        var line=div("code-line");
+        line.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
+        line.lastChild.textContent=code[i];
+        host.appendChild(line);
+        S.codeEls.push(line);
+      }
+    }
+    if(!S.codeEls) return;
+    var active=codeLineSet(codeLine);
+    for(var j=0;j<S.codeEls.length;j++){
+      S.codeEls[j].className="code-line"+(active.indexOf(j)>=0?" active":"");
+    }
+    if(active.length && S.codeEls[active[0]] && S.codeEls[active[0]].scrollIntoView){
+      S.codeEls[active[0]].scrollIntoView({block:"nearest"});
     }
   }
 
@@ -72,6 +109,7 @@
     renderArray($("arrayHost"), f.array, f.roles);
 
     var narr=$("narr"); if(narr) narr.textContent=f.narr||"";
+    renderCode($("codeHost"), f.code, f.codeLine);
 
     for(var key in S.statEls){
       var val = key==="phase" ? String(f.phase||"").replace(/-/g," ") : (f[key]===undefined?0:f[key]);

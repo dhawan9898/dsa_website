@@ -63,6 +63,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; bubbleSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -83,12 +90,29 @@
 (function(){
   "use strict";
 
+  var CODE=[
+    "void bubbleSort(int arr[], int n) {",
+    "  for (int i = 0; i < n - 1; i++) {",
+    "    int swapped = 0;",
+    "    for (int j = 0; j < n - 1 - i; j++) {",
+    "      if (arr[j] > arr[j + 1]) {",
+    "        int tmp = arr[j];",
+    "        arr[j] = arr[j + 1];",
+    "        arr[j + 1] = tmp;",
+    "        swapped = 1;",
+    "      }",
+    "    }",
+    "    if (!swapped) break;",
+    "  }",
+    "}"
+  ];
+
   function build(input){
     var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0;
     function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp}); }
+    function push(r,phase,narr,codeLine){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,code:CODE,codeLine:codeLine}); }
 
-    push(roles(),"start","Bubble sort repeatedly walks the array, swapping neighbours that are out of order. Each full pass pushes the largest remaining value to the end.");
+    push(roles(),"start","Bubble sort repeatedly walks the array, swapping neighbours that are out of order. Each full pass pushes the largest remaining value to the end.",0);
 
     for(var i=0;i<n-1;i++){
       var swappedThisPass=false;
@@ -99,25 +123,25 @@
         cmp++;
         var willSwap=a[j]>a[j+1];
         push(r,"compare","Compare neighbours at "+j+" and "+(j+1)+": "+a[j]+" and "+a[j+1]+". "+
-          (willSwap ? "Out of order, so swap them." : "Already in order, so leave them."));
+          (willSwap ? "Out of order, so swap them." : "Already in order, so leave them."),4);
         if(willSwap){
           var tmp=a[j]; a[j]=a[j+1]; a[j+1]=tmp; swp++; swappedThisPass=true;
           var r2=roles();
           r2[j]="left head landed"; r2[j+1]="right head landed";
           for(var k2=n-i;k2<n;k2++) r2[k2]="sorted";
-          push(r2,"swap","Swapped: "+a[j]+" now sits before "+a[j+1]+".");
+          push(r2,"swap","Swapped: "+a[j]+" now sits before "+a[j+1]+".",[5,8]);
         }
       }
       var rEnd=roles();
       for(var k3=n-1-i;k3<n;k3++) rEnd[k3]="sorted";
-      push(rEnd,"pass-done","Pass "+(i+1)+" complete. The largest unsorted value has bubbled up into place at index "+(n-1-i)+".");
+      push(rEnd,"pass-done","Pass "+(i+1)+" complete. The largest unsorted value has bubbled up into place at index "+(n-1-i)+".",11);
       if(!swappedThisPass){
         push(new Array(n).fill("sorted"),"done",
-          "No swaps happened this pass, so the array is already sorted. Stopping early after "+(i+1)+" pass"+(i===0?"":"es")+".");
+          "No swaps happened this pass, so the array is already sorted. Stopping early after "+(i+1)+" pass"+(i===0?"":"es")+".",11);
         return frames;
       }
     }
-    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.");
+    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.",12);
     return frames;
   }
 
