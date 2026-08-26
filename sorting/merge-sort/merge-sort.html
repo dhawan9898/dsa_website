@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merge Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Divide &middot; Compare &middot; Merge</p>
+      <h1>Merge&nbsp;Sort</h1>
+    </div>
+    <p class="note">Splits the array in half recursively down to single elements, then zips each pair of already-sorted halves back together in order.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Merge sort is a classic <b>divide and conquer</b> algorithm. Going down, it only cuts: split the
+      range in half, recursively sort each half, and repeat until a range is down to a single element (which
+      is trivially sorted already). No comparisons happen on the way down at all — the actual work is all on
+      the way <em>back up</em>, where two already-sorted halves are merged into one sorted run by repeatedly
+      taking whichever half's front value is smaller.</p>
+
+      <table class="notes-table">
+        <tr><th>Case</th><th>Time</th></tr>
+        <tr><td>Every case</td><td><b>O(n log n)</b> &mdash; log n levels of splitting, O(n) work merging each level</td></tr>
+        <tr><td>Space</td><td><b>O(n)</b> &mdash; needs a temporary array for the merge step</td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel below copies each half into its own temporary array,
+      <code>L</code> and <code>R</code>, before merging — writing the merged result back into the original
+      array while still reading from it would overwrite values the merge hasn't consumed yet. That temporary
+      space is the one thing merge sort gives up to guarantee O(n log n) in <em>every</em> case, unlike quick
+      sort, which is usually faster in practice but can degrade to O(n&sup2;) on unlucky input.</p>
+
+      <p><b>Common mistake:</b> on a tie, always take from the <b>left</b> half first. Taking from the right
+      on a tie still produces a correctly sorted array, but it silently breaks <b>stability</b> — two equal
+      elements can end up swapped relative to their original order, which matters whenever you're sorting
+      records by one field while relying on a previous sort's order for a tiebreaker.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; six values, start to finish</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; mergeSort() / merge()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="merge-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: open the visualizer to see the full recursion tree — every split going down and every merge coming
+    back up, at once.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "void mergeSort(int arr[], int lo, int hi) {",
+    "  if (lo == hi) return;              // one element is already sorted",
+    "  int mid = (lo + hi) / 2;",
+    "  mergeSort(arr, lo, mid);",
+    "  mergeSort(arr, mid + 1, hi);",
+    "  merge(arr, lo, mid, hi);",
+    "}",
+    "",
+    "void merge(int arr[], int lo, int mid, int hi) {",
+    "  int L[MAXN], R[MAXN];",
+    "  int nl = mid - lo + 1, nr = hi - mid;",
+    "  for (int x = 0; x < nl; x++) L[x] = arr[lo + x];",
+    "  for (int x = 0; x < nr; x++) R[x] = arr[mid + 1 + x];",
+    "",
+    "  int i = 0, j = 0, k = lo;",
+    "  while (i < nl && j < nr) {",
+    "    if (L[i] <= R[j]) arr[k++] = L[i++];   // tie goes left: keeps it stable",
+    "    else arr[k++] = R[j++];",
+    "  }",
+    "  while (i < nl) arr[k++] = L[i++];        // copy whatever remains",
+    "  while (j < nr) arr[k++] = R[j++];",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var a=[6,3,8,1,9,2], n=a.length, frames=[];
+    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
+    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
+
+    push(new Array(n).fill(""),"The whole array is one unsorted run. Merge sort cuts it in half, recursively, down to single elements.",0);
+
+    function msort(lo,hi){
+      if(lo===hi){
+        var rl=new Array(n).fill(""); rl[lo]="sorted";
+        push(rl,"Index "+lo+" holds "+a[lo]+" alone — already a sorted run.",1);
+        return;
+      }
+      var mid=Math.floor((lo+hi)/2);
+      var rd=new Array(n).fill("");
+      for(var q=lo;q<=hi;q++) rd[q]= q<=mid?"left":"right";
+      push(rd,"Split "+lo+"–"+hi+" at "+mid+".",[2,4]);
+      msort(lo,mid);
+      msort(mid+1,hi);
+
+      var L=a.slice(lo,mid+1), R=a.slice(mid+1,hi+1);
+      var i=0,j=0,k=lo;
+      var rm=new Array(n).fill("");
+      for(var q2=lo;q2<=hi;q2++) rm[q2]="dim";
+      push(rm,"Both halves of "+lo+"–"+hi+" are sorted: ["+L.join(", ")+"] and ["+R.join(", ")+"]. Merge them.",[9,14]);
+      while(i<L.length && j<R.length){
+        var takeL=L[i]<=R[j];
+        var v = takeL ? L[i++] : R[j++];
+        a[k]=v; k++;
+        var rt=new Array(n).fill("");
+        for(var q3=lo;q3<k;q3++) rt[q3]="sorted landed";
+        for(var q4=k;q4<=hi;q4++) rt[q4]="dim";
+        push(rt,"Take "+v+" from the "+(takeL?"left":"right")+" half.",takeL?16:17);
+      }
+      while(i<L.length){
+        a[k]=L[i++]; k++;
+        var r5=new Array(n).fill("");
+        for(var q5=lo;q5<k;q5++) r5[q5]="sorted landed";
+        for(var q6=k;q6<=hi;q6++) r5[q6]="dim";
+        push(r5,"Copy the rest of the left half straight down.",19);
+      }
+      while(j<R.length){
+        a[k]=R[j++]; k++;
+        var r7=new Array(n).fill("");
+        for(var q7=lo;q7<k;q7++) r7[q7]="sorted landed";
+        for(var q8=k;q8<=hi;q8++) r7[q8]="dim";
+        push(r7,"Copy the rest of the right half straight down.",20);
+      }
+
+      var rDone=new Array(n).fill("");
+      for(var q9=lo;q9<=hi;q9++) rDone[q9]="sorted";
+      push(rDone,"Indices "+lo+"–"+hi+" are now a single sorted run: ["+a.slice(lo,hi+1).join(", ")+"].",6);
+    }
+
+    msort(0,n-1);
+    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",6);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

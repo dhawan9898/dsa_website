@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bubble Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Compare &middot; Swap &middot; Repeat</p>
+      <h1>Bubble&nbsp;Sort</h1>
+    </div>
+    <p class="note">The simplest sort there is: walk the array, swap any neighbours that are out of order, and repeat until a full pass makes no swaps.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Bubble sort makes repeated passes over the array. On each pass it walks left to right, comparing
+      every pair of neighbours and swapping them if they're out of order. One full pass guarantees the
+      largest remaining value has "bubbled" all the way up to its correct resting place at the end — which
+      is why the sorted region grows from the <em>right</em>, one element per pass.</p>
+
+      <table class="notes-table">
+        <tr><th>Case</th><th>Comparisons</th><th>Time</th></tr>
+        <tr><td>Worst / average</td><td>~n&sup2;/2</td><td><b>O(n&sup2;)</b></td></tr>
+        <tr><td>Best (already sorted)</td><td>n&minus;1</td><td><b>O(n)</b></td></tr>
+        <tr><td>Space</td><td colspan="2"><b>O(1)</b> &mdash; sorts in place</td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel below carries a <code>swapped</code> flag that's the whole
+      reason the best case is O(n) rather than O(n&sup2;): if an entire pass completes with no swaps, the
+      array was already sorted, and the algorithm exits immediately instead of grinding through the
+      remaining passes anyway. The inner loop's bound, <code>n - 1 - i</code>, also shrinks by one every
+      pass — it never re-compares the suffix that's already provably sorted.</p>
+
+      <p><b>Common mistake:</b> drop the <code>swapped</code> flag (or the shrinking inner bound) and bubble
+      sort still produces a correct answer — it just silently pays the full O(n&sup2;) cost every single
+      time, even on an array that was already sorted. Because the result is still correct, this kind of bug
+      never shows up as a wrong answer, only as a slowdown nobody notices until the input gets large.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; five values, start to finish</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; bubbleSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="bubble-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: load your own array in the visualizer and watch the sorted region grow from the right, one bubbled
+    value per pass.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "void bubbleSort(int arr[], int n) {",
+    "  for (int i = 0; i < n - 1; i++) {",
+    "    int swapped = 0;",
+    "    for (int j = 0; j < n - 1 - i; j++) {",
+    "      if (arr[j] > arr[j + 1]) {",
+    "        int tmp = arr[j];",
+    "        arr[j] = arr[j + 1];",
+    "        arr[j + 1] = tmp;",
+    "        swapped = 1;",
+    "      }",
+    "    }",
+    "    if (!swapped) break;",
+    "  }",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var a=[5,3,4,1,2], n=a.length, frames=[];
+    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
+    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
+
+    push(new Array(n).fill(""),"Bubble sort compares neighbours and swaps them if they're out of order, over and over, until a pass makes no swaps.",1);
+
+    for(var i=0;i<n-1;i++){
+      var swapped=false;
+      for(var j=0;j<n-1-i;j++){
+        var r=new Array(n).fill("");
+        r[j]="left head"; r[j+1]="right head";
+        for(var k=n-i;k<n;k++) r[k]="sorted";
+        var willSwap=a[j]>a[j+1];
+        push(r,"Compare "+a[j]+" and "+a[j+1]+". "+(willSwap?"Out of order, so swap them.":"Already in order — leave them."),4);
+        if(willSwap){
+          var tmp=a[j]; a[j]=a[j+1]; a[j+1]=tmp; swapped=true;
+          var r2=new Array(n).fill("");
+          r2[j]="left head landed"; r2[j+1]="right head landed";
+          for(var k2=n-i;k2<n;k2++) r2[k2]="sorted";
+          push(r2,"Swapped: array is now ["+a.join(", ")+"].",[5,8]);
+        }
+      }
+      var rEnd=new Array(n).fill("");
+      for(var k3=n-1-i;k3<n;k3++) rEnd[k3]="sorted";
+      push(rEnd,"Pass "+(i+1)+" complete.",11);
+      if(!swapped){
+        push(new Array(n).fill("sorted"),"No swaps this pass — already sorted.",11);
+        return frames;
+      }
+    }
+    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",12);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>
