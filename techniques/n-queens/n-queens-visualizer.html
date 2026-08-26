@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N-Queens Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .board{display:inline-flex;flex-direction:column;border:2px solid var(--ink)}
+  .board-row{display:flex}
+  .board-cell{width:var(--cw);height:var(--cw);display:flex;align-items:center;justify-content:center;
+    font-size:calc(var(--cw)*.62);border:1px solid var(--faint);transition:background .2s var(--ease),outline-color .2s var(--ease)}
+  .board-cell.light{background:#fff}
+  .board-cell.dark{background:#EDF0E8}
+  .board-cell.trying{outline:3px solid var(--plot);outline-offset:-3px}
+  .board-cell.conflict{outline:3px solid var(--stamp);outline-offset:-3px}
+  .board-cell.queen{color:var(--seal);animation:land .3s var(--ease)}
+  .board-wrap{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="n-queens.html">&larr; N-Queens notes</a>
+      <p class="eyebrow">Backtracking &middot; Try &middot; Recurse &middot; Undo</p>
+      <h1>N&#8209;Queens&nbsp;Visualizer</h1>
+    </div>
+    <p class="note">Place a queen, recurse into the next row; hit a dead end, undo the last placement and try the next column instead.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Solve</h2><span class="sub">no two queens may share a row, column, or diagonal</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld narrow"><span>Board size (N)</span><input type="number" id="nVal" value="4" min="4" max="7"></label>
+        <button id="btnSolve" class="primary">Solve</button>
+      </div>
+      <p class="hint" id="hint">N = 4 finds a solution after one backtrack. Try N = 5 or 6 to see a longer search.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="60" max="1200" step="20" value="260"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The board &amp; the call stack</h2><span class="sub">one stack frame per row currently being worked on</span></div>
+    <div class="panel-body">
+      <div class="board-wrap">
+        <div class="scroller"><div class="board" id="boardHost"></div></div>
+        <div class="callstack" id="stackHost" style="flex:1 1 220px;min-width:200px"></div>
+      </div>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> column being tried (safe)</span>
+        <span class="key"><i class="swatch right"></i> column rejected (conflict)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; isSafe() / solve()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Backtracking explores exactly the same space a brute-force check-every-arrangement search would, but
+    prunes early: the instant a partial placement is unsafe, every arrangement built on top of it is skipped
+    without ever being constructed. That pruning is the entire reason it finishes in a reasonable time.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int isSafe(int col[], int row, int c) {",
+    "  for (int r = 0; r < row; r++) {",
+    "    if (col[r] == c) return 0;                    // same column",
+    "    if (abs(col[r] - c) == row - r) return 0;      // same diagonal",
+    "  }",
+    "  return 1;",
+    "}",
+    "",
+    "int solve(int col[], int row, int n) {",
+    "  if (row == n) return 1;                          // all n queens placed",
+    "  for (int c = 0; c < n; c++) {",
+    "    if (isSafe(col, row, c)) {",
+    "      col[row] = c;                                // place the queen",
+    "      if (solve(col, row + 1, n)) return 1;         // recurse",
+    "      col[row] = -1;                                // backtrack: undo the placement",
+    "    }",
+    "  }",
+    "  return 0;                                          // no column worked in this row",
+    "}"
+  ];
+
+  function boardCells(col, n, tryingRC, conflictRC){
+    var rows=[];
+    for(var r=0;r<n;r++){
+      var cells=[];
+      for(var c=0;c<n;c++){
+        var cls="board-cell "+((r+c)%2===0?"light":"dark");
+        if(col[r]===c) cls+=" queen";
+        if(tryingRC && tryingRC[0]===r && tryingRC[1]===c) cls+=" trying";
+        if(conflictRC && conflictRC[0]===r && conflictRC[1]===c) cls+=" conflict";
+        cells.push({cls:cls, val: col[r]===c ? "♛" : ""});
+      }
+      rows.push(cells);
+    }
+    return rows;
+  }
+  function renderBoard(host, rows){
+    host.innerHTML="";
+    rows.forEach(function(rowCells){
+      var rowEl=document.createElement("div"); rowEl.className="board-row";
+      rowCells.forEach(function(c){
+        var cell=document.createElement("div"); cell.className=c.cls; cell.textContent=c.val;
+        rowEl.appendChild(cell);
+      });
+      host.appendChild(rowEl);
+    });
+  }
+
+  function frame(col, n, stack, tryingRC, conflictRC, narr, ops, codeLine){
+    return {
+      board: boardCells(col, n, tryingRC, conflictRC),
+      stack: stack.map(function(f){ return {fn:f.fn, args:f.args, ret:f.ret, role:f.role}; }),
+      narr:narr, ops:ops, code:CODE, codeLine:codeLine
+    };
+  }
+
+  function opSolve(state, n){
+    if(!isFinite(n) || n<4 || n>7) return {error:"Choose a board size between 4 and 7 (larger boards make for a very long trace)."};
+    var oc=(state.opsCount||0)+1, frames=[];
+    var col=new Array(n).fill(-1);
+    var stack=[];
+
+    function isSafe(row,c){
+      for(var r=0;r<row;r++){
+        if(col[r]===c) return false;
+        if(Math.abs(col[r]-c)===row-r) return false;
+      }
+      return true;
+    }
+
+    var solved=false;
+    function solve(row){
+      var f={fn:"solve", args:"row="+row};
+      stack.push(f);
+      if(row===n){
+        f.ret=1; f.role="returning";
+        frames.push(frame(col,n,stack,null,null,"All "+n+" queens placed — solution found!",oc,9));
+        solved=true;
+        stack.pop();
+        return true;
+      }
+      for(var c=0;c<n;c++){
+        if(isSafe(row,c)){
+          frames.push(frame(col,n,stack,[row,c],null,"Row "+row+": try column "+c+" — safe so far.",oc,11));
+          col[row]=c;
+          frames.push(frame(col,n,stack,[row,c],null,"Place the queen at row "+row+", column "+c+".",oc,12));
+          if(solve(row+1)){
+            f.ret=1; f.role="returning";
+            stack.pop();
+            return true;
+          }
+          col[row]=-1;
+          frames.push(frame(col,n,stack,null,null,"That path failed — backtrack: remove the queen from row "+row+", column "+c+".",oc,14));
+        } else {
+          frames.push(frame(col,n,stack,null,[row,c],"Row "+row+": column "+c+" conflicts with an existing queen. Try the next column.",oc,11));
+        }
+      }
+      f.ret=0; f.role="returning";
+      frames.push(frame(col,n,stack,null,null,"No column works for row "+row+" — backtrack to row "+(row-1)+".",oc,17));
+      stack.pop();
+      return false;
+    }
+
+    solve(0);
+    if(!solved){
+      frames.push(frame(col,n,stack,null,null,"No solution exists for N = "+n+".",oc,17));
+    }
+    return {frames:frames, state:{n:n, opsCount:oc, col:col.slice(), solved:solved}};
+  }
+
+  function init(){
+    var state={n:4, opsCount:0};
+    var r=opSolve(state, 4);
+    return {state:r.state, frames:r.frames};
+  }
+  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      solve: { btn:"btnSolve", enterOn:"nVal", run: function(state){ return opSolve(state, num("nVal")); } }
+    },
+    renderExtra: function(f){
+      renderBoard(document.getElementById("boardHost"), f.board);
+      DSRender.callstack(document.getElementById("stackHost"), f.stack);
+    },
+    statLabels: [{key:"ops",label:"Operations"}]
+  });
+})();
+</script>
+</body>
+</html>

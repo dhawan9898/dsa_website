@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activity Selection Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .timeline{display:flex;flex-direction:column;gap:6px;min-width:440px}
+  .timeline-row{display:flex;align-items:center;gap:8px;height:30px}
+  .timeline-label{flex:0 0 20px;font-family:"IBM Plex Mono",monospace;font-weight:600;text-align:center}
+  .timeline-track{position:relative;flex:1 1 auto;height:26px;background:#fff;border:1px solid var(--faint);border-radius:3px}
+  .timeline-bar{position:absolute;top:2px;bottom:2px;border-radius:3px;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;white-space:nowrap;overflow:hidden;
+    transition:left .2s var(--ease),width .2s var(--ease),background .2s var(--ease),outline-color .2s var(--ease),opacity .2s var(--ease)}
+  .timeline-bar.pending{background:#fff;border:1px solid var(--faint);color:var(--ink)}
+  .timeline-bar.trying{background:#fff;border:1px solid var(--plot);outline:3px solid var(--plot);outline-offset:-2px;color:var(--ink)}
+  .timeline-bar.selected{background:var(--seal);border:1px solid var(--seal);color:#fff}
+  .timeline-bar.rejected{background:var(--stamp);border:1px solid var(--stamp);color:#fff;opacity:.5}
+  .timeline-ruler{display:flex;align-items:center;gap:8px;height:14px;margin-top:2px}
+  .timeline-ruler .timeline-label{visibility:hidden}
+  .timeline-ruler-track{position:relative;flex:1 1 auto;height:14px}
+  .timeline-ruler-track .tick{position:absolute;top:0;transform:translateX(-50%);font-family:"IBM Plex Mono",monospace;font-size:9.5px;color:var(--ink-soft)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="activity-selection.html">&larr; Activity Selection notes</a>
+      <p class="eyebrow">Greedy &middot; Sort &middot; Scan &middot; Never Reconsider</p>
+      <h1>Activity&nbsp;Selection&nbsp;Visualizer</h1>
+    </div>
+    <p class="note">Sort by finish time, then walk once: keep any activity that starts at or after the last one you kept.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Solve</h2><span class="sub">choose the maximum number of non-overlapping activities</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld narrow"><span>Activities (N)</span><input type="number" id="countVal" value="6" min="3" max="9"></label>
+        <button id="btnRandom" class="primary">Randomize &amp; Select</button>
+      </div>
+      <p class="hint" id="hint">Loads with a fixed 6-activity example first. Randomize to try a fresh set.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="60" max="1200" step="20" value="320"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The timeline</h2><span class="sub">rows in finish-time order — the order the algorithm walks them</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="timeline" id="timelineHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch right"></i> being considered</span>
+        <span class="key"><i class="swatch found"></i> selected</span>
+        <span class="key"><i class="swatch left"></i> rejected (overlaps)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; cmpByEnd() / selectActivities()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Sorting by finish time is what makes the greedy choice safe: the activity that ends soonest always leaves
+    the most room for everything still to come, so keeping it can never be worse than skipping it.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int cmpByEnd(const void *a, const void *b) {",
+    "  return ((Activity*)a)->end - ((Activity*)b)->end;",
+    "}",
+    "",
+    "int selectActivities(Activity acts[], int n, int chosen[]) {",
+    "  qsort(acts, n, sizeof(Activity), cmpByEnd);        // earliest finish time first",
+    "  int count = 0, lastEnd = -1;",
+    "  for (int i = 0; i < n; i++) {",
+    "    if (acts[i].start >= lastEnd) {                   // doesn't overlap the last pick",
+    "      chosen[count++] = i;",
+    "      lastEnd = acts[i].end;",
+    "    }",
+    "  }",
+    "  return count;",
+    "}"
+  ];
+
+  var FIXED=[
+    {id:"E", start:5, end:9}, {id:"B", start:2, end:5}, {id:"F", start:8, end:10},
+    {id:"A", start:1, end:3}, {id:"D", start:6, end:8}, {id:"C", start:4, end:6}
+  ];
+  var LETTERS="ABCDEFGHI";
+
+  function randomActivities(n){
+    var list=[];
+    for(var i=0;i<n;i++){
+      var start=Math.floor(Math.random()*10);
+      var dur=1+Math.floor(Math.random()*5);
+      list.push({id:LETTERS[i], start:start, end:start+dur});
+    }
+    return list;
+  }
+
+  function renderTimeline(host, timeline){
+    host.innerHTML="";
+    var maxEnd=1;
+    timeline.forEach(function(a){ if(a.end>maxEnd) maxEnd=a.end; });
+    timeline.forEach(function(a){
+      var row=document.createElement("div"); row.className="timeline-row";
+      var label=document.createElement("div"); label.className="timeline-label"; label.textContent=a.id;
+      var track=document.createElement("div"); track.className="timeline-track";
+      var bar=document.createElement("div"); bar.className="timeline-bar "+a.role;
+      bar.style.left=(a.start/maxEnd*100)+"%";
+      bar.style.width=Math.max(3,(a.end-a.start)/maxEnd*100)+"%";
+      bar.textContent=a.start+"–"+a.end;
+      track.appendChild(bar);
+      row.appendChild(label); row.appendChild(track);
+      host.appendChild(row);
+    });
+    var ruler=document.createElement("div"); ruler.className="timeline-ruler";
+    var rlabel=document.createElement("div"); rlabel.className="timeline-label"; rlabel.textContent="·";
+    var rtrack=document.createElement("div"); rtrack.className="timeline-ruler-track";
+    var step=Math.max(1,Math.round(maxEnd/8));
+    for(var t=0;t<=maxEnd;t+=step){
+      var tick=document.createElement("span"); tick.className="tick"; tick.style.left=(t/maxEnd*100)+"%"; tick.textContent=t;
+      rtrack.appendChild(tick);
+    }
+    ruler.appendChild(rlabel); ruler.appendChild(rtrack);
+    host.appendChild(ruler);
+  }
+
+  function opSelect(state, list){
+    if(!list || list.length<2) return {error:"Need at least a couple of activities to select from."};
+    var oc=(state.opsCount||0)+1;
+    var original=list.map(function(a){ return {id:a.id, start:a.start, end:a.end}; });
+    var sorted=original.slice().sort(function(a,b){ return a.end-b.end; });
+    var n=sorted.length;
+    var roles=new Array(n).fill("pending");
+    var frames=[], lastEnd=-1, selCount=0, rejCount=0, chosenIds=[];
+
+    function snap(){
+      return sorted.map(function(a,i){ return {id:a.id, start:a.start, end:a.end, role:roles[i]}; });
+    }
+    function push(timeline, narr, codeLine){
+      frames.push({timeline:timeline, narr:narr, code:CODE, codeLine:codeLine, selected:selCount, rejected:rejCount, ops:oc});
+    }
+
+    push(original.map(function(a){ return {id:a.id, start:a.start, end:a.end, role:"pending"}; }),
+      "Start with "+n+" activities, in input order.", 4);
+    push(snap(), "Sort by finish time — earliest deadline first.", 5);
+
+    for(var i=0;i<n;i++){
+      var a=sorted[i];
+      roles[i]="trying";
+      var frontier = selCount===0 ? "nothing is selected yet, so any start time qualifies" : ("the last pick finishes at "+lastEnd);
+      push(snap(), "Consider "+a.id+" ("+a.start+"–"+a.end+"): "+frontier+".", 8);
+      if(a.start>=lastEnd){
+        roles[i]="selected"; selCount++; lastEnd=a.end; chosenIds.push(a.id);
+        push(snap(), a.id+" starts at "+a.start+" — no overlap, so select it. It now finishes at "+a.end+".", [9,10]);
+      } else {
+        roles[i]="rejected"; rejCount++;
+        push(snap(), a.id+" starts at "+a.start+", before the last pick finishes at "+lastEnd+" — it overlaps, so reject it.", 8);
+      }
+    }
+    push(snap(), "Done — selected "+selCount+" of "+n+" activities: "+chosenIds.join(", ")+".", 13);
+
+    return {frames:frames, state:{opsCount:oc, chosen:chosenIds.slice(), sorted:sorted.slice(), selCount:selCount, rejCount:rejCount}};
+  }
+
+  function init(){
+    var state={opsCount:0};
+    var r=opSelect(state, FIXED);
+    return {state:r.state, frames:r.frames};
+  }
+  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      select: { btn:"btnRandom", enterOn:"countVal", run: function(state){
+        var n=num("countVal");
+        if(!isFinite(n) || n<3 || n>9) return {error:"Choose between 3 and 9 activities."};
+        return opSelect(state, randomActivities(n));
+      } }
+    },
+    renderExtra: function(f){
+      renderTimeline(document.getElementById("timelineHost"), f.timeline);
+    },
+    statLabels: [{key:"selected",label:"Selected"},{key:"rejected",label:"Rejected"}]
+  });
+})();
+</script>
+</body>
+</html>

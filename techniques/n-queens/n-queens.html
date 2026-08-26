@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N-Queens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .board{display:inline-flex;flex-direction:column;border:2px solid var(--ink)}
+  .board-row{display:flex}
+  .board-cell{width:var(--cw);height:var(--cw);display:flex;align-items:center;justify-content:center;
+    font-size:calc(var(--cw)*.62);border:1px solid var(--faint);transition:background .2s var(--ease),outline-color .2s var(--ease)}
+  .board-cell.light{background:#fff}
+  .board-cell.dark{background:#EDF0E8}
+  .board-cell.trying{outline:3px solid var(--plot);outline-offset:-3px}
+  .board-cell.conflict{outline:3px solid var(--stamp);outline-offset:-3px}
+  .board-cell.queen{color:var(--seal);animation:land .3s var(--ease)}
+  .board-wrap{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Backtracking &middot; Try &middot; Recurse &middot; Undo</p>
+      <h1>N&#8209;Queens</h1>
+    </div>
+    <p class="note">Place queens one row at a time; the instant two threaten each other, undo and try the next column — a search that prunes itself as it goes.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>The puzzle: place N queens on an N&times;N board so that no two attack each other — meaning no two
+      may share a row, a column, or either diagonal. Checking every way to choose N squares out of N&sup2;
+      is hopeless even for small boards: on the classic 8&times;8 board that's C(64,8) &asymp; 4.4 billion raw
+      placements to test, and that's before N gets any bigger.</p>
+
+      <p><b>Implementation:</b> the first real insight is structural, not algorithmic — since two queens in
+      the same row always attack each other, a valid board has <em>exactly one</em> queen per row. So instead
+      of choosing squares, the code below chooses one column per row, stored in a plain array
+      <code>col[row]</code>. That alone shrinks the space to N<sup>N</sup> column assignments. Backtracking is
+      what makes even that fast: <code>solve(row)</code> tries each column left to right, calls
+      <code>isSafe</code> to check it against every queen already placed, and only recurses into
+      <code>solve(row + 1)</code> when it's safe. The moment a column conflicts, the whole subtree of boards
+      built on top of it is skipped without ever being constructed — see
+      <a href="../../foundations/recursion/recursion.html">Recursion &amp; the Call Stack</a> for the base
+      mechanism this builds on. What makes it <em>backtracking</em> specifically, rather than just recursion,
+      is the line right after the recursive call: <code>col[row] = -1</code> undoes the placement before
+      trying the next column, so a failed guess never lingers into the next attempt.</p>
+
+      <table class="notes-table">
+        <tr><th>Approach</th><th>What it checks</th><th>Time</th></tr>
+        <tr><td>Brute force</td><td>Every way to choose N of the N&sup2; squares</td><td>far worse than factorial</td></tr>
+        <tr><td>One queen per row</td><td>Every column assignment, valid or not</td><td>O(N<sup>N</sup>)</td></tr>
+        <tr><td>Backtracking (this page)</td><td>Only assignments that stayed safe so far</td><td><b>O(N!)</b> worst case, usually far fewer</td></tr>
+      </table>
+
+      <p><code>isSafe(col, row, c)</code> only ever needs to check the rows already placed above it — same
+      column (<code>col[r] == c</code>), or same diagonal, which is true whenever the column distance equals
+      the row distance: <code>abs(col[r] - c) == row - r</code>. <b>Common mistake:</b> dropping the
+      <code>abs()</code> and writing something like <code>col[r] - c == row - r</code> instead. That only
+      catches a queen attacking from the upper-left; one attacking from the upper-right slips through
+      unnoticed, and the algorithm confidently reports a "solution" that quietly has two queens sharing the
+      other diagonal. Both directions need the absolute value, exactly as the code below has it.</p>
+
+      <p>Space is just O(N) for the <code>col[]</code> array plus O(N) call-stack depth — one frame per row
+      currently being worked on, which is exactly what the demo below draws next to the board. N-Queens is
+      the standard first example of backtracking precisely because the three moves — try, recurse, undo — are
+      so easy to see acting on a board; the same pattern (choose, recurse, undo) solves Sudoku, graph
+      coloring, and generating subsets or permutations.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; solving the classic N = 4 board</span></div>
+    <div class="panel-body">
+      <div class="board-wrap">
+        <div class="scroller"><div class="board" id="boardHost"></div></div>
+        <div class="callstack" id="stackHost" style="flex:1 1 220px;min-width:200px"></div>
+      </div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> column being tried (safe)</span>
+        <span class="key"><i class="swatch right"></i> column rejected (conflict)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; isSafe() / solve()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="n-queens-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try N = 6 in the visualizer — it's the classic hard case for this exact algorithm, needing far more
+    backtracking than N = 5 or N = 7 before it finds one of its few solutions.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int isSafe(int col[], int row, int c) {",
+    "  for (int r = 0; r < row; r++) {",
+    "    if (col[r] == c) return 0;                    // same column",
+    "    if (abs(col[r] - c) == row - r) return 0;      // same diagonal",
+    "  }",
+    "  return 1;",
+    "}",
+    "",
+    "int solve(int col[], int row, int n) {",
+    "  if (row == n) return 1;                          // all n queens placed",
+    "  for (int c = 0; c < n; c++) {",
+    "    if (isSafe(col, row, c)) {",
+    "      col[row] = c;                                // place the queen",
+    "      if (solve(col, row + 1, n)) return 1;         // recurse",
+    "      col[row] = -1;                                // backtrack: undo the placement",
+    "    }",
+    "  }",
+    "  return 0;                                          // no column worked in this row",
+    "}"
+  ];
+
+  var n=4;
+
+  function boardCells(col, tryingRC, conflictRC){
+    var rows=[];
+    for(var r=0;r<n;r++){
+      var cells=[];
+      for(var c=0;c<n;c++){
+        var cls="board-cell "+((r+c)%2===0?"light":"dark");
+        if(col[r]===c) cls+=" queen";
+        if(tryingRC && tryingRC[0]===r && tryingRC[1]===c) cls+=" trying";
+        if(conflictRC && conflictRC[0]===r && conflictRC[1]===c) cls+=" conflict";
+        cells.push({cls:cls, val: col[r]===c ? "♛" : ""});
+      }
+      rows.push(cells);
+    }
+    return rows;
+  }
+  function renderBoard(host, rows){
+    host.innerHTML="";
+    rows.forEach(function(rowCells){
+      var rowEl=document.createElement("div"); rowEl.className="board-row";
+      rowCells.forEach(function(c){
+        var cell=document.createElement("div"); cell.className=c.cls; cell.textContent=c.val;
+        rowEl.appendChild(cell);
+      });
+      host.appendChild(rowEl);
+    });
+  }
+
+  function scriptFrames(){
+    var col=new Array(n).fill(-1), stack=[], frames=[];
+
+    function isSafe(row,c){
+      for(var r=0;r<row;r++){
+        if(col[r]===c) return false;
+        if(Math.abs(col[r]-c)===row-r) return false;
+      }
+      return true;
+    }
+    function push(tryingRC, conflictRC, narr, codeLine){
+      frames.push({
+        board: boardCells(col, tryingRC, conflictRC),
+        stack: stack.map(function(f){ return {fn:f.fn, args:f.args, ret:f.ret, role:f.role}; }),
+        narr:narr, code:CODE, codeLine:codeLine
+      });
+    }
+    function solve(row){
+      var f={fn:"solve", args:"row="+row};
+      stack.push(f);
+      if(row===n){
+        f.ret=1; f.role="returning";
+        push(null,null,"All "+n+" queens placed — solution found!",9);
+        stack.pop();
+        return true;
+      }
+      for(var c=0;c<n;c++){
+        if(isSafe(row,c)){
+          push([row,c],null,"Row "+row+": try column "+c+" — safe so far.",11);
+          col[row]=c;
+          push([row,c],null,"Place the queen at row "+row+", column "+c+".",12);
+          if(solve(row+1)){
+            f.ret=1; f.role="returning";
+            stack.pop();
+            return true;
+          }
+          col[row]=-1;
+          push(null,null,"That path failed — backtrack: remove the queen from row "+row+", column "+c+".",14);
+        } else {
+          push(null,[row,c],"Row "+row+": column "+c+" conflicts with an existing queen. Try the next column.",11);
+        }
+      }
+      f.ret=0; f.role="returning";
+      push(null,null,"No column works for row "+row+" — backtrack to row "+(row-1)+".",17);
+      stack.pop();
+      return false;
+    }
+
+    solve(0);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 750,
+    renderExtra: function(frame){
+      renderBoard(document.getElementById("boardHost"), frame.board);
+      DSRender.callstack(document.getElementById("stackHost"), frame.stack);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>
