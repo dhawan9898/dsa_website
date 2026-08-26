@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linear Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Check Every Index, In Order</p>
+      <h1>Linear&nbsp;Search</h1>
+    </div>
+    <p class="note">Walks the array from the front, checking each value against the target until it finds a match or runs out of array. Works on any array, sorted or not.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Linear search is the baseline every other search algorithm improves on: check index 0, then 1, then
+      2, and so on, until the target turns up or the array runs out. It needs no assumption at all about how
+      the data is arranged — it works identically on a sorted array, a shuffled one, or one full of
+      duplicates. That generality is exactly why it's slow: with no ordering to exploit, there's no way to
+      rule out large chunks of the array without actually looking at them.</p>
+
+      <table class="notes-table">
+        <tr><th>Case</th><th>Comparisons</th><th>Time</th></tr>
+        <tr><td>Best (target at index 0)</td><td>1</td><td><b>O(1)</b></td></tr>
+        <tr><td>Worst (target absent, or at the end)</td><td>n</td><td><b>O(n)</b></td></tr>
+        <tr><td>Space</td><td colspan="2"><b>O(1)</b></td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel below is about as short as an algorithm gets — one loop, one
+      comparison, one early return. That simplicity is the whole point of having it on this site: every
+      other search algorithm here is a strategy for skipping comparisons that linear search cannot skip,
+      precisely because it assumes nothing about the data.</p>
+
+      <p><b>Common mistake:</b> continuing to scan after a match instead of returning immediately wastes
+      comparisons on an array with a unique target, but matters more with duplicates — if the array can
+      contain the target more than once and you need the <em>first</em> occurrence specifically, an early
+      return is what guarantees that, not an afterthought.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; search for 25</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; linearSearch()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="linear-search-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try searching for a value that isn't in the array in the visualizer, and watch it check every
+    single index before giving up.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int linearSearch(int arr[], int n, int target) {",
+    "  for (int i = 0; i < n; i++) {",
+    "    if (arr[i] == target) return i;   // found it",
+    "  }",
+    "  return -1;                          // never seen",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var a=[12,47,3,98,25,61,8], n=a.length, target=25, frames=[];
+    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
+    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
+
+    push(new Array(n).fill(""),"Search for "+target+": check every index in order, from the front.",0);
+
+    for(var i=0;i<n;i++){
+      var r=new Array(n).fill("");
+      for(var k=0;k<i;k++) r[k]="dim";
+      r[i]="left head";
+      var match=a[i]===target;
+      push(r,"Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match?"Yes — found it.":"No — move on."),2);
+      if(match){
+        var rf=new Array(n).fill("");
+        for(var k2=0;k2<i;k2++) rf[k2]="dim";
+        rf[i]="found";
+        push(rf,"Found "+target+" at index "+i+".",2);
+        return frames;
+      }
+    }
+    var rNo=new Array(n).fill("dim");
+    push(rNo,"Reached the end without finding "+target+".",4);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

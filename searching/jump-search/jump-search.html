@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jump Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Jump in Blocks &middot; Scan the Last One</p>
+      <h1>Jump&nbsp;Search</h1>
+    </div>
+    <p class="note">Requires sorted data. Leaps forward in fixed-size blocks to find where the target must live, then falls back to a plain scan inside just that block.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Jump search sits between linear search and binary search. Like binary search it needs sorted data,
+      but instead of always halving the range, it leaps forward in fixed-size <b>blocks</b> — checking only
+      the last element of each block — until it finds a block whose last value is &ge; the target. Since the
+      array is sorted, the target (if present) has to be somewhere in that one block, so the final step
+      falls back to an ordinary linear scan, but only across that single block instead of the whole array.</p>
+
+      <table class="notes-table">
+        <tr><th>Case</th><th>Time</th></tr>
+        <tr><td>Every case</td><td><b>O(&radic;n)</b> with block size &radic;n</td></tr>
+        <tr><td>Space</td><td><b>O(1)</b></td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel below picks a block size of &radic;n specifically because
+      it's the size that <em>minimizes</em> the total work: jumping costs at most n/blockSize probes, and
+      the final scan costs at most blockSize more, and n/blockSize + blockSize is smallest exactly when
+      blockSize = &radic;n. That balance is the entire reason jump search exists — it was designed for tape
+      and disk drives where a long jump was cheap but a full binary search's scattered, unpredictable
+      probing pattern was expensive.</p>
+
+      <p><b>Common mistake:</b> forgetting to clamp the final block's upper bound to <code>n</code> — the
+      last jump can land past the end of the array if <code>n</code> isn't an exact multiple of the block
+      size, and scanning (or even just indexing) past the array's actual length is undefined behavior in C,
+      not a graceful "not found."</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; search for 72</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; jumpSearch()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="jump-search-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: open the visualizer and compare its probe count against binary search on the same array — jump
+    search needs more comparisons, but each one is a much longer stride.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int jumpSearch(int arr[], int n, int target) {",
+    "  int blockSize = (int)sqrt(n);",
+    "  int step = blockSize, prev = 0;",
+    "  while (arr[min(step, n) - 1] < target) {   // jump forward a block at a time",
+    "    prev = step;",
+    "    step += blockSize;",
+    "    if (prev >= n) return -1;                 // ran off the end",
+    "  }",
+    "  int hi = min(step, n);",
+    "  for (int i = prev; i < hi; i++) {           // scan inside the block we landed in",
+    "    if (arr[i] == target) return i;           // found it",
+    "  }",
+    "  return -1;                                   // not in this block either",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var a=[3,8,12,19,25,34,47,61,72,84,98], n=a.length, target=72, frames=[];
+    var blockSize=Math.max(1,Math.floor(Math.sqrt(n)));
+    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
+    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
+
+    push(new Array(n).fill(""),"Search for "+target+" using blocks of "+blockSize+" (√"+n+").",[1,2]);
+
+    var step=blockSize, prev=0;
+    while(true){
+      var probe=Math.min(step,n)-1;
+      var r=new Array(n).fill("");
+      for(var k=0;k<prev;k++) r[k]="dim";
+      r[probe]="left head";
+      var passedTarget=a[probe]>=target;
+      var reachedEnd=step>=n;
+      push(r,"Jump to index "+probe+": value is "+a[probe]+". "+
+        (passedTarget?"≥ target — the target, if present, is in this block.":(reachedEnd?"Reached the end.":"Still less — jump again.")),
+        passedTarget?3:(reachedEnd?6:[4,5]));
+      if(passedTarget||reachedEnd) break;
+      prev=step; step+=blockSize;
+    }
+
+    var hi=Math.min(step,n);
+    var r2=new Array(n).fill("");
+    for(var k2=0;k2<prev;k2++) r2[k2]="dim";
+    for(var k3=hi;k3<n;k3++) r2[k3]="dim";
+    push(r2,"Scan the block from index "+prev+" to "+(hi-1)+" one element at a time.",8);
+
+    for(var i=prev;i<hi;i++){
+      var r3=new Array(n).fill("");
+      for(var k4=0;k4<prev;k4++) r3[k4]="dim";
+      for(var k5=hi;k5<n;k5++) r3[k5]="dim";
+      for(var k6=prev;k6<i;k6++) r3[k6]="dim";
+      r3[i]="right head";
+      var match=a[i]===target;
+      push(r3,"Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match?"Yes — found it.":"No — keep scanning."),10);
+      if(match){
+        var rf=new Array(n).fill("");
+        for(var k7=0;k7<n;k7++) if(k7!==i) rf[k7]="dim";
+        rf[i]="found";
+        push(rf,"Found "+target+" at index "+i+".",10);
+        return frames;
+      }
+    }
+    push(new Array(n).fill("dim"),"Scanned the whole block — "+target+" isn't present.",12);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>
