@@ -36,6 +36,13 @@
       <p>The cost is bookkeeping: every insert and delete has to keep <em>two</em> pointers consistent per
       affected node instead of one, and each node spends a little more memory on the extra pointer.</p>
 
+      <p><b>When it breaks:</b> that extra bookkeeping is exactly where doubly-linked-list bugs live — update
+      <code>next</code> on one side of a splice but forget the matching <code>prev</code> on the other, and
+      the list looks fine walking forward while being silently broken walking backward (or vice versa).
+      Deleting the head or tail is its own special case: forget to also update the list's <code>head</code>/
+      <code>tail</code> pointer (not just the neighbouring node's link) and you're left pointing at a node
+      that no longer starts or ends the list.</p>
+
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
         <tr><td>Insert Head</td><td>New node becomes the head</td><td><b>O(1)</b></td></tr>
@@ -59,6 +66,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertHead() / insertTail() / deleteHead() / deleteTail()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
       <a class="cta" href="doubly-linked-list-visualizer.html">Open the interactive visualizer &rarr;</a>
     </div>
@@ -77,45 +91,90 @@
 (function(){
   "use strict";
 
+  var INIT_CODE=[
+    "void initList(DList *l) {",
+    "  l->head = l->tail = NULL;",
+    "}"
+  ];
+  var INSERT_HEAD_CODE=[
+    "void insertHead(DList *l, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->prev = NULL; n->next = l->head;",
+    "  if (l->head) l->head->prev = n;",
+    "  else l->tail = n;",
+    "  l->head = n;",
+    "}"
+  ];
+  var INSERT_TAIL_CODE=[
+    "void insertTail(DList *l, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->next = NULL; n->prev = l->tail;",
+    "  if (l->tail) l->tail->next = n;",
+    "  else l->head = n;",
+    "  l->tail = n;",
+    "}"
+  ];
+  var DELETE_HEAD_CODE=[
+    "void deleteHead(DList *l) {",
+    "  Node *old = l->head;",
+    "  l->head = old->next;",
+    "  if (l->head) l->head->prev = NULL;",
+    "  else l->tail = NULL;",
+    "  free(old);",
+    "}"
+  ];
+  var DELETE_TAIL_CODE=[
+    "void deleteTail(DList *l) {",
+    "  Node *old = l->tail;",
+    "  l->tail = old->prev;",
+    "  if (l->tail) l->tail->next = NULL;",
+    "  else l->head = NULL;",
+    "  free(old);",
+    "}"
+  ];
+
   function size(head){ var n=0,cur=head; while(cur){n++;cur=cur.next;} return n; }
-  function toStruct(head, activeId, activeRole){
-    var nodes=[], linkActive=[], cur=head, i=0, n=size(head);
+  function toStruct(head, activeId, activeRole, linkLandedId){
+    var nodes=[], linkActive=[], linkLanded=[], cur=head, i=0, n=size(head);
     while(cur){
       var badges=[]; if(i===0) badges.push("HEAD"); if(i===n-1) badges.push("TAIL");
       nodes.push({val:cur.val, role:(cur.id===activeId?activeRole:""), ptr:badges.join("/")});
-      if(cur.next) linkActive.push(cur.id===activeId || cur.next.id===activeId);
+      linkActive.push(cur.id===activeId || (cur.next && cur.next.id===activeId));
+      linkLanded.push(cur.id===linkLandedId || (cur.next && cur.next.id===linkLandedId));
       cur=cur.next; i++;
     }
-    return {dir:"h", nullEnd:true, double:true, emptyText:"Empty list", nodes:nodes, linkActive:linkActive};
+    return {dir:"h", nullEnd:true, double:true, emptyText:"Empty list", nodes:nodes, linkActive:linkActive, linkLanded:linkLanded};
   }
 
   function scriptFrames(){
     var nextId=0, head=null, tail=null, frames=[];
     function node(v){ return {id:nextId++, val:v, prev:null, next:null}; }
-    function push(activeId,activeRole,narr){ frames.push({struct:toStruct(head,activeId,activeRole), narr:narr}); }
+    function push(activeId,activeRole,narr,code,codeLine,linkLandedId){
+      frames.push({struct:toStruct(head,activeId,activeRole,linkLandedId), narr:narr, code:code, codeLine:codeLine});
+    }
     function insHead(v){
-      push(head?head.id:undefined,"right","Insert "+v+" at the head — O(1).");
+      push(head?head.id:undefined,"right","Insert "+v+" at the head — O(1).",INSERT_HEAD_CODE,[1,4]);
       var n=node(v); n.next=head; if(head) head.prev=n; head=n; if(!tail) tail=n;
-      push(n.id,"left head landed", v+" is the new head.");
+      push(n.id,"left head landed", v+" is the new head.",INSERT_HEAD_CODE,5,n.id);
     }
     function insTail(v){
-      push(tail?tail.id:undefined,"right","Insert "+v+" at the tail — O(1), no walk needed.");
+      push(tail?tail.id:undefined,"right","Insert "+v+" at the tail — O(1), no walk needed.",INSERT_TAIL_CODE,[1,4]);
       var n=node(v); n.prev=tail; if(tail) tail.next=n; tail=n; if(!head) head=n;
-      push(n.id,"left head landed", v+" is the new tail.");
+      push(n.id,"left head landed", v+" is the new tail.",INSERT_TAIL_CODE,5,tail.prev?tail.prev.id:n.id);
     }
     function delHead(){
       var v=head.val;
-      push(head.id,"left head","Delete the head, "+v+".");
+      push(head.id,"left head","Delete the head, "+v+".",DELETE_HEAD_CODE,[1,4]);
       head=head.next; if(head) head.prev=null; else tail=null;
-      push(undefined,"", v+" removed.");
+      push(undefined,"", v+" removed.",DELETE_HEAD_CODE,5);
     }
     function delTail(){
       var v=tail.val;
-      push(tail.id,"left head","Delete the tail, "+v+" — O(1) thanks to the tail pointer.");
+      push(tail.id,"left head","Delete the tail, "+v+" — O(1) thanks to the tail pointer.",DELETE_TAIL_CODE,[1,4]);
       tail=tail.prev; if(tail) tail.next=null; else head=null;
-      push(undefined,"", v+" removed.");
+      push(undefined,"", v+" removed.",DELETE_TAIL_CODE,5);
     }
-    push(undefined,"","An empty list — HEAD and TAIL are both NULL.");
+    push(undefined,"","Create the list: head and tail both start NULL.",INIT_CODE,1);
     insHead(6); insTail(3); insTail(9); insHead(1);
     delTail(); delHead(); delTail(); delHead();
     return frames;
