@@ -14,9 +14,14 @@
 
      DSRender.sequence(host, struct)
        struct: {dir:'h'|'v', double, nullEnd, emptyText,
-                nodes:[{val, role, ptr, label}], linkActive:[bool,...]}
+                nodes:[{val, role, ptr, label}], linkActive:[bool,...], linkLanded:[bool,...]}
        Linked boxes with directional arrows. Used by linked lists and, in
-       vertical mode, a single hash-table bucket's collision chain.
+       vertical mode, a single hash-table bucket's collision chain. A node's
+       own "just created" pop-in is just `role:"...landed"` (same convention
+       as array cells — `.cell.landed` isn't scoped to arrays). `linkLanded[i]`
+       is the arrow equivalent: the arrow *before* nodes[i] plays a one-shot
+       "just formed" animation, for the moment a pointer gets wired up right
+       after the node it belongs to appears.
 
      DSRender.tree(nodesHost, svgEl, root, opts)
        root: {id, val, role, label, left, right} | null
@@ -73,7 +78,8 @@
     nodes.forEach(function(node,i){
       if(i>0){
         var arrowCls="seq-arrow "+(dir==="v"?"vert":"horiz")+(struct.double?" back":"")+
-          ((struct.linkActive&&struct.linkActive[i-1])?" active":"");
+          ((struct.linkActive&&struct.linkActive[i-1])?" active":"")+
+          ((struct.linkLanded&&struct.linkLanded[i-1])?" landed":"");
         row.appendChild(el("div",arrowCls));
       }
       var n=el("div","seq-node");
@@ -88,7 +94,8 @@
     if(struct.nullEnd){
       if(nodes.length){
         row.appendChild(el("div","seq-arrow "+(dir==="v"?"vert":"horiz")+
-          ((struct.linkActive&&struct.linkActive[nodes.length-1])?" active":"")));
+          ((struct.linkActive&&struct.linkActive[nodes.length-1])?" active":"")+
+          ((struct.linkLanded&&struct.linkLanded[nodes.length-1])?" landed":"")));
       }
       row.appendChild(el("div","seq-null","NULL"));
     }

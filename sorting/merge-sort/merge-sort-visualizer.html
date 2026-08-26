@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merge Sort — step by step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EAEFE2;
+  --bar:#D9E4CB;
+  --ink:#1C2B24;
+  --ink-soft:#5D6E61;
+  --rule:#A8B7A3;
+  --faint:#C7D2C1;
+  --stamp:#BE3A1D;
+  --plot:#1F4E79;
+  --seal:#2E6B4F;
+  --cw:clamp(24px,5.2vw,44px);
+  --tcw:clamp(19px,3.4vw,32px);
+  --gap:4px;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+
+@view-transition{
+  navigation:auto;
+}
+::view-transition-old(root),
+::view-transition-new(root){
+  animation-duration:.5s;
+  animation-timing-function:var(--ease);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  animation:pageIn .55s var(--ease) both;
+}
+@keyframes pageIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:none}
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 72px}
+
+/* ---------- masthead ---------- */
+.masthead{background:var(--ink);color:var(--paper);margin-bottom:26px;border-bottom:6px double var(--seal);
+  position:sticky;top:0;z-index:50;
+  transition:background-color .4s var(--ease),box-shadow .4s var(--ease)}
+.masthead.scrolled{background:rgba(28,43,36,.92);box-shadow:0 10px 30px -14px rgba(0,0,0,.45);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+.masthead-inner{max-width:1080px;margin:0 auto;padding:22px 20px 20px;
+  display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 28px;justify-content:space-between;
+  transition:padding .35s var(--ease)}
+.masthead.scrolled .masthead-inner{padding-top:13px;padding-bottom:11px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:#9DB79F;margin:0 0 2px}
+h1{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:800;
+  font-size:clamp(46px,9vw,86px);line-height:.84;letter-spacing:.01em;margin:0;text-transform:uppercase;
+  transition:font-size .35s var(--ease)}
+.masthead.scrolled h1{font-size:clamp(28px,5vw,42px)}
+.masthead p.note{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:#9DB79F;
+  margin:0;max-width:30ch;line-height:1.6;text-align:right;transition:opacity .3s var(--ease)}
+.masthead.scrolled p.note{opacity:0}
+.masthead-nav{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:#9DB79F;text-decoration:none;margin:0 0 10px;border-bottom:1px solid transparent;
+  transition:color .15s var(--ease),border-color .15s var(--ease)}
+.masthead-nav:hover{color:var(--paper);border-color:var(--paper)}
+
+/* ---------- panels ---------- */
+.panel{border:1px solid var(--rule);background:#F4F7EE;margin-bottom:22px}
+.panel-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding:9px 14px;border-bottom:1px solid var(--rule);background:var(--ink);color:var(--paper)}
+.panel-head h2{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;
+  font-size:20px;letter-spacing:.06em;text-transform:uppercase;margin:0}
+.panel-head .sub{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:#9DB79F;margin-left:auto}
+.panel-body{padding:16px 14px}
+
+/* ---------- controls ---------- */
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+label.fld{display:flex;flex-direction:column;gap:5px;flex:1 1 300px}
+label.fld span{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-soft)}
+input[type=text]{font-family:"IBM Plex Mono",monospace;font-size:15px;padding:9px 11px;
+  border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:0;width:100%}
+button{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+  padding:9px 13px;border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);
+  cursor:pointer;border-radius:0;
+  transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease),
+    transform .12s var(--ease),box-shadow .2s var(--ease)}
+button:hover{background:var(--ink);color:var(--paper)}
+button:active{transform:scale(.96)}
+button.primary{background:var(--ink);color:var(--paper)}
+button.primary:hover{background:var(--stamp);border-color:var(--stamp);box-shadow:0 8px 20px -10px rgba(190,58,29,.6)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button:disabled:active{transform:none}
+:focus-visible{outline:3px solid var(--stamp);outline-offset:2px}
+.hint{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-soft);margin:9px 0 0}
+.hint.bad{color:var(--stamp)}
+input[type=range]{accent-color:var(--stamp);width:150px}
+.slider{display:flex;align-items:center;gap:9px;font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+#scrub{flex:1 1 220px;width:auto;min-width:160px}
+.stats{display:flex;flex-wrap:wrap;gap:22px;margin:14px 0 0;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-soft)}
+.stats b{font-size:19px;font-weight:600;color:var(--ink);letter-spacing:0;display:block}
+
+/* ---------- shared cells ---------- */
+.cell{border:1px solid var(--rule);background:#fff;display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:clamp(11px,2.4vw,15px);
+  height:var(--cw);width:var(--cw);
+  transition:background .22s var(--ease),color .22s var(--ease),border-color .22s var(--ease),transform .22s var(--ease)}
+.cell.left{border-color:var(--stamp);color:var(--stamp)}
+.cell.right{border-color:var(--plot);color:var(--plot)}
+.cell.head{transform:translateY(-4px);font-weight:600}
+.cell.left.head{background:var(--stamp);color:#fff}
+.cell.right.head{background:var(--plot);color:#fff}
+.cell.spent{background:#EDF0E8;color:#B9C4B4;border-color:#DCE3D6;text-decoration:line-through}
+.scroller{overflow-x:auto;padding-bottom:6px}
+
+/* ---------- recursion tree ---------- */
+.treewrap{position:relative;width:max-content;min-width:100%;padding:6px 4px 4px}
+#links{position:absolute;inset:0;pointer-events:none;overflow:visible}
+#links path{fill:none;stroke:var(--faint);stroke-width:1.5;transition:stroke .25s,stroke-width .25s}
+#links path.live{stroke:var(--stamp);stroke-width:2.5}
+#links path.done{stroke:var(--seal)}
+.tnode{display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+.tkids{display:flex;gap:16px;padding-top:34px;align-items:flex-start}
+.tbox{border:1px solid var(--faint);background:#F4F7EE;padding:5px 5px 3px;position:relative;
+  transition:border-color .25s,background .25s,box-shadow .25s}
+.tcells{display:flex;gap:3px}
+.tcell{width:var(--tcw);height:calc(var(--tcw) + 2px);border:1px solid var(--faint);background:#fff;
+  display:flex;align-items:center;justify-content:center;color:var(--ink);
+  font-family:"IBM Plex Mono",monospace;font-size:clamp(10px,2.1vw,14px);
+  transition:background .2s,color .2s,border-color .2s,transform .2s}
+.tlabel{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
+  color:var(--ink-soft);text-align:center;margin-top:3px}
+.tstate{position:absolute;top:-19px;left:50%;transform:translateX(-50%);
+  font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  white-space:nowrap;padding:1px 6px;border:1px solid;background:var(--paper);opacity:0;transition:opacity .2s}
+.tbox.latent{border-style:dashed;background:transparent}
+.tbox.latent .tcell{color:var(--faint);border-style:dashed;background:transparent}
+.tbox.latent .tlabel{color:var(--faint)}
+.tbox.split{border-color:var(--ink);border-style:dashed}
+.tbox.split .tcell{color:var(--ink-soft)}
+.tbox.split .tstate{opacity:1;color:var(--ink);border-color:var(--ink)}
+.tbox.merge{border-color:var(--stamp);background:rgba(190,58,29,.08);box-shadow:0 0 0 3px rgba(190,58,29,.09)}
+.tbox.merge .tstate{opacity:1;color:var(--stamp);border-color:var(--stamp)}
+.tbox.sorted{border-color:var(--seal)}
+.tbox.sorted .tcell{border-color:var(--seal);color:var(--seal)}
+.tbox.used{opacity:.5}
+.tcell.empty{color:var(--faint);border-style:dashed;background:#F7F9F4}
+.tcell.fresh{animation:land .34s cubic-bezier(.2,.9,.3,1.4)}
+.tcell.spent{background:#EDF0E8;color:#B9C4B4;border-color:#DCE3D6;text-decoration:line-through}
+.tcell.readL{background:var(--stamp);color:#fff;border-color:var(--stamp);transform:translateY(-3px)}
+.tcell.readR{background:var(--plot);color:#fff;border-color:var(--plot);transform:translateY(-3px)}
+@keyframes land{
+  0%{transform:translateY(-22px) scale(.8);opacity:0}
+  60%{transform:translateY(2px) scale(1.05);opacity:1}
+  100%{transform:none}
+}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-soft)}
+.key{display:inline-flex;align-items:center;gap:6px}
+.swatch{width:13px;height:13px;border:1px solid var(--faint);background:#fff;display:inline-block}
+.swatch.split{border:1px dashed var(--ink)}
+.swatch.merge{border-color:var(--stamp);background:rgba(190,58,29,.14)}
+.swatch.sorted{border-color:var(--seal)}
+
+/* ---------- merge bench ---------- */
+.bench-empty{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-soft);
+  border:1px dashed var(--rule);padding:26px 16px;text-align:center;line-height:1.7}
+.tape{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.tape-label{flex:0 0 78px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;text-align:right;line-height:1.3}
+.tape-label.l{color:var(--stamp)}
+.tape-label.r{color:var(--plot)}
+.tape-cells{display:flex;gap:var(--gap);flex-wrap:wrap;align-items:center}
+.verdict{margin:10px 0 12px 90px;display:inline-flex;align-items:center;gap:10px;
+  border:1px solid var(--ink);background:#fff;padding:7px 12px;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.verdict .op{font-weight:600;font-size:15px}
+.verdict .arrow{color:var(--ink-soft)}
+.verdict.takeL{border-color:var(--stamp);color:var(--stamp)}
+.verdict.takeR{border-color:var(--plot);color:var(--plot)}
+.feed{margin:2px 0 8px 90px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft)}
+.out{display:flex;align-items:center;gap:12px;margin-top:8px;border-top:1px solid var(--rule);padding-top:12px}
+.slot{width:var(--cw);height:var(--cw);border:1px dashed var(--rule);background:#F7F9F4;
+  display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono",monospace;font-size:clamp(11px,2.4vw,15px);color:#C3CDBE}
+.slot.filled{border:1px solid var(--ink);background:var(--ink);color:var(--paper);font-weight:500}
+.slot.landed{animation:land .34s cubic-bezier(.2,.9,.3,1.4)}
+
+/* ---------- commentary ---------- */
+.narr{font-family:"IBM Plex Mono",monospace;font-size:14px;line-height:1.6;
+  border-left:4px solid var(--stamp);padding:6px 0 6px 12px;margin:0 0 14px;min-height:2.6em}
+.log{max-height:190px;overflow-y:auto;border:1px solid var(--rule);background:#fff;padding:8px 10px}
+.log ul{margin:0;padding:0}
+.log li{font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.7;
+  color:var(--ink-soft);list-style:none;display:flex;gap:10px}
+.log li .n{color:#B9C4B4;flex:0 0 32px;text-align:right}
+.log li:last-child{color:var(--ink)}
+
+footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);
+  border-top:1px solid var(--rule);padding-top:14px;line-height:1.7}
+
+@media (max-width:620px){
+  .tape-label{flex-basis:52px;font-size:9px}
+  .verdict,.feed{margin-left:0}
+  .masthead p.note{text-align:left}
+  .tkids{gap:10px;padding-top:28px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .cell.head,.tcell.readL,.tcell.readR{transform:none}
+  ::view-transition-old(root),::view-transition-new(root){animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Divide · Compare · Merge</p>
+      <h1>Merge&nbsp;Sort</h1>
+    </div>
+    <p class="note">Written down by von Neumann in 1945 to merge sorted runs of punched tape. Every split and every comparison is printed as it happens.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Set the array</h2><span class="sub">2 – 16 numbers</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld">
+          <span>Numbers, separated by commas</span>
+          <input type="text" id="input" value="38, 27, 43, 3, 9, 82, 10" autocomplete="off" spellcheck="false">
+        </label>
+        <button id="load">Use this array</button>
+        <button id="rand">Random</button>
+      </div>
+      <p class="hint" id="hint">Press Play to watch the sort, or step through one comparison at a time.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">◀ Back</button>
+        <button id="fwd">Step ▶</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats">
+        <span>Comparisons<b id="sCmp">0</b></span>
+        <span>Writes<b id="sWrt">0</b></span>
+        <span>Phase<b id="sPhase">ready</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Recursion tree</h2><span class="sub">split going down · merge coming up</span></div>
+    <div class="panel-body">
+      <div class="scroller" id="treeScroll">
+        <div class="treewrap" id="treewrap">
+          <svg id="links"></svg>
+          <div id="tree"></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="key"><i class="swatch"></i> not reached yet</span>
+        <span class="key"><i class="swatch split"></i> divided, waiting on its halves</span>
+        <span class="key"><i class="swatch merge"></i> merging now</span>
+        <span class="key"><i class="swatch sorted"></i> sorted run</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Merge bench</h2><span class="sub">two runs → one run</span></div>
+    <div class="panel-body"><div id="bench"></div></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Load an array to begin.</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Going down the tree, merge sort only cuts — no comparing happens there. All the work is on the way
+    back up, where two already-sorted runs are zipped into one. Taking the left value on a tie is what
+    keeps the sort stable: equal values never swap places.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var S={frames:[],cur:0,playing:false,timer:null,spec:null,els:{},links:[]};
+  function $(id){return document.getElementById(id);}
+  function div(c){var d=document.createElement("div");d.className=c;return d;}
+  function key(lo,hi){return lo+"-"+hi;}
+
+  /* ---------------- frame generation ---------------- */
+  function build(input){
+    var a=input.slice(),frames=[],node={},cmp=0,wrt=0;
+
+    function snapNodes(){
+      var o={},k;
+      for(k in node) o[k]={state:node[k].state,vals:node[k].vals.slice()};
+      return o;
+    }
+    function push(o){
+      frames.push({nodes:snapNodes(),active:o.active||null,heads:o.heads||null,
+        fresh:(o.fresh===undefined?null:o.fresh),bench:o.bench||null,
+        phase:o.phase,narr:o.narr,cmp:cmp,wrt:wrt});
+    }
+
+    node[key(0,a.length-1)]={state:"pending",vals:a.slice()};
+    push({phase:"start",active:key(0,a.length-1),
+      narr:"The whole array is one unsorted run. Merge sort cuts it in half, then cuts the halves, until every piece holds a single number — then it merges the pieces back together in order."});
+
+    function msort(lo,hi){
+      var id=key(lo,hi);
+      if(lo===hi){
+        node[id].state="sorted";
+        push({phase:"leaf",active:id,
+          narr:"Index "+lo+" holds "+a[lo]+" by itself. One number is already a sorted run, so this branch stops here."});
+        return;
+      }
+      var mid=Math.floor((lo+hi)/2);
+      node[id].state="split";
+      node[key(lo,mid)]={state:"pending",vals:a.slice(lo,mid+1)};
+      node[key(mid+1,hi)]={state:"pending",vals:a.slice(mid+1,hi+1)};
+      push({phase:"divide",active:id,
+        narr:"Split "+lo+"–"+hi+" at "+mid+": left half "+lo+"–"+mid+" gets ["+a.slice(lo,mid+1).join(", ")+
+             "], right half "+(mid+1)+"–"+hi+" gets ["+a.slice(mid+1,hi+1).join(", ")+"]. No comparing yet — this is only cutting."});
+      msort(lo,mid);
+      msort(mid+1,hi);
+      merge(lo,mid,hi);
+    }
+
+    function merge(lo,mid,hi){
+      var id=key(lo,hi),lid=key(lo,mid),rid=key(mid+1,hi);
+      var L=node[lid].vals.slice(),R=node[rid].vals.slice();
+      var i=0,j=0,out=[],n=hi-lo+1,p;
+      var blank=[];for(p=0;p<n;p++)blank.push(null);
+
+      function bench(extra){
+        var b={L:L,R:R,i:i,j:j,out:out.slice(),total:n,verdict:null,landed:false};
+        for(var q in extra) b[q]=extra[q];
+        return b;
+      }
+      function heads(){return {lid:lid,li:i,rid:rid,rj:j};}
+
+      node[id].state="merge";
+      node[id].vals=blank.slice();
+      push({phase:"merge",active:id,heads:heads(),bench:bench({}),
+        narr:"Both halves of "+lo+"–"+hi+" are sorted now: ["+L.join(", ")+"] and ["+R.join(", ")+
+             "]. Empty the parent and refill it by repeatedly taking the smaller of the two front values."});
+
+      while(i<L.length&&j<R.length){
+        cmp++;
+        var takeL=L[i]<=R[j];
+        var sign=L[i]<R[j]?"<":(L[i]>R[j]?">":"=");
+        push({phase:"compare",active:id,heads:heads(),
+          bench:bench({verdict:{l:L[i],r:R[j],sign:sign,takeL:takeL}}),
+          narr:"Compare the front of each half: "+L[i]+" "+sign+" "+R[j]+". "+
+               (sign==="=" ? "Equal, so take the left one — that is what keeps the sort stable."
+                           : "The "+(takeL?"left":"right")+" value is smaller, so it goes out next.")});
+        var v;
+        if(takeL){v=L[i];i++;}else{v=R[j];j++;}
+        out.push(v);
+        node[id].vals[out.length-1]=v;
+        a[lo+out.length-1]=v;wrt++;
+        push({phase:"take",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),
+          narr:"Take "+v+" from the "+(takeL?"left":"right")+" half into slot "+(out.length)+" of "+n+
+               ". "+(n-out.length===0?"That fills the run.":(n-out.length)+" slot"+((n-out.length)===1?"":"s")+" still empty.")});
+      }
+      while(i<L.length){
+        out.push(L[i]);node[id].vals[out.length-1]=L[i];a[lo+out.length-1]=L[i];i++;wrt++;
+        push({phase:"drain",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),
+          narr:"The right half is used up, so nothing is left to compare against. Copy "+out[out.length-1]+" straight down from the left half."});
+      }
+      while(j<R.length){
+        out.push(R[j]);node[id].vals[out.length-1]=R[j];a[lo+out.length-1]=R[j];j++;wrt++;
+        push({phase:"drain",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),
+          narr:"The left half is used up, so nothing is left to compare against. Copy "+out[out.length-1]+" straight down from the right half."});
+      }
+
+      node[id].state="sorted";
+      node[lid].state="used";node[rid].state="used";
+      push({phase:"done-seg",active:id,bench:bench({}),
+        narr:"Indices "+lo+"–"+hi+" are now a single sorted run: ["+out.join(", ")+"]. It travels back up as one half of the next merge."});
+    }
+
+    msort(0,a.length-1);
+    push({phase:"done",active:key(0,a.length-1),
+      narr:"Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+wrt+" writes for "+a.length+" numbers."});
+    return frames;
+  }
+
+  /* ---------------- tree structure + DOM (built once per array) ---------------- */
+  function spec(lo,hi){
+    var t={id:key(lo,hi),lo:lo,hi:hi,kids:null};
+    if(lo<hi){var m=Math.floor((lo+hi)/2);t.kids=[spec(lo,m),spec(m+1,hi)];}
+    return t;
+  }
+  function buildTree(sp,parent,size){
+    var wrap=div("tnode");
+    var box=div("tbox latent");
+    var st=div("tstate");st.textContent="dividing";box.appendChild(st);
+    var cells=div("tcells");
+    var list=[],q;
+    for(q=sp.lo;q<=sp.hi;q++){
+      var c=div("tcell");c.textContent="·";cells.appendChild(c);list.push(c);
+    }
+    box.appendChild(cells);
+    var lab=div("tlabel");
+    lab.textContent=(sp.lo===sp.hi)?("i"+sp.lo):(sp.lo+"–"+sp.hi);
+    box.appendChild(lab);
+    wrap.appendChild(box);
+    S.els[sp.id]={box:box,cells:list,state:st};
+    if(sp.kids){
+      var kids=div("tkids");
+      buildTree(sp.kids[0],kids);buildTree(sp.kids[1],kids);
+      wrap.appendChild(kids);
+      S.links.push({p:sp.id,c:sp.kids[0].id});
+      S.links.push({p:sp.id,c:sp.kids[1].id});
+    }
+    parent.appendChild(wrap);
+  }
+  function drawLinks(){
+    var svg=$("links"),wrapEl=$("treewrap");
+    if(!wrapEl||!S.links.length)return;
+    var base=wrapEl.getBoundingClientRect();
+    svg.setAttribute("viewBox","0 0 "+wrapEl.offsetWidth+" "+wrapEl.offsetHeight);
+    svg.setAttribute("width",wrapEl.offsetWidth);
+    svg.setAttribute("height",wrapEl.offsetHeight);
+    var out="";
+    for(var q=0;q<S.links.length;q++){
+      var L=S.links[q];
+      var pb=S.els[L.p].box.getBoundingClientRect(),cb=S.els[L.c].box.getBoundingClientRect();
+      var x1=pb.left+pb.width/2-base.left,y1=pb.bottom-base.top;
+      var x2=cb.left+cb.width/2-base.left,y2=cb.top-base.top;
+      var my=y1+(y2-y1)/2;
+      out+='<path data-p="'+L.p+'" data-c="'+L.c+'" d="M'+x1+' '+y1+' V'+my+' H'+x2+' V'+y2+'"></path>';
+    }
+    svg.innerHTML=out;
+    paintLinks();
+  }
+  function paintLinks(){
+    var f=S.frames[S.cur];if(!f)return;
+    var paths=$("links").querySelectorAll("path");
+    for(var q=0;q<paths.length;q++){
+      var p=paths[q],pid=p.getAttribute("data-p"),nd=f.nodes[pid];
+      p.setAttribute("class",
+        !nd?"":(nd.state==="merge"?"live":(nd.state==="sorted"||nd.state==="used"?"done":"")));
+    }
+  }
+
+  /* ---------------- rendering ---------------- */
+  function render(){
+    var f=S.frames[S.cur];if(!f)return;
+    var id,el,nd,q;
+
+    for(id in S.els){
+      el=S.els[id];nd=f.nodes[id];
+      if(!nd){
+        el.box.className="tbox latent";
+        for(q=0;q<el.cells.length;q++){el.cells[q].className="tcell";el.cells[q].textContent="·";}
+        continue;
+      }
+      el.box.className="tbox "+nd.state;
+      el.state.textContent = nd.state==="merge" ? "merging" : "dividing";
+      for(q=0;q<el.cells.length;q++){
+        var c=el.cells[q],v=nd.vals[q];
+        var cls="tcell";
+        if(v===null||v===undefined){cls+=" empty";c.textContent="·";}
+        else c.textContent=v;
+        if(f.heads){
+          if(id===f.heads.lid){ if(q<f.heads.li)cls+=" spent"; else if(q===f.heads.li)cls+=" readL"; }
+          if(id===f.heads.rid){ if(q<f.heads.rj)cls+=" spent"; else if(q===f.heads.rj)cls+=" readR"; }
+        }
+        if(id===f.active&&f.fresh===q)cls+=" fresh";
+        if(c.className!==cls){c.className=cls;}
+      }
+    }
+    paintLinks();
+    if(f.active&&S.els[f.active])keepInView(S.els[f.active].box);
+
+    renderBench(f);
+    $("narr").textContent=f.narr;
+    $("sCmp").textContent=f.cmp;
+    $("sWrt").textContent=f.wrt;
+    $("sPhase").textContent=f.phase.replace("-"," ");
+    $("scrub").value=S.cur;
+    $("scrubLbl").textContent=S.cur+" / "+(S.frames.length-1);
+
+    var ul=$("log").firstElementChild;
+    ul.innerHTML="";
+    for(q=Math.max(0,S.cur-39);q<=S.cur;q++){
+      var li=document.createElement("li");
+      li.innerHTML='<span class="n">'+q+'</span><span></span>';
+      li.lastChild.textContent=S.frames[q].narr;
+      ul.appendChild(li);
+    }
+    $("log").scrollTop=$("log").scrollHeight;
+  }
+
+  function keepInView(box){
+    var sc=$("treeScroll"),a=sc.getBoundingClientRect(),b=box.getBoundingClientRect();
+    if(b.left<a.left+8) sc.scrollLeft-=(a.left+8-b.left);
+    else if(b.right>a.right-8) sc.scrollLeft+=(b.right-a.right+8);
+  }
+
+  function cell(v,cls){
+    var d=div("cell"+(cls?" "+cls:""));d.textContent=v;return d;
+  }
+  function tape(label,side,vals,ptr,colour){
+    var w=div("tape"),l=div("tape-label "+side);
+    l.textContent=label;w.appendChild(l);
+    var c=div("tape-cells");
+    for(var i=0;i<vals.length;i++){
+      c.appendChild(cell(vals[i], i<ptr?"spent":(i===ptr?colour+" head":colour)));
+    }
+    if(ptr>=vals.length){var t=div("feed");t.style.margin="0 0 0 4px";t.textContent="empty";c.appendChild(t);}
+    w.appendChild(c);
+    return w;
+  }
+  function renderBench(f){
+    var b=$("bench");b.innerHTML="";
+    if(!f.bench){
+      var e=div("bench-empty");
+      e.textContent=f.phase==="done"?"Nothing left to merge. The array is sorted."
+        :"No merge running — the tree is still being cut into smaller pieces.";
+      b.appendChild(e);return;
+    }
+    var bn=f.bench;
+    b.appendChild(tape("Left half","l",bn.L,bn.i,"left"));
+    if(bn.verdict&&f.phase==="compare"){
+      var v=div("verdict "+(bn.verdict.takeL?"takeL":"takeR"));
+      var op=document.createElement("span");op.className="op";
+      op.textContent=bn.verdict.l+" "+bn.verdict.sign+" "+bn.verdict.r;
+      var ar=document.createElement("span");ar.className="arrow";
+      ar.textContent="→ take from the "+(bn.verdict.takeL?"left":"right")+" half"+(bn.verdict.sign==="="?" (tie keeps left first)":"");
+      v.appendChild(op);v.appendChild(ar);b.appendChild(v);
+    } else {
+      var fd=div("feed");
+      fd.textContent=f.phase==="drain"?"One half is empty — the rest copies straight across."
+        :(f.phase==="done-seg"?"Both halves are used up. This run is finished."
+          :"Read heads sit at the front of each half.");
+      b.appendChild(fd);
+    }
+    b.appendChild(tape("Right half","r",bn.R,bn.j,"right"));
+    var o=div("out"),ol=div("tape-label");ol.textContent="Merged";o.appendChild(ol);
+    var oc=div("tape-cells");
+    for(var i=0;i<bn.total;i++){
+      var s=div(i<bn.out.length?("slot filled"+(bn.landed&&i===bn.out.length-1?" landed":"")):"slot");
+      s.textContent=i<bn.out.length?bn.out[i]:"·";
+      oc.appendChild(s);
+    }
+    o.appendChild(oc);b.appendChild(o);
+  }
+
+  /* ---------------- playback ---------------- */
+  function stop(){S.playing=false;if(S.timer){clearInterval(S.timer);S.timer=null;}$("play").textContent="Play";}
+  function play(){if(S.cur>=S.frames.length-1)S.cur=0;S.playing=true;$("play").textContent="Pause";tick();}
+  function tick(){
+    if(S.timer)clearInterval(S.timer);
+    S.timer=setInterval(function(){
+      if(S.cur>=S.frames.length-1){stop();return;}
+      S.cur++;render();
+    },Number($("speed").value));
+  }
+
+  function load(){
+    var raw=$("input").value.split(/[\s,;]+/).filter(function(x){return x.length;});
+    var nums=raw.map(Number).filter(function(x){return isFinite(x);});
+    if(nums.length<2){
+      $("hint").className="hint bad";
+      $("hint").textContent="Enter at least 2 numbers, separated by commas.";
+      return;
+    }
+    if(nums.length>16){
+      nums=nums.slice(0,16);
+      $("hint").className="hint";
+      $("hint").textContent="Using the first 16 numbers so the tree stays readable.";
+    } else {
+      $("hint").className="hint";
+      $("hint").textContent="Loaded "+nums.length+" numbers. Press Play, or step through one comparison at a time.";
+    }
+    stop();
+    S.frames=build(nums);
+    S.cur=0;
+    S.spec=spec(0,nums.length-1);
+    S.els={};S.links=[];
+    var host=$("tree");host.innerHTML="";
+    buildTree(S.spec,host);
+    $("scrub").max=S.frames.length-1;
+    render();
+    drawLinks();
+  }
+
+  $("load").addEventListener("click",load);
+  $("input").addEventListener("keydown",function(e){if(e.key==="Enter")load();});
+  $("rand").addEventListener("click",function(){
+    var n=6+Math.floor(Math.random()*5),out=[];
+    for(var i=0;i<n;i++)out.push(1+Math.floor(Math.random()*99));
+    $("input").value=out.join(", ");load();
+  });
+  $("play").addEventListener("click",function(){S.playing?stop():play();});
+  $("fwd").addEventListener("click",function(){stop();if(S.cur<S.frames.length-1){S.cur++;render();}});
+  $("back").addEventListener("click",function(){stop();if(S.cur>0){S.cur--;render();}});
+  $("reset").addEventListener("click",function(){stop();S.cur=0;render();});
+  $("speed").addEventListener("input",function(){if(S.playing)tick();});
+  $("scrub").addEventListener("input",function(){stop();S.cur=Number(this.value);render();});
+  document.addEventListener("keydown",function(e){
+    if(e.target.tagName==="INPUT")return;
+    if(e.key==="ArrowRight"){e.preventDefault();$("fwd").click();}
+    if(e.key==="ArrowLeft"){e.preventDefault();$("back").click();}
+    if(e.key===" "){e.preventDefault();$("play").click();}
+  });
+  var rt;
+  window.addEventListener("resize",function(){clearTimeout(rt);rt=setTimeout(drawLinks,120);});
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(drawLinks);
+  window.addEventListener("load",drawLinks);
+
+  (function stickyMasthead(){
+    var m=document.querySelector(".masthead");
+    if(!m) return;
+    var ticking=false;
+    function update(){
+      ticking=false;
+      if(window.scrollY>8) m.classList.add("scrolled");
+      else m.classList.remove("scrolled");
+    }
+    window.addEventListener("scroll",function(){
+      if(!ticking){ window.requestAnimationFrame(update); ticking=true; }
+    },{passive:true});
+    update();
+  })();
+
+  load();
+})();
+</script>
+</body>
+</html>

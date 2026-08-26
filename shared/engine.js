@@ -21,10 +21,21 @@
        renderExtra: function(frame, ctx){ ... } // optional page-specific visual
      });
 
-   A frame is a plain object: { array, roles, narr, phase, <statKeys>..., extra }
+   A frame is a plain object: { array, roles, narr, phase, code, codeLine, <statKeys>... }
    - array: current array state (values, or null for an empty slot)
    - roles: array parallel to `array`, each entry a space-separated class
             string (e.g. "left head") or "" / null / undefined
+   - code: optional array of C source lines (a shared `var CODE=[...]` the page
+           defines once and every frame references — not copied per frame)
+   - codeLine: optional index into `code`, or [start,end] to highlight a block.
+           Renders into #codeHost if the page has one; omit on frames where no
+           particular line applies (e.g. a "start"/"done" summary frame) and
+           the panel just keeps showing the code with nothing highlighted.
+   - moves: optional [{from,to}, ...] — slots that exchanged values this frame.
+           The array/roles above are already the correct end state; `moves`
+           just tells the renderer which cells to visually slide into that
+           state (FLIP technique) instead of popping straight there. Omit on
+           frames with no movement (comparisons, summaries).
    ========================================================================== */
 (function(window){
   "use strict";
@@ -32,11 +43,12 @@
   function $(id){ return document.getElementById(id); }
   function div(cls){ var d=document.createElement("div"); d.className=cls; return d; }
 
-  var S = { frames:[], cur:0, playing:false, timer:null, cfg:null, statEls:{} };
+  var S = { frames:[], cur:0, playing:false, timer:null, cfg:null, statEls:{}, codeArr:null, codeEls:null };
 
-  function renderArray(host, arr, roles){
+  function renderArray(host, arr, roles, moves){
     if(!host) return;
     host.innerHTML="";
+    var cells=[];
     for(var i=0;i<arr.length;i++){
       var item=div("array-item");
       var cls="cell"+(roles && roles[i] ? " "+roles[i] : "");
@@ -47,6 +59,61 @@
       var idx=div("array-idx"); idx.textContent=i;
       item.appendChild(idx);
       host.appendChild(item);
+      cells.push(c);
+    }
+    // FLIP: `moves` names which slots swapped values this frame. The DOM above
+    // is already built in its final (correct) layout; snap each moved cell back
+    // to where it visually was, then release it next frame so its existing
+    // `transform` transition animates it sliding into its real resting slot.
+    if(moves && moves.length && cells.length>1){
+      var step=cells[1].parentNode.offsetLeft-cells[0].parentNode.offsetLeft;
+      var targets=[];
+      moves.forEach(function(m){
+        var el=cells[m.to];
+        if(!el || m.from===m.to) return;
+        el.style.transition="none";
+        el.style.transform="translateX("+((m.from-m.to)*step)+"px)";
+        targets.push(el);
+      });
+      if(targets.length){
+        host.offsetHeight; // flush layout so the browser registers the start position
+        requestAnimationFrame(function(){
+          targets.forEach(function(el){ el.style.transition=""; el.style.transform=""; });
+        });
+      }
+    }
+  }
+
+  function codeLineSet(codeLine){
+    if(codeLine===undefined || codeLine===null) return [];
+    if(typeof codeLine==="number") return [codeLine];
+    var out=[]; for(var i=codeLine[0]; i<=codeLine[1]; i++) out.push(i);
+    return out;
+  }
+
+  function renderCode(host, code, codeLine){
+    if(!host) return;
+    if(code && code!==S.codeArr){
+      host.innerHTML="";
+      S.codeArr=code;
+      S.codeEls=[];
+      for(var i=0;i<code.length;i++){
+        var line=div("code-line");
+        line.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
+        line.lastChild.textContent=code[i];
+        host.appendChild(line);
+        S.codeEls.push(line);
+      }
+    }
+    if(!S.codeEls) return;
+    var active=codeLineSet(codeLine);
+    for(var j=0;j<S.codeEls.length;j++){
+      S.codeEls[j].className="code-line"+(active.indexOf(j)>=0?" active":"");
+    }
+    if(active.length && S.codeEls[active[0]]){
+      var hostR=host.getBoundingClientRect(), lineR=S.codeEls[active[0]].getBoundingClientRect();
+      if(lineR.top<hostR.top) host.scrollTop+=(lineR.top-hostR.top);
+      else if(lineR.bottom>hostR.bottom) host.scrollTop+=(lineR.bottom-hostR.bottom);
     }
   }
 
@@ -69,9 +136,10 @@
 
   function render(){
     var f=S.frames[S.cur]; if(!f) return;
-    renderArray($("arrayHost"), f.array, f.roles);
+    renderArray($("arrayHost"), f.array, f.roles, f.moves);
 
     var narr=$("narr"); if(narr) narr.textContent=f.narr||"";
+    renderCode($("codeHost"), f.code, f.codeLine);
 
     for(var key in S.statEls){
       var val = key==="phase" ? String(f.phase||"").replace(/-/g," ") : (f[key]===undefined?0:f[key]);

@@ -42,72 +42,88 @@
 <div class="wrap">
 
   <section class="panel">
+    <div class="panel-head"><h2>Foundations</h2><span class="sub">1 concept</span></div>
+    <div class="panel-body">
+      <p class="intro">Start here if any badge on this site — O(1), O(log n), O(n&sup2;) — doesn't immediately make sense.</p>
+      <div class="algo-grid">
+
+        <a class="algo-card" href="foundations/big-o/big-o.html">
+          <h3>Big-O Notation</h3>
+          <p>How to read the complexity badges on every page on this site.</p>
+          <div class="badges"><span>Prerequisite</span></div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Data Structures</h2><span class="sub">11 structures</span></div>
     <div class="panel-body">
       <p class="intro">Each one gets notes, a looping demo you can just watch, and an interactive visualizer with Insert/Delete/Search-style buttons that animate exactly what happens underneath.</p>
       <div class="algo-grid">
 
-        <a class="algo-card" href="stack.html">
+        <a class="algo-card" href="data-structures/stack/stack.html">
           <h3>Stack</h3>
           <p>Push and pop from one end only — Last In, First Out.</p>
           <div class="badges"><span>Push/Pop <b>O(1)</b></span><span>Search O(n)</span></div>
         </a>
 
-        <a class="algo-card" href="queue.html">
+        <a class="algo-card" href="data-structures/queue/queue.html">
           <h3>Queue</h3>
           <p>Enqueue at the rear, dequeue from the front — First In, First Out.</p>
           <div class="badges"><span>Enqueue/Dequeue <b>O(1)</b></span></div>
         </a>
 
-        <a class="algo-card" href="circular-queue.html">
+        <a class="algo-card" href="data-structures/circular-queue/circular-queue.html">
           <h3>Circular Queue</h3>
           <p>A fixed-size buffer where front and rear wrap back to index 0.</p>
           <div class="badges"><span>Enqueue/Dequeue <b>O(1)</b></span><span>Fixed capacity</span></div>
         </a>
 
-        <a class="algo-card" href="deque.html">
+        <a class="algo-card" href="data-structures/deque/deque.html">
           <h3>Deque</h3>
           <p>Insert and delete at either end — front or rear, always O(1).</p>
           <div class="badges"><span>Both ends <b>O(1)</b></span></div>
         </a>
 
-        <a class="algo-card" href="linked-list.html">
+        <a class="algo-card" href="data-structures/linked-list/linked-list.html">
           <h3>Singly Linked List</h3>
           <p>A chain of nodes, each holding a value and a pointer to the next.</p>
           <div class="badges"><span>Insert Head <b>O(1)</b></span><span>Search O(n)</span></div>
         </a>
 
-        <a class="algo-card" href="doubly-linked-list.html">
+        <a class="algo-card" href="data-structures/doubly-linked-list/doubly-linked-list.html">
           <h3>Doubly Linked List</h3>
           <p>Every node points both ways, and a tail pointer is kept too.</p>
           <div class="badges"><span>Head/Tail <b>O(1)</b></span><span>Search O(n)</span></div>
         </a>
 
-        <a class="algo-card" href="binary-search-tree.html">
+        <a class="algo-card" href="data-structures/binary-search-tree/binary-search-tree.html">
           <h3>Binary Search Tree</h3>
           <p>Left is always smaller, right is always larger, at every node.</p>
           <div class="badges"><span>Avg <b>O(log n)</b></span><span>Worst O(n)</span></div>
         </a>
 
-        <a class="algo-card" href="avl-tree.html">
+        <a class="algo-card" href="data-structures/avl-tree/avl-tree.html">
           <h3>AVL Tree</h3>
           <p>A self-balancing BST that rotates after every change — never O(n).</p>
           <div class="badges"><span>Guaranteed <b>O(log n)</b></span></div>
         </a>
 
-        <a class="algo-card" href="priority-queue.html">
+        <a class="algo-card" href="data-structures/priority-queue/priority-queue.html">
           <h3>Priority Queue</h3>
           <p>A binary heap — the highest-priority value always sits at the root.</p>
           <div class="badges"><span>Insert/Extract <b>O(log n)</b></span><span>Peek O(1)</span></div>
         </a>
 
-        <a class="algo-card" href="hash-table.html">
+        <a class="algo-card" href="data-structures/hash-table/hash-table.html">
           <h3>Hash Table</h3>
           <p>Hash a key straight to a bucket index; collisions chain together.</p>
           <div class="badges"><span>Avg <b>O(1)</b></span><span>Worst O(n)</span></div>
         </a>
 
-        <a class="algo-card" href="graph.html">
+        <a class="algo-card" href="data-structures/graph/graph.html">
           <h3>Graph</h3>
           <p>Vertices and edges, explored with breadth-first or depth-first search.</p>
           <div class="badges"><span>Traverse <b>O(V + E)</b></span></div>
@@ -123,49 +139,49 @@
       <p class="intro">Each comparison, swap, and write happens on screen, in order, with a running log underneath — press Play or step through by hand.</p>
       <div class="algo-grid">
 
-        <a class="algo-card" href="bubble-sort-visualizer.html">
+        <a class="algo-card" href="sorting/bubble-sort/bubble-sort-visualizer.html">
           <h3>Bubble Sort</h3>
           <p>Swap out-of-order neighbours, over and over, until a full pass makes no swaps.</p>
           <div class="badges"><span>Avg <b>O(n&sup2;)</b></span><span>Space <b>O(1)</b></span><span><b>Stable</b></span></div>
         </a>
 
-        <a class="algo-card" href="selection-sort-visualizer.html">
+        <a class="algo-card" href="sorting/selection-sort/selection-sort-visualizer.html">
           <h3>Selection Sort</h3>
           <p>Scan the unsorted remainder for its smallest value, then swap it to the front.</p>
           <div class="badges"><span>Avg <b>O(n&sup2;)</b></span><span>Space <b>O(1)</b></span><span><b>Not stable</b></span></div>
         </a>
 
-        <a class="algo-card" href="insertion-sort-visualizer.html">
+        <a class="algo-card" href="sorting/insertion-sort/insertion-sort-visualizer.html">
           <h3>Insertion Sort</h3>
           <p>Grow a sorted prefix one value at a time, walking each new value left into place.</p>
           <div class="badges"><span>Avg <b>O(n&sup2;)</b></span><span>Space <b>O(1)</b></span><span><b>Stable</b></span></div>
         </a>
 
-        <a class="algo-card" href="merge-sort-visualizer.html">
+        <a class="algo-card" href="sorting/merge-sort/merge-sort-visualizer.html">
           <h3>Merge Sort</h3>
           <p>Split the array in half recursively, then zip each pair of sorted halves back together.</p>
           <div class="badges"><span>Avg <b>O(n log n)</b></span><span>Space <b>O(n)</b></span><span><b>Stable</b></span></div>
         </a>
 
-        <a class="algo-card" href="quick-sort-visualizer.html">
+        <a class="algo-card" href="sorting/quick-sort/quick-sort-visualizer.html">
           <h3>Quick Sort</h3>
           <p>Pick a pivot, partition everything else around it, then recurse on each side.</p>
           <div class="badges"><span>Avg <b>O(n log n)</b></span><span>Space <b>O(log n)</b></span><span><b>Not stable</b></span></div>
         </a>
 
-        <a class="algo-card" href="heap-sort-visualizer.html">
+        <a class="algo-card" href="sorting/heap-sort/heap-sort-visualizer.html">
           <h3>Heap Sort</h3>
           <p>Arrange the array into a max-heap, then repeatedly pull the largest value from the root.</p>
           <div class="badges"><span>Avg <b>O(n log n)</b></span><span>Space <b>O(1)</b></span><span><b>Not stable</b></span></div>
         </a>
 
-        <a class="algo-card" href="shell-sort-visualizer.html">
+        <a class="algo-card" href="sorting/shell-sort/shell-sort-visualizer.html">
           <h3>Shell Sort</h3>
           <p>Insertion sort with far-apart comparisons first, shrinking the gap down to 1.</p>
           <div class="badges"><span>Avg <b>O(n&sup1;&middot;&sup3;&#8776;)</b></span><span>Space <b>O(1)</b></span><span><b>Not stable</b></span></div>
         </a>
 
-        <a class="algo-card" href="counting-sort-visualizer.html">
+        <a class="algo-card" href="sorting/counting-sort/counting-sort-visualizer.html">
           <h3>Counting Sort</h3>
           <p>Count each value's occurrences, accumulate positions, then place every value directly.</p>
           <div class="badges"><span>Avg <b>O(n + k)</b></span><span>Space <b>O(n + k)</b></span><span><b>Stable</b></span></div>
@@ -181,19 +197,19 @@
       <p class="intro">Give it an array and a target value, then watch how each strategy narrows down where that value could be.</p>
       <div class="algo-grid">
 
-        <a class="algo-card" href="linear-search-visualizer.html">
+        <a class="algo-card" href="searching/linear-search/linear-search-visualizer.html">
           <h3>Linear Search</h3>
           <p>Check every index in order until the target turns up. Needs no particular ordering.</p>
           <div class="badges"><span>Avg <b>O(n)</b></span><span>Space <b>O(1)</b></span><span>Any order</span></div>
         </a>
 
-        <a class="algo-card" href="binary-search-visualizer.html">
+        <a class="algo-card" href="searching/binary-search/binary-search-visualizer.html">
           <h3>Binary Search</h3>
           <p>Compare against the middle of the range and discard the half that can't contain it.</p>
           <div class="badges"><span>Avg <b>O(log n)</b></span><span>Space <b>O(1)</b></span><span>Needs sorted</span></div>
         </a>
 
-        <a class="algo-card" href="jump-search-visualizer.html">
+        <a class="algo-card" href="searching/jump-search/jump-search-visualizer.html">
           <h3>Jump Search</h3>
           <p>Leap forward in fixed-size blocks, then scan the one block the target must be in.</p>
           <div class="badges"><span>Avg <b>O(&radic;n)</b></span><span>Space <b>O(1)</b></span><span>Needs sorted</span></div>

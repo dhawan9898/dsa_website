@@ -12,40 +12,47 @@ A dependency-free static website: an illustrated field guide to data structures 
 - Verification is manual: open the changed page in a browser, load an input, and play/step/scrub through the frames.
 - Deployed via `.github/workflows/pages.yml` (GitHub Pages, no build step — the whole repo root is uploaded as-is on every push to `main`).
 
+## File layout
+
+Every topic lives in `<category>/<topic>/`, mirroring `index.html`'s own four sections: `data-structures/`, `sorting/`, `searching/`, `foundations/`. Files keep their original basenames inside (e.g. `data-structures/stack/stack.html` + `data-structures/stack/stack-visualizer.html`). `index.html`, `shared/`, `CLAUDE.md`, and `.github/` stay at the repo root. Every topic page sits at the same depth, so references are consistent: `shared/*` and `index.html` become `../../shared/*` / `../../index.html`; a link to another topic page is a relative path from there (e.g. `../linked-list/linked-list.html` from a `data-structures/` sibling); a notes↔visualizer link to its own pair stays a bare filename since the two share a folder.
+
 ## Architecture
 
 Everything is **frame-based playback**: page logic produces an array of plain-object frames (immutable snapshots), and a shared engine owns all playback (play/pause/step/back/reset, speed + scrub sliders, stats row, narration line, scrolling log, keyboard shortcuts ←/→/space). Pages never manipulate playback state themselves.
 
-There are three page types, wired to three shared files in `shared/`:
+There are four page types, wired to shared files in `shared/`:
 
 | Page type | Files | Engine |
 |---|---|---|
-| Algorithm visualizer (sorts, searches) | `bubble-sort-visualizer.html`, `binary-search-visualizer.html`, … | `shared/engine.js` → `Viz.init(cfg)` |
-| Data-structure visualizer | `stack-visualizer.html`, `avl-tree-visualizer.html`, … | `shared/ds-engine.js` → `VizDS.init(cfg)` + `shared/ds-render.js` |
-| Data-structure notes page | `stack.html`, `avl-tree.html`, … | `shared/ds-engine.js` → `VizDS.loopDemo(cfg)` + `shared/ds-render.js` |
+| Algorithm visualizer (sorts, searches) | `sorting/bubble-sort/bubble-sort-visualizer.html`, `searching/binary-search/binary-search-visualizer.html`, … | `shared/engine.js` → `Viz.init(cfg)` |
+| Data-structure visualizer | `data-structures/stack/stack-visualizer.html`, `data-structures/avl-tree/avl-tree-visualizer.html`, … | `shared/ds-engine.js` → `VizDS.init(cfg)` + `shared/ds-render.js` |
+| Data-structure notes page | `data-structures/stack/stack.html`, `data-structures/avl-tree/avl-tree.html`, … | `shared/ds-engine.js` → `VizDS.loopDemo(cfg)` + `shared/ds-render.js` |
+| Concept/foundation page | `foundations/big-o/big-o.html`, … | none required; optionally `VizDS.loopDemo(cfg)` with a fully custom `renderExtra` (no `DSRender` call needed — see big-o.html's growth-rate bars) |
 
-- **Algorithm pages** run once, start to finish: `build(array, target)` executes the whole algorithm up front and returns the complete frame list. The engine also owns input parsing, the random-array button, `needsTarget` (search target field), `sortRequired` (pre-sort input), and `validateValue` filtering. Frame shape: `{array, roles, narr, phase, <statKeys>}` — `roles` is parallel to `array`, holding space-separated cell class strings.
-- **Data-structure pages** persist: the structure lives across operations (Insert, then Delete, then Search each act on what the last op left behind). Each op's `run(state)` returns `{frames, state}` (or `{error}`); the engine appends the new frames to one ever-growing timeline and auto-plays into them. Scrubbing back revisits earlier operations — nothing is discarded — so `run` must **copy state, never mutate it** (see `items.slice()` in existing pages). Frame shape: `{struct, narr, phase, <statKeys>}` where `struct` is whatever the page's chosen `DSRender` function expects.
+- **Algorithm pages** run once, start to finish: `build(array, target)` executes the whole algorithm up front and returns the complete frame list. The engine also owns input parsing, the random-array button, `needsTarget` (search target field), `sortRequired` (pre-sort input), and `validateValue` filtering. Frame shape: `{array, roles, narr, phase, code, codeLine, moves, <statKeys>}` — `roles` is parallel to `array`, holding space-separated cell class strings. `moves` (optional, e.g. `[{from:j,to:j+1},{from:j+1,to:j}]`) names which slots exchanged values this frame; `array`/`roles` are already the correct end state, `moves` just tells `renderArray` which cells to visually slide into place (a scoped FLIP animation) instead of popping straight there — see bubble-sort-visualizer.html's swap frames.
+- **Data-structure pages** persist: the structure lives across operations (Insert, then Delete, then Search each act on what the last op left behind). Each op's `run(state)` returns `{frames, state}` (or `{error}`); the engine appends the new frames to one ever-growing timeline and auto-plays into them. Scrubbing back revisits earlier operations — nothing is discarded — so `run` must **copy state, never mutate it** (see `items.slice()` in existing pages). Frame shape: `{struct, narr, phase, code, codeLine, <statKeys>}` where `struct` is whatever the page's chosen `DSRender` function expects.
 - **Notes pages** pair with each DS visualizer (`<name>.html` ↔ `<name>-visualizer.html`): prose + complexity table (`.notes-table`), a non-interactive looping demo (`VizDS.loopDemo`), and a `.cta` link to the visualizer. Sorts/searches have no notes page, only the visualizer.
+- **Concept pages** teach a prerequisite (Big-O, pointers, recursion…) rather than an operation: masthead + notes panel(s) + an optional small illustrative demo, no insert/delete-style controls, no `.cta` (there's no visualizer to open). Cross-link to the DS/algorithm pages that depend on the concept; get their own `.algo-card` in index.html's "Foundations" section.
 - Every stats row automatically gets a `phase` entry; `statLabels` adds page-specific counters (comparisons, swaps, etc.) that frames carry as top-level keys.
+- **`code`/`codeLine`** (optional, any frame on any engine): `code` is a page-defined array of C source lines (e.g. `var PUSH_CODE=[...]`, referenced by variable, never copied per frame); `codeLine` is an index into it, or `[start,end]` to highlight a block. Renders into `#codeHost` as a line-numbered panel with the active line(s) highlighted — see the "The Code" panel on stack.html / stack-visualizer.html / bubble-sort-visualizer.html / linked-list.html / linked-list-visualizer.html. Omit on frames where no line applies (a pure "start"/"done" summary); the panel just keeps its last state. One focused function per operation (`void push(Stack *s, int val)`), not a whole file — and every frame that mutates the structure should carry narration + `codeLine` + the visual role change (e.g. `landed`) together, so the three reinforce the same moment instead of code being a bolted-on fourth layer.
 
 The header comments of `shared/engine.js`, `shared/ds-engine.js`, and `shared/ds-render.js` are the authoritative config/contract docs — read them before touching a page.
 
 Every page also loads `shared/motion.js`, a fourth shared file that is independent of the playback engines: it toggles a `.scrolled` class on the sticky masthead and fades/staggers `.panel`/`.algo-card` elements into view as they scroll into the viewport (see its header comment for the FOUC-safe approach). It's pure progressive enhancement — no page depends on it for correctness.
 
-**The one exception:** `merge-sort-visualizer.html` is fully self-contained (its own inline CSS and engine, no `shared/` references). It is the original page the shared theme and engine were extracted from. Don't refactor it to the shared files unless asked; conversely, don't copy it as a template for new pages — copy a page that already uses `shared/`. Its inline `<style>`/`<script>` mirror the motion conventions below by hand (sticky masthead listener, `--ease`, view-transitions) since it can't load `shared/motion.js` — keep the two in sync if you change one.
+**The one exception:** `sorting/merge-sort/merge-sort-visualizer.html` is fully self-contained (its own inline CSS and engine, no `shared/` references). It is the original page the shared theme and engine were extracted from. Don't refactor it to the shared files unless asked; conversely, don't copy it as a template for new pages — copy a page that already uses `shared/`. Its inline `<style>`/`<script>` mirror the motion conventions below by hand (sticky masthead listener, `--ease`, view-transitions) since it can't load `shared/motion.js` — keep the two in sync if you change one.
 
 ### DSRender renderers (`shared/ds-render.js`)
 
 Declarative full-redraw renderers (no DOM diffing — structures are small):
 - `slots(host, cells)` — fixed-slot row with pointer badges (TOP/FRONT/REAR/HEAD…): stack, queue, circular queue, deque, hash-table bucket row.
-- `sequence(host, struct)` — linked boxes with arrows (`dir:'h'|'v'`, `double`, `nullEnd`): linked lists, hash collision chains.
+- `sequence(host, struct)` — linked boxes with arrows (`dir:'h'|'v'`, `double`, `nullEnd`, `linkActive`, `linkLanded`): linked lists, hash collision chains. A node's own "just created" pop-in is just `role:"...landed"` (`.cell.landed` isn't scoped to arrays); `linkLanded[i]` is the arrow equivalent — the arrow *before* `nodes[i]` plays a one-shot "just formed" pop, for the moment a pointer gets wired up right after the node it belongs to appears (or a predecessor's arrow gets re-pointed). See linked-list-visualizer.html's insert/delete ops.
 - `tree(nodesHost, svgEl, root, opts)` — recursive boxes + SVG connectors: BST, AVL, binary heap.
 - `graph(nodesHost, svgEl, struct, opts)` — nodes on a circle + SVG edges.
 
 ### Engine ↔ page DOM contract
 
-The engines look up fixed element ids — pages just supply matching markup: `play`, `back`, `fwd`, `reset`, `speed`, `scrub`, `scrubLbl`, `statsHost`, `hint`, `narr`, `log`; algorithm pages additionally `input`, `load`, `rand`, `arrayHost`, and `target` when `needsTarget`. DS visualizers wire their operation buttons/fields through the `ops` config (`btn`, `enterOn`), and draw into page-specific hosts (e.g. `stackHost`, `treeNodes`/`treeLinks` inside `.treewrap`, `graphNodes`/`graphLinks` inside `.graphwrap`) via `renderExtra(frame, ctx)`.
+The engines look up fixed element ids — pages just supply matching markup: `play`, `back`, `fwd`, `reset`, `speed`, `scrub`, `scrubLbl`, `statsHost`, `hint`, `narr`, `log`; algorithm pages additionally `input`, `load`, `rand`, `arrayHost`, and `target` when `needsTarget`. DS visualizers wire their operation buttons/fields through the `ops` config (`btn`, `enterOn`), and draw into page-specific hosts (e.g. `stackHost`, `treeNodes`/`treeLinks` inside `.treewrap`, `graphNodes`/`graphLinks` inside `.graphwrap`) via `renderExtra(frame, ctx)`. `codeHost` is optional on any page (both engines, plus `loopDemo`) — add a `.code-panel` div with that id to get the C code panel; omit it and `code`/`codeLine` on frames are simply never rendered.
 
 ## Conventions
 
@@ -57,6 +64,8 @@ The engines look up fixed element ids — pages just supply matching markup: `pl
 
 ### Adding a topic
 
-- New sort/search: copy the nearest `*-visualizer.html`, rewrite `build()` and the legend/footer copy.
-- New data structure: create both `<name>.html` (notes + loop demo) and `<name>-visualizer.html`, cross-linked via masthead-nav and the notes page's `.cta`.
+- New sort/search: create `sorting/<name>/` or `searching/<name>/`, copy the nearest `*-visualizer.html` into it, rewrite `build()` and the legend/footer copy.
+- New data structure: create `data-structures/<name>/` with both `<name>.html` (notes + loop demo) and `<name>-visualizer.html`, cross-linked via masthead-nav and the notes page's `.cta`.
+- New concept page: create `foundations/<name>/`, copy `big-o.html` into it, rewrite the notes prose and (if one earns its place) the demo; no visualizer counterpart needed.
+- Whichever it is, copying an existing page into its new folder means every `shared/*`/`index.html`/cross-page reference in it needs its relative path re-derived for the new depth (see "File layout" above) — don't just copy the old page's hrefs verbatim.
 - Either way, add an `.algo-card` to the matching section of `index.html` and update that section's count in its `panel-head` `.sub` (e.g. "11 structures").

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Last In &middot; First Out</p>
+      <h1>Stack</h1>
+    </div>
+    <p class="note">A collection where you can only ever add to, or remove from, one end &mdash; the top.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A stack holds items in the order they arrived and only exposes one end for both adding and
+      removing: the <b>top</b>. That single rule — <b>Last In, First Out (LIFO)</b> — is the entire
+      definition. There's no reaching into the middle, and no peeking at the bottom.</p>
+      <p>Because every operation only ever touches the top element, a stack never needs to shift or search
+      anything: push and pop are both O(1), whether the stack holds 3 items or 3 million. Compare that to
+      inserting at the <em>front</em> of an array, which is O(n) because everything after it has to shift
+      over — a stack sidesteps that entirely by only ever touching one fixed end.</p>
+
+      <p><b>Implementation:</b> the visualizer below uses the simplest possible version — a fixed-size
+      array plus a single <code>top</code> index that points at the last occupied slot (<code>-1</code>
+      when empty). Push writes to <code>items[++top]</code>; pop reads <code>items[top--]</code>. No
+      pointers, no allocation, just one integer doing all the work. The trade-off is a hard capacity limit,
+      fixed when the array is created. A <a href="../linked-list/linked-list.html">linked-list</a>-backed stack removes
+      that limit — push and pop become "add/remove the head node" instead — at the cost of a pointer's
+      worth of memory per item and a heap allocation on every push.</p>
+
+      <p><b>When it breaks:</b> push past capacity is a <b>stack overflow</b> — the array-backed version
+      here simply refuses once full, but the term comes from the *real* call stack: every function call
+      your program makes pushes a frame onto it, and recursion with no base case overflows it for real,
+      crashing the program. Pop (or peek) on an empty stack is the mirror case, <b>underflow</b> — reading
+      a slot that was never written. Both are one-line guard checks (see the code panel below), and both
+      are exactly the kind of bug that only shows up once, at the edge, in production.</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Push</td><td>Add a value on top</td><td><b>O(1)</b></td></tr>
+        <tr><td>Pop</td><td>Remove and return the top value</td><td><b>O(1)</b></td></tr>
+        <tr><td>Peek / Top</td><td>Look at the top value without removing it</td><td><b>O(1)</b></td></tr>
+        <tr><td>Search</td><td>Find a value anywhere in the stack</td><td>O(n)</td></tr>
+      </table>
+
+      <p>Used constantly under the hood: every function call your program makes is pushed onto a <b>call
+      stack</b>, and returning from it is a pop — that's the mechanism behind recursion itself. Undo/redo
+      history, "back" buttons, matching brackets/parentheses, and depth-first search all lean on the same
+      LIFO idea: handle the most recent thing first, and let finished work fall away in the reverse order
+      it arrived.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; push, pop, push, pop</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row vert" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; push() / pop()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="stack-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself in the visualizer — push a few values, pop them back off, and watch which one
+    comes back first.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var INIT_CODE=[
+    "void initStack(Stack *s) {",
+    "  s->top = -1;   // -1 means empty",
+    "}"
+  ];
+  var PUSH_CODE=[
+    "void push(Stack *s, int val) {",
+    "  if (s->top == MAX - 1) return;   // full",
+    "  s->items[++s->top] = val;",
+    "}"
+  ];
+  var POP_CODE=[
+    "int pop(Stack *s) {",
+    "  if (s->top == -1) return -1;   // empty",
+    "  return s->items[s->top--];",
+    "}"
+  ];
+
+  function cellsFor(items, hi, hiRole){
+    return items.map(function(v,i){
+      return {
+        val:v,
+        role: i===hi ? hiRole : (i===items.length-1 ? "right" : ""),
+        ptr: i===items.length-1 ? "TOP" : ""
+      };
+    });
+  }
+  function frame(items, hi, hiRole, narr, code, codeLine){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr, code:code, codeLine:codeLine};
+  }
+
+  function scriptFrames(){
+    var items=[], frames=[];
+    function push(v){
+      frames.push(frame(items, undefined, "", "Push "+v+" onto the top.", PUSH_CODE, 1));
+      items.push(v);
+      frames.push(frame(items, items.length-1, "left head landed", v+" is on top.", PUSH_CODE, 2));
+    }
+    function pop(){
+      var top=items[items.length-1];
+      frames.push(frame(items, items.length-1, "left head", "Pop the top item, "+top+".", POP_CODE, 1));
+      items.pop();
+      frames.push(frame(items, undefined, "", top+" removed."+(items.length?" New top is "+items[items.length-1]+".":" Stack is empty."), POP_CODE, 2));
+    }
+    frames.push(frame(items, undefined, "", "Create the stack: an empty array plus one index, top, starting at -1.", INIT_CODE, 1));
+    push(4); push(7); push(2);
+    pop();
+    push(9);
+    pop(); pop(); pop();
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>
