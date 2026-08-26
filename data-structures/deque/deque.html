@@ -31,9 +31,18 @@
       supports inserting and deleting at <b>both</b> ends, each in O(1). Use only the rear for insertion and
       the front for removal and it behaves exactly like a queue; use only one end for both and it behaves
       exactly like a stack.</p>
-      <p>Real implementations back a deque with a doubly linked list, or a resizable circular buffer —
-      never a plain array, since inserting at the front of a plain array would mean shifting every other
-      element down.</p>
+      <p><b>Implementation:</b> the code panel below backs it with a doubly linked list — every node has
+      both a <code>next</code> and a <code>prev</code>, so unlike a plain <a href="../linked-list/linked-list.html">singly
+      linked list</a>, you can reach backward from any node too. That's what makes inserting or deleting at
+      the <em>rear</em> O(1): a singly-linked list would have to walk all the way to the end first to find
+      the node just before it. (The visualization above still shows the deque as a simple ordered row for
+      clarity — the two <code>prev</code>/<code>next</code> pointers on every real node are what the
+      <a href="../doubly-linked-list/doubly-linked-list.html">Doubly Linked List</a> page shows in full.)
+      Never a plain array — inserting at the front of one means shifting every other element down.</p>
+
+      <p><b>When it breaks:</b> deleting the last remaining node and forgetting to null out <em>both</em>
+      <code>front</code> and <code>rear</code> (not just one) leaves the other pointing at freed memory —
+      the next insert then attaches onto a dangling pointer instead of correctly starting fresh.</p>
 
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
@@ -58,6 +67,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertFront() / insertRear() / deleteFront() / deleteRear()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
       <a class="cta" href="deque-visualizer.html">Open the interactive visualizer &rarr;</a>
     </div>
@@ -75,6 +91,48 @@
 (function(){
   "use strict";
 
+  var INIT_CODE=[
+    "void initDeque(Deque *d) {",
+    "  d->front = d->rear = NULL;",
+    "}"
+  ];
+  var INSERT_FRONT_CODE=[
+    "void insertFront(Deque *d, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->prev = NULL; n->next = d->front;",
+    "  if (d->front) d->front->prev = n;",
+    "  else d->rear = n;",
+    "  d->front = n;",
+    "}"
+  ];
+  var INSERT_REAR_CODE=[
+    "void insertRear(Deque *d, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->next = NULL; n->prev = d->rear;",
+    "  if (d->rear) d->rear->next = n;",
+    "  else d->front = n;",
+    "  d->rear = n;",
+    "}"
+  ];
+  var DELETE_FRONT_CODE=[
+    "void deleteFront(Deque *d) {",
+    "  Node *old = d->front;",
+    "  d->front = old->next;",
+    "  if (d->front) d->front->prev = NULL;",
+    "  else d->rear = NULL;",
+    "  free(old);",
+    "}"
+  ];
+  var DELETE_REAR_CODE=[
+    "void deleteRear(Deque *d) {",
+    "  Node *old = d->rear;",
+    "  d->rear = old->prev;",
+    "  if (d->rear) d->rear->next = NULL;",
+    "  else d->front = NULL;",
+    "  free(old);",
+    "}"
+  ];
+
   function cellsFor(items, hi, hiRole){
     return items.map(function(v,i){
       var badges=[];
@@ -83,35 +141,35 @@
       return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
     });
   }
-  function frame(items, hi, hiRole, narr){
-    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr};
+  function frame(items, hi, hiRole, narr, code, codeLine){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr, code:code, codeLine:codeLine};
   }
 
   function scriptFrames(){
     var items=[], frames=[];
     function insFront(v){
-      frames.push(frame(items, undefined, "", "Insert "+v+" at the front."));
+      frames.push(frame(items, undefined, "", "Insert "+v+" at the front.", INSERT_FRONT_CODE, [1,4]));
       items.unshift(v);
-      frames.push(frame(items, 0, "left head landed", v+" is now at the front."));
+      frames.push(frame(items, 0, "left head landed", v+" is now at the front.", INSERT_FRONT_CODE, 5));
     }
     function insRear(v){
-      frames.push(frame(items, undefined, "", "Insert "+v+" at the rear."));
+      frames.push(frame(items, undefined, "", "Insert "+v+" at the rear.", INSERT_REAR_CODE, [1,4]));
       items.push(v);
-      frames.push(frame(items, items.length-1, "left head landed", v+" is now at the rear."));
+      frames.push(frame(items, items.length-1, "left head landed", v+" is now at the rear.", INSERT_REAR_CODE, 5));
     }
     function delFront(){
       var v=items[0];
-      frames.push(frame(items, 0, "left head", "Delete the front item, "+v+"."));
+      frames.push(frame(items, 0, "left head", "Delete the front item, "+v+".", DELETE_FRONT_CODE, [1,4]));
       items.shift();
-      frames.push(frame(items, undefined, "", v+" removed from the front."));
+      frames.push(frame(items, undefined, "", v+" removed from the front.", DELETE_FRONT_CODE, 5));
     }
     function delRear(){
       var v=items[items.length-1];
-      frames.push(frame(items, items.length-1, "left head", "Delete the rear item, "+v+"."));
+      frames.push(frame(items, items.length-1, "left head", "Delete the rear item, "+v+".", DELETE_REAR_CODE, [1,4]));
       items.pop();
-      frames.push(frame(items, undefined, "", v+" removed from the rear."));
+      frames.push(frame(items, undefined, "", v+" removed from the rear.", DELETE_REAR_CODE, 5));
     }
-    frames.push(frame(items, undefined, "", "An empty deque — both ends are open."));
+    frames.push(frame(items, undefined, "", "Create the deque: front and rear both start NULL.", INIT_CODE, 1));
     insRear(4); insFront(7); insRear(2); insFront(9);
     delFront(); delRear(); delFront(); delRear();
     return frames;

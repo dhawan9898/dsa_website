@@ -30,8 +30,23 @@
       <p>A queue models a line of people: new arrivals join at the <b>rear</b>, and whoever has been
       waiting longest leaves from the <b>front</b>. That's <b>First In, First Out (FIFO)</b> — the mirror
       image of a stack's LIFO rule.</p>
-      <p>Like a stack, every operation touches only one end, so enqueue and dequeue are both O(1) with the
-      right underlying structure (a linked list, or an array with tracked front/rear indices).</p>
+      <p>Like a stack, every operation touches only one end, so enqueue and dequeue are both O(1) —
+      <em>if</em> the underlying structure is chosen correctly. A naive array that physically shifts every
+      remaining element down after each dequeue is O(n), not O(1); that shift is exactly what you're paying
+      for if you reach for the wrong tool.</p>
+
+      <p><b>Implementation:</b> the code panel below uses a linked list with two pointers, <code>front</code>
+      and <code>rear</code> — unlike a plain <a href="../linked-list/linked-list.html">linked list</a>,
+      which only ever tracks the head. Enqueue allocates a node and attaches it after <code>rear</code>;
+      dequeue detaches <code>front</code> and advances it. Neither one ever walks the list, so both stay
+      O(1) no matter how long the queue gets. (The visualization above shows the queue as a simple ordered
+      row, front to rear — that's the abstract shape; <a href="../circular-queue/circular-queue.html">Circular
+      Queue</a> shows the array-based alternative in full.)</p>
+
+      <p><b>When it breaks:</b> dequeuing an empty queue means dereferencing a NULL <code>front</code> —
+      an immediate crash, not silent corruption, which at least makes it easy to spot. The sneakier bug is
+      forgetting to null out <code>rear</code> when the last node is removed: the next enqueue then attaches
+      a new node onto a dangling <code>rear</code> pointer instead of correctly starting a fresh list.</p>
 
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
@@ -54,6 +69,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; enqueue() / dequeue()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
       <a class="cta" href="queue-visualizer.html">Open the interactive visualizer &rarr;</a>
     </div>
@@ -71,6 +93,31 @@
 (function(){
   "use strict";
 
+  var INIT_CODE=[
+    "void initQueue(Queue *q) {",
+    "  q->front = q->rear = NULL;",
+    "}"
+  ];
+  var ENQUEUE_CODE=[
+    "void enqueue(Queue *q, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->next = NULL;",
+    "  if (!q->rear) { q->front = q->rear = n; return; }",
+    "  q->rear->next = n;",
+    "  q->rear = n;",
+    "}"
+  ];
+  var DEQUEUE_CODE=[
+    "int dequeue(Queue *q) {",
+    "  Node *old = q->front;",
+    "  int val = old->val;",
+    "  q->front = old->next;",
+    "  if (!q->front) q->rear = NULL;",
+    "  free(old);",
+    "  return val;",
+    "}"
+  ];
+
   function cellsFor(items, hi, hiRole){
     return items.map(function(v,i){
       var badges=[];
@@ -79,24 +126,24 @@
       return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
     });
   }
-  function frame(items, hi, hiRole, narr){
-    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr};
+  function frame(items, hi, hiRole, narr, code, codeLine){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr, code:code, codeLine:codeLine};
   }
 
   function scriptFrames(){
     var items=[], frames=[];
     function enqueue(v){
-      frames.push(frame(items, undefined, "", "Enqueue "+v+" at the rear."));
+      frames.push(frame(items, undefined, "", "Enqueue "+v+" at the rear.", ENQUEUE_CODE, [3,5]));
       items.push(v);
-      frames.push(frame(items, items.length-1, "left head landed", v+" joins the back of the line."));
+      frames.push(frame(items, items.length-1, "left head landed", v+" joins the back of the line.", ENQUEUE_CODE, 5));
     }
     function dequeue(){
       var front=items[0];
-      frames.push(frame(items, 0, "left head", "Dequeue the front item, "+front+"."));
+      frames.push(frame(items, 0, "left head", "Dequeue the front item, "+front+".", DEQUEUE_CODE, [1,3]));
       items.shift();
-      frames.push(frame(items, undefined, "", front+" removed."+(items.length?" New front is "+items[0]+".":" Queue is empty.")));
+      frames.push(frame(items, undefined, "", front+" removed."+(items.length?" New front is "+items[0]+".":" Queue is empty."), DEQUEUE_CODE, 4));
     }
-    frames.push(frame(items, undefined, "", "An empty queue — nothing to dequeue yet."));
+    frames.push(frame(items, undefined, "", "Create the queue: front and rear both start NULL.", INIT_CODE, 1));
     enqueue(4); enqueue(7); enqueue(2);
     dequeue();
     enqueue(9);

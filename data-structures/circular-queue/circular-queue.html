@@ -33,7 +33,15 @@
       index 0 with a modulo (<code>(i + 1) % capacity</code>) once they reach the last slot — the array
       behaves like a ring instead of a dead-ending line.</p>
       <p>The trade-off is a fixed capacity, decided up front, and a little index arithmetic on every
-      operation to detect "full" versus "empty" (both can otherwise look identical: front equals rear).</p>
+      operation to detect "full" versus "empty" (both can otherwise look identical: front equals rear).
+      The code panel below resolves that ambiguity with an explicit <code>count</code> field rather than
+      trying to infer it from the indices alone.</p>
+
+      <p><b>When it breaks:</b> forget the <code>% capacity</code> wraparound on either index and the buffer
+      just walks off the end of the array — writing past it silently, into whatever memory happens to sit
+      next. Get the full/empty check wrong (comparing only <code>front</code> and <code>rear</code>, without
+      <code>count</code>) and a full buffer looks identical to an empty one, so an enqueue against a full
+      buffer overwrites data that hasn't been read yet.</p>
 
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
@@ -56,6 +64,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; enqueue() / dequeue()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
       <a class="cta" href="circular-queue-visualizer.html">Open the interactive visualizer &rarr;</a>
     </div>
@@ -74,6 +89,30 @@
   "use strict";
   var CAP=6;
 
+  var INIT_CODE=[
+    "void initQueue(CQueue *q) {",
+    "  q->front = 0;",
+    "  q->rear = CAP - 1;   // first enqueue lands at 0",
+    "  q->count = 0;",
+    "}"
+  ];
+  var ENQUEUE_CODE=[
+    "void enqueue(CQueue *q, int val) {",
+    "  if (q->count == CAP) return;   // full",
+    "  q->rear = (q->rear + 1) % CAP;",
+    "  q->items[q->rear] = val;",
+    "  q->count++;",
+    "}"
+  ];
+  var DEQUEUE_CODE=[
+    "int dequeue(CQueue *q) {",
+    "  int val = q->items[q->front];",
+    "  q->front = (q->front + 1) % CAP;",
+    "  q->count--;",
+    "  return val;",
+    "}"
+  ];
+
   function cellsFor(buf, front, rear, count, hi, hiRole){
     var out=[];
     for(var i=0;i<CAP;i++){
@@ -88,28 +127,28 @@
     }
     return out;
   }
-  function frame(state, hi, hiRole, narr){
-    return {struct:{cells:cellsFor(state.buf,state.front,state.rear,state.count,hi,hiRole)}, narr:narr};
+  function frame(state, hi, hiRole, narr, code, codeLine){
+    return {struct:{cells:cellsFor(state.buf,state.front,state.rear,state.count,hi,hiRole)}, narr:narr, code:code, codeLine:codeLine};
   }
 
   function scriptFrames(){
     var buf=new Array(CAP).fill(null), front=-1, rear=-1, count=0, frames=[];
     function state(){ return {buf:buf,front:front,rear:rear,count:count}; }
     function enqueue(v){
-      frames.push(frame(state(), undefined, "", "Enqueue "+v+"."));
+      frames.push(frame(state(), undefined, "", "Enqueue "+v+".", ENQUEUE_CODE, [2,4]));
       if(count===0){ front=0; rear=0; } else { rear=(rear+1)%CAP; }
       buf[rear]=v; count++;
-      frames.push(frame(state(), rear, "left head landed", v+" placed at index "+rear+(rear===0&&count>1?" — wrapped around!":".")));
+      frames.push(frame(state(), rear, "left head landed", v+" placed at index "+rear+(rear===0&&count>1?" — wrapped around!":"."), ENQUEUE_CODE, 4));
     }
     function dequeue(){
       var v=buf[front];
-      frames.push(frame(state(), front, "left head", "Dequeue "+v+" from index "+front+"."));
+      frames.push(frame(state(), front, "left head", "Dequeue "+v+" from index "+front+".", DEQUEUE_CODE, [1,3]));
       buf[front]=null;
       if(count===1){ front=-1; rear=-1; } else { front=(front+1)%CAP; }
       count--;
-      frames.push(frame(state(), undefined, "", v+" removed."));
+      frames.push(frame(state(), undefined, "", v+" removed.", DEQUEUE_CODE, 3));
     }
-    frames.push(frame(state(), undefined, "", "An empty ring buffer, capacity "+CAP+"."));
+    frames.push(frame(state(), undefined, "", "Create the ring buffer, capacity "+CAP+".", INIT_CODE, [1,3]));
     enqueue(4); enqueue(7); enqueue(2); enqueue(9);
     dequeue(); dequeue();
     enqueue(5); enqueue(1);

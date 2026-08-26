@@ -63,6 +63,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertFront() / insertRear() / deleteFront() / deleteRear()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Loading…</p>
@@ -85,6 +92,48 @@
   "use strict";
   var MAX=12;
 
+  var INIT_CODE=[
+    "void initDeque(Deque *d) {",
+    "  d->front = d->rear = NULL;",
+    "}"
+  ];
+  var INSERT_FRONT_CODE=[
+    "void insertFront(Deque *d, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->prev = NULL; n->next = d->front;",
+    "  if (d->front) d->front->prev = n;",
+    "  else d->rear = n;",
+    "  d->front = n;",
+    "}"
+  ];
+  var INSERT_REAR_CODE=[
+    "void insertRear(Deque *d, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->next = NULL; n->prev = d->rear;",
+    "  if (d->rear) d->rear->next = n;",
+    "  else d->front = n;",
+    "  d->rear = n;",
+    "}"
+  ];
+  var DELETE_FRONT_CODE=[
+    "void deleteFront(Deque *d) {",
+    "  Node *old = d->front;",
+    "  d->front = old->next;",
+    "  if (d->front) d->front->prev = NULL;",
+    "  else d->rear = NULL;",
+    "  free(old);",
+    "}"
+  ];
+  var DELETE_REAR_CODE=[
+    "void deleteRear(Deque *d) {",
+    "  Node *old = d->rear;",
+    "  d->rear = old->prev;",
+    "  if (d->rear) d->rear->next = NULL;",
+    "  else d->front = NULL;",
+    "  free(old);",
+    "}"
+  ];
+
   function cellsFor(items, hi, hiRole){
     return items.map(function(v,i){
       var badges=[];
@@ -93,52 +142,54 @@
       return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
     });
   }
-  function frame(items, hi, hiRole, phase, narr, ops){
-    return {struct:{cells:cellsFor(items,hi,hiRole)}, phase:phase, narr:narr, ops:ops};
+  function frame(items, hi, hiRole, phase, narr, ops, code, codeLine){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
   }
 
   function opInsertFront(state, val){
     if(state.items.length>=MAX) return {error:"Deque is full — only "+MAX+" items fit in this view."};
     var items=state.items.slice(), oc=state.opsCount||0, frames=[];
-    frames.push(frame(items, undefined, "", "insert-front-start", "Insert "+val+" at the front.", oc));
+    frames.push(frame(items, undefined, "", "insert-front-start", "Insert "+val+" at the front.", oc, INSERT_FRONT_CODE, [1,4]));
     items.unshift(val); oc++;
-    frames.push(frame(items, 0, "left head landed", "inserted", val+" is now at the front.", oc));
+    frames.push(frame(items, 0, "left head landed", "inserted", val+" is now at the front.", oc, INSERT_FRONT_CODE, 5));
     return {frames:frames, state:{items:items, opsCount:oc}};
   }
   function opInsertRear(state, val){
     if(state.items.length>=MAX) return {error:"Deque is full — only "+MAX+" items fit in this view."};
     var items=state.items.slice(), oc=state.opsCount||0, frames=[];
-    frames.push(frame(items, undefined, "", "insert-rear-start", "Insert "+val+" at the rear.", oc));
+    frames.push(frame(items, undefined, "", "insert-rear-start", "Insert "+val+" at the rear.", oc, INSERT_REAR_CODE, [1,4]));
     items.push(val); oc++;
-    frames.push(frame(items, items.length-1, "left head landed", "inserted", val+" is now at the rear.", oc));
+    frames.push(frame(items, items.length-1, "left head landed", "inserted", val+" is now at the rear.", oc, INSERT_REAR_CODE, 5));
     return {frames:frames, state:{items:items, opsCount:oc}};
   }
   function opDeleteFront(state){
     if(!state.items.length) return {error:"The deque is empty — nothing to delete."};
     var items=state.items.slice(), oc=(state.opsCount||0)+1, frames=[];
     var v=items[0];
-    frames.push(frame(items, 0, "left head", "delete-front-start", "Delete the front item, "+v+".", oc));
+    frames.push(frame(items, 0, "left head", "delete-front-start", "Delete the front item, "+v+".", oc, DELETE_FRONT_CODE, [1,4]));
     items.shift();
-    frames.push(frame(items, undefined, "", "deleted", v+" removed from the front.", oc));
+    frames.push(frame(items, undefined, "", "deleted", v+" removed from the front.", oc, DELETE_FRONT_CODE, 5));
     return {frames:frames, state:{items:items, opsCount:oc}};
   }
   function opDeleteRear(state){
     if(!state.items.length) return {error:"The deque is empty — nothing to delete."};
     var items=state.items.slice(), oc=(state.opsCount||0)+1, frames=[];
     var v=items[items.length-1];
-    frames.push(frame(items, items.length-1, "left head", "delete-rear-start", "Delete the rear item, "+v+".", oc));
+    frames.push(frame(items, items.length-1, "left head", "delete-rear-start", "Delete the rear item, "+v+".", oc, DELETE_REAR_CODE, [1,4]));
     items.pop();
-    frames.push(frame(items, undefined, "", "deleted", v+" removed from the rear.", oc));
+    frames.push(frame(items, undefined, "", "deleted", v+" removed from the rear.", oc, DELETE_REAR_CODE, 5));
     return {frames:frames, state:{items:items, opsCount:oc}};
   }
 
   function init(){
-    var items=[7,3,9];
-    return {
-      state:{items:items, opsCount:0},
-      frames:[frame(items, undefined, "", "start",
-        "A deque starts empty (seeded here with a few values). Unlike a stack or queue, both ends are open for insertion and deletion.", 0)]
-    };
+    var items=[], oc=0, frames=[];
+    frames.push(frame(items, undefined, "", "start", "Create the deque: front and rear both start NULL.", oc, INIT_CODE, 1));
+    [7,3,9].forEach(function(v){
+      frames.push(frame(items, undefined, "", "insert-rear-start", "Insert "+v+" at the rear.", oc, INSERT_REAR_CODE, [1,4]));
+      items=items.concat([v]); oc++;
+      frames.push(frame(items, items.length-1, "left head landed", "inserted", v+" is now at the rear.", oc, INSERT_REAR_CODE, 5));
+    });
+    return { state:{items:items, opsCount:oc}, frames:frames };
   }
 
   function readVal(){
