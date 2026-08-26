@@ -68,6 +68,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; jumpSearch()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -88,13 +95,30 @@
 (function(){
   "use strict";
 
+  var CODE=[
+    "int jumpSearch(int arr[], int n, int target) {",
+    "  int blockSize = (int)sqrt(n);",
+    "  int step = blockSize, prev = 0;",
+    "  while (arr[min(step, n) - 1] < target) {   // jump forward a block at a time",
+    "    prev = step;",
+    "    step += blockSize;",
+    "    if (prev >= n) return -1;                 // ran off the end",
+    "  }",
+    "  int hi = min(step, n);",
+    "  for (int i = prev; i < hi; i++) {           // scan inside the block we landed in",
+    "    if (arr[i] == target) return i;           // found it",
+    "  }",
+    "  return -1;                                   // not in this block either",
+    "}"
+  ];
+
   function build(input, target){
     var a=input.slice(), n=a.length, frames=[], cmp=0;
     var blockSize=Math.max(1,Math.floor(Math.sqrt(n)));
     function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,block:blockSize}); }
+    function push(r,phase,narr,codeLine){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,block:blockSize,code:CODE,codeLine:codeLine}); }
 
-    push(roles(),"start","Jump search only works on sorted data. It jumps forward in fixed-size blocks of "+blockSize+" (about √"+n+") to find the block that could contain the target, "+target+", then scans that block one element at a time.");
+    push(roles(),"start","Jump search only works on sorted data. It jumps forward in fixed-size blocks of "+blockSize+" (about √"+n+") to find the block that could contain the target, "+target+", then scans that block one element at a time.",[1,2]);
 
     var step=blockSize, prev=0;
     while(true){
@@ -107,7 +131,8 @@
       var reachedEnd=step>=n;
       push(r,"jump","Jump to index "+probe+" (end of the block starting at "+prev+"): value is "+a[probe]+". "+
         (passedTarget ? "That's ≥ the target, so the target, if present, is in this block."
-                      : (reachedEnd ? "Reached the end of the array without passing the target." : "Still less than the target — jump forward another block.")));
+                      : (reachedEnd ? "Reached the end of the array without passing the target." : "Still less than the target — jump forward another block.")),
+        passedTarget?3:(reachedEnd?6:[4,5]));
       if(passedTarget || reachedEnd) break;
       prev=step;
       step+=blockSize;
@@ -117,7 +142,7 @@
     var r2=roles();
     for(var k2=0;k2<prev;k2++) r2[k2]="dim";
     for(var k3=hi;k3<n;k3++) r2[k3]="dim";
-    push(r2,"block-found","Search the block from index "+prev+" to "+(hi-1)+" one element at a time.");
+    push(r2,"block-found","Search the block from index "+prev+" to "+(hi-1)+" one element at a time.",8);
 
     for(var i=prev;i<hi;i++){
       var r3=roles();
@@ -127,18 +152,18 @@
       r3[i]="right head";
       cmp++;
       var match=a[i]===target;
-      push(r3,"compare","Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match ? "Yes — found it." : "No — keep scanning."));
+      push(r3,"compare","Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match ? "Yes — found it." : "No — keep scanning."),10);
       if(match){
         var rf=roles();
         for(var k7=0;k7<n;k7++) if(k7!==i) rf[k7]="dim";
         rf[i]="found";
-        push(rf,"found","Found "+target+" at index "+i+" after "+cmp+" comparison"+(cmp===1?"":"s")+".");
+        push(rf,"found","Found "+target+" at index "+i+" after "+cmp+" comparison"+(cmp===1?"":"s")+".",10);
         return frames;
       }
     }
     var rNo=roles();
     for(var k8=0;k8<n;k8++) rNo[k8]="dim";
-    push(rNo,"not-found","Scanned the whole block without finding "+target+" — it isn't present. "+cmp+" comparisons made.");
+    push(rNo,"not-found","Scanned the whole block without finding "+target+" — it isn't present. "+cmp+" comparisons made.",12);
     return frames;
   }
 
