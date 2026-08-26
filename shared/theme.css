@@ -204,6 +204,9 @@ input[type=range]{accent-color:var(--stamp);width:150px}
 .gnode{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px}
 .gnode .cell{width:var(--cw);height:var(--cw);border-radius:50%}
 .gnode .tlabel{margin-top:0}
+.graphwrap svg.links marker path{fill:var(--ink-soft)}
+.graphwrap svg.links rect.edge-weight-bg{fill:#fff;stroke:var(--faint);stroke-width:1}
+.graphwrap svg.links text.edge-weight{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;fill:var(--ink-soft)}
 
 /* ---------- data-structure notes pages ---------- */
 .notes-table{width:100%;border-collapse:collapse;font-family:"IBM Plex Mono",monospace;font-size:12px;margin:10px 0}

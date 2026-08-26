@@ -30,9 +30,17 @@
        (priority queue).
 
      DSRender.graph(nodesHost, svgEl, struct, opts)
-       struct: {nodes:[{id, val, role, label}], edges:[{from, to, active, settled}]}
+       struct: {nodes:[{id, val, role, label}], edges:[{from, to, active, settled, weight}]}
+       opts: {emptyText, directed}
        Nodes placed evenly around a circle inside svgEl's parent element,
-       edges drawn as SVG lines.
+       edges drawn as SVG lines shortened to stop at each node's rendered
+       radius (measured via getBoundingClientRect, not assumed). `weight`
+       (optional, any node on any edge) draws a small labeled tag at the
+       edge's midpoint — used by Dijkstra and Kruskal's MST. `opts.directed`
+       (optional, page-level — every edge on a directed page renders with
+       one) draws an arrowhead at the `to` end — used by Dijkstra and
+       Topological Sort; the plain BFS/DFS graph page leaves both unset and
+       renders exactly as before.
    ========================================================================== */
 (function(window){
   "use strict";
@@ -178,6 +186,7 @@
     if(!n){
       nodesHost.appendChild(el("div","seq-empty",opts.emptyText||"No vertices yet"));
     }
+    var nodeR=18;
     nodes.forEach(function(node,i){
       var angle=-Math.PI/2 + (i*2*Math.PI/Math.max(n,1));
       var x=cx+r*Math.cos(angle), y=cy+r*Math.sin(angle);
@@ -189,17 +198,30 @@
       gn.appendChild(cell);
       if(node.label!==undefined) gn.appendChild(el("div","tlabel",node.label));
       nodesHost.appendChild(gn);
+      if(i===0 && cell.offsetWidth) nodeR=cell.offsetWidth/2;
     });
 
     svgEl.setAttribute("viewBox","0 0 "+w+" "+h);
     svgEl.setAttribute("width",w);
     svgEl.setAttribute("height",h);
-    var out="";
+    var out=opts.directed ?
+      '<defs><marker id="graph-arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z"></path></marker></defs>' : "";
     (struct.edges||[]).forEach(function(e){
       var a=pos[e.from], b=pos[e.to];
       if(!a||!b) return;
       var cls=e.active?"active":(e.settled?"settled":"");
-      out+='<line class="'+cls+'" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"></line>';
+      var dx=b.x-a.x, dy=b.y-a.y, dist=Math.sqrt(dx*dx+dy*dy)||1;
+      var ux=dx/dist, uy=dy/dist;
+      var x1=a.x+ux*nodeR, y1=a.y+uy*nodeR;
+      var endInset=opts.directed ? nodeR+7 : nodeR;
+      var x2=b.x-ux*endInset, y2=b.y-uy*endInset;
+      out+='<line class="'+cls+'" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"'+
+        (opts.directed?' marker-end="url(#graph-arrowhead)"':'')+'></line>';
+      if(e.weight!==undefined){
+        var mx=(x1+x2)/2, my=(y1+y2)/2;
+        out+='<rect class="edge-weight-bg" x="'+(mx-10)+'" y="'+(my-8)+'" width="20" height="16" rx="2"></rect>'+
+          '<text class="edge-weight" x="'+mx+'" y="'+(my+4)+'" text-anchor="middle">'+e.weight+'</text>';
+      }
     });
     svgEl.innerHTML=out;
     return {pos:pos};
