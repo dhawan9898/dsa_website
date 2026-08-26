@@ -62,6 +62,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; enqueue() / dequeue() / peek()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Loading…</p>
@@ -84,6 +91,36 @@
   "use strict";
   var MAX=12;
 
+  var INIT_CODE=[
+    "void initQueue(Queue *q) {",
+    "  q->front = q->rear = NULL;",
+    "}"
+  ];
+  var ENQUEUE_CODE=[
+    "void enqueue(Queue *q, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->next = NULL;",
+    "  if (!q->rear) { q->front = q->rear = n; return; }",
+    "  q->rear->next = n;",
+    "  q->rear = n;",
+    "}"
+  ];
+  var DEQUEUE_CODE=[
+    "int dequeue(Queue *q) {",
+    "  Node *old = q->front;",
+    "  int val = old->val;",
+    "  q->front = old->next;",
+    "  if (!q->front) q->rear = NULL;",
+    "  free(old);",
+    "  return val;",
+    "}"
+  ];
+  var PEEK_CODE=[
+    "int peek(Queue *q) {",
+    "  return q->front->val;",
+    "}"
+  ];
+
   function cellsFor(items, hi, hiRole){
     return items.map(function(v,i){
       var badges=[];
@@ -92,18 +129,18 @@
       return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
     });
   }
-  function frame(items, hi, hiRole, phase, narr, ops){
-    return {struct:{cells:cellsFor(items,hi,hiRole)}, phase:phase, narr:narr, ops:ops};
+  function frame(items, hi, hiRole, phase, narr, ops, code, codeLine){
+    return {struct:{cells:cellsFor(items,hi,hiRole)}, phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
   }
 
   function opEnqueue(state, val){
     if(state.items.length>=MAX) return {error:"Queue is full — only "+MAX+" items fit in this view."};
     var items=state.items.slice(), oc=state.opsCount||0, frames=[];
     frames.push(frame(items, undefined, "", "enqueue-start",
-      "Enqueue "+val+": a queue only allows inserting at the rear.", oc));
+      "Enqueue "+val+": a queue only allows inserting at the rear.", oc, ENQUEUE_CODE, [3,5]));
     items.push(val); oc++;
     frames.push(frame(items, items.length-1, "left head landed", "enqueued",
-      val+" joins the back of the line, at position "+(items.length-1)+".", oc));
+      val+" joins the back of the line, at position "+(items.length-1)+".", oc, ENQUEUE_CODE, 5));
     return {frames:frames, state:{items:items, opsCount:oc}};
   }
   function opDequeue(state){
@@ -111,26 +148,28 @@
     var items=state.items.slice(), oc=(state.opsCount||0)+1, frames=[];
     var front=items[0];
     frames.push(frame(items, 0, "left head", "dequeue-start",
-      "Dequeue: remove the front item, "+front+". A queue can only ever remove from the front.", oc));
+      "Dequeue: remove the front item, "+front+". A queue can only ever remove from the front.", oc, DEQUEUE_CODE, [1,3]));
     items.shift();
     frames.push(frame(items, undefined, "", "dequeued",
-      front+" removed. "+(items.length ? ("New front is "+items[0]+".") : "The queue is now empty."), oc));
+      front+" removed. "+(items.length ? ("New front is "+items[0]+".") : "The queue is now empty."), oc, DEQUEUE_CODE, 4));
     return {frames:frames, state:{items:items, opsCount:oc}};
   }
   function opPeek(state){
     if(!state.items.length) return {error:"The queue is empty — nothing to peek at."};
     var items=state.items.slice(), oc=(state.opsCount||0)+1;
     return {frames:[frame(items, 0, "left head", "peek",
-      "Peek: look at the front item without removing it — it's "+items[0]+".", oc)], state:{items:items, opsCount:oc}};
+      "Peek: look at the front item without removing it — it's "+items[0]+".", oc, PEEK_CODE, 1)], state:{items:items, opsCount:oc}};
   }
 
   function init(){
-    var items=[7,3,9];
-    return {
-      state:{items:items, opsCount:0},
-      frames:[frame(items, undefined, "", "start",
-        "A queue starts empty (seeded here with a few values). Whatever arrives first leaves first — First In, First Out.", 0)]
-    };
+    var items=[], oc=0, frames=[];
+    frames.push(frame(items, undefined, "", "start", "Create the queue: front and rear both start NULL.", oc, INIT_CODE, 1));
+    [7,3,9].forEach(function(v){
+      frames.push(frame(items, undefined, "", "enqueue-start", "Enqueue "+v+" at the rear.", oc, ENQUEUE_CODE, [3,5]));
+      items=items.concat([v]); oc++;
+      frames.push(frame(items, items.length-1, "left head landed", "enqueued", v+" joins the back of the line.", oc, ENQUEUE_CODE, 5));
+    });
+    return { state:{items:items, opsCount:oc}, frames:frames };
   }
 
   VizDS.init({
