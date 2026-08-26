@@ -208,6 +208,18 @@ input[type=range]{accent-color:var(--stamp);width:150px}
 .graphwrap svg.links rect.edge-weight-bg{fill:#fff;stroke:var(--faint);stroke-width:1}
 .graphwrap svg.links text.edge-weight{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;fill:var(--ink-soft)}
 
+/* ---------- call-stack renderer: vertical frames, newest on top ---------- */
+.callstack{display:flex;flex-direction:column;gap:5px;padding:4px}
+.stackframe{border:1px solid var(--rule);background:#fff;padding:7px 12px;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;align-self:flex-start;min-width:160px;
+  transition:background .2s var(--ease),border-color .2s var(--ease),transform .2s var(--ease);
+  animation:land .28s var(--ease)}
+.stackframe.active{border-color:var(--stamp);background:rgba(190,58,29,.06)}
+.stackframe.active .stackframe-head{color:var(--stamp)}
+.stackframe.returning{border-color:var(--seal);background:rgba(46,107,79,.07)}
+.stackframe-head{font-weight:600;color:var(--ink)}
+.stackframe-ret{font-size:11px;color:var(--seal);margin-top:3px}
+
 /* ---------- data-structure notes pages ---------- */
 .notes-table{width:100%;border-collapse:collapse;font-family:"IBM Plex Mono",monospace;font-size:12px;margin:10px 0}
 .notes-table th,.notes-table td{border:1px solid var(--rule);padding:6px 10px;text-align:left}

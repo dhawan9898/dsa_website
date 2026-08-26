@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recursion &amp; the Call Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Base Case &middot; Recursive Case &middot; Stack Frames</p>
+      <h1>Recursion&nbsp;&amp;&nbsp;the&nbsp;Call&nbsp;Stack</h1>
+    </div>
+    <p class="note">A function that calls itself, and the stack of pending calls that makes it work — and that you can overflow if you're not careful.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A recursive function solves a problem by calling itself on a <em>smaller</em> version of the same
+      problem. Every recursive function needs exactly two parts: a <b>base case</b> — the smallest version
+      of the problem, simple enough to answer directly, with no further recursion — and a <b>recursive
+      case</b> that does a little work and then calls itself on something strictly closer to the base case.
+      Miss either part and the function either never recurses at all, or never stops.</p>
+
+      <p>Every function call, recursive or not, gets its own <b>stack frame</b>: a chunk of memory holding
+      that call's parameters, local variables, and the address to resume at when it returns. Calling a
+      function pushes a new frame on top of the <b>call stack</b>; returning pops it back off and resumes
+      the caller exactly where it left off. A recursive function just means the same function's frames stack
+      up on top of each other, one per level of recursion still waiting on a result — which is exactly what
+      the demo below makes visible: watch the boxes stack up as <code>factorial(4)</code> calls
+      <code>factorial(3)</code> calls <code>factorial(2)</code>&hellip;, then unstack as each one finally
+      gets a number back and returns it to whoever called it.</p>
+
+      <p><b>Implementation:</b> the code panel below is as small as recursion gets — one comparison for the
+      base case, one multiplication and one recursive call for everything else. Notice that
+      <code>factorial(4)</code> can't produce its own answer until <code>factorial(3)</code> hands one back,
+      which can't answer until <code>factorial(2)</code> does, all the way down to <code>factorial(1)</code>
+      — the base case is the only frame that returns without waiting on anyone.</p>
+
+      <p><b>When it breaks:</b> a missing base case, or one that's never actually reached (recursing on
+      <code>n + 1</code> instead of <code>n - 1</code>, say), means every call pushes another frame and none
+      ever pop — the call stack is a fixed-size region of memory, not an infinite one, and running out of it
+      is a real crash called <b>stack overflow</b>, the same term the <a href="../../data-structures/stack/stack.html">Stack</a>
+      page uses for pushing past a fixed capacity. It's the same failure for the same underlying reason:
+      more pushes than the stack has room for.</p>
+
+      <p>Recursion is the natural shape for anything that's already built recursively — trees (a subtree is
+      just a smaller tree), divide-and-conquer sorts, graph traversal — which is why it shows up all over
+      this site: <a href="../../data-structures/binary-search-tree/binary-search-tree.html">BST</a> and
+      <a href="../../data-structures/avl-tree/avl-tree.html">AVL</a> insert/delete,
+      <a href="../../sorting/merge-sort/merge-sort.html">merge sort</a>'s split-and-merge,
+      <a href="../../sorting/quick-sort/quick-sort.html">quick sort</a>'s partition-and-recurse, and
+      depth-first search on a <a href="../../data-structures/graph/graph.html">graph</a>.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; factorial(4), call stack growing then unwinding</span></div>
+    <div class="panel-body">
+      <div class="callstack" id="stackHost"></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; factorial()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <footer>
+    Next: whenever a page on this site says "recurse" — BST insert, merge sort, DFS — picture this same
+    stack of frames growing and shrinking underneath it, even though those pages don't draw it explicitly.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int factorial(int n) {",
+    "  if (n <= 1) return 1;             // base case",
+    "  return n * factorial(n - 1);      // recursive case",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var frames=[], stack=[];
+    function push(narr, codeLine){
+      var snap=stack.map(function(f){ return {fn:f.fn, args:f.args, ret:f.ret, role:f.role}; });
+      frames.push({stack:snap, narr:narr, code:CODE, codeLine:codeLine});
+    }
+    function factorial(n){
+      var frame={fn:"factorial", args:"n="+n, role:(n<=1?"active":"")};
+      stack.push(frame);
+      if(n<=1){
+        push("Call factorial("+n+"). "+n+" ≤ 1 — base case! Return 1 without recursing further.", 1);
+        frame.ret=1; frame.role="returning";
+        push("factorial("+n+") returns 1.", 1);
+        stack.pop();
+        return 1;
+      }
+      push("Call factorial("+n+"). "+n+" is not ≤ 1, so recurse into factorial("+(n-1)+").", [1,2]);
+      var sub=factorial(n-1);
+      var result=n*sub;
+      frame.ret=result; frame.role="returning";
+      push("Back in factorial("+n+"): "+n+" × "+sub+" = "+result+". Return "+result+".", 2);
+      stack.pop();
+      return result;
+    }
+    factorial(4);
+    push("The call stack is empty again — the recursion is fully unwound. factorial(4) = 24.", 3);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.callstack(document.getElementById("stackHost"), frame.stack);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

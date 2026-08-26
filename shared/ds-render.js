@@ -41,6 +41,18 @@
        one) draws an arrowhead at the `to` end — used by Dijkstra and
        Topological Sort; the plain BFS/DFS graph page leaves both unset and
        renders exactly as before.
+
+     DSRender.callstack(host, frames)
+       frames: [{fn, args, ret, role}, ...] — oldest (outermost) call first,
+       newest (innermost, currently executing) call last, exactly like a
+       real call stack's contents. Renders as vertical boxes, newest on top,
+       each indented one step further than the last so the recursion depth
+       reads as a staircase. `ret` (optional) shows a return value on a
+       frame that's already produced one, for the unwind-back-down half of
+       a call. `role` (optional, e.g. "active") highlights the frame the
+       current step is actually working on. Used by the Recursion
+       foundation page; designed for reuse by any future page whose
+       operation is genuinely recursive rather than a retrofit of one.
    ========================================================================== */
 (function(window){
   "use strict";
@@ -227,6 +239,24 @@
     return {pos:pos};
   }
 
-  window.DSRender = { slots:slots, sequence:sequence, tree:tree, graph:graph };
+  function callstack(host, frames){
+    if(!host) return;
+    host.innerHTML="";
+    frames=frames||[];
+    if(!frames.length){
+      host.appendChild(el("div","seq-empty","Call stack empty"));
+      return;
+    }
+    for(var i=frames.length-1;i>=0;i--){
+      var f=frames[i];
+      var box=el("div","stackframe"+(f.role?" "+f.role:""));
+      box.style.marginLeft=(i*14)+"px";
+      box.appendChild(el("div","stackframe-head",f.fn+"("+(f.args||"")+")"));
+      if(f.ret!==undefined) box.appendChild(el("div","stackframe-ret","returns "+f.ret));
+      host.appendChild(box);
+    }
+  }
+
+  window.DSRender = { slots:slots, sequence:sequence, tree:tree, graph:graph, callstack:callstack };
 
 })(window);
