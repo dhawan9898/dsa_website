@@ -58,7 +58,7 @@
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Data Structures</h2><span class="sub">11 structures</span></div>
+    <div class="panel-head"><h2>Data Structures</h2><span class="sub">13 structures</span></div>
     <div class="panel-body">
       <p class="intro">Each one gets notes, a looping demo you can just watch, and an interactive visualizer with Insert/Delete/Search-style buttons that animate exactly what happens underneath.</p>
       <div class="algo-grid">
@@ -127,6 +127,46 @@
           <h3>Graph</h3>
           <p>Vertices and edges, explored with breadth-first or depth-first search.</p>
           <div class="badges"><span>Traverse <b>O(V + E)</b></span></div>
+        </a>
+
+        <a class="algo-card" href="data-structures/union-find/union-find.html">
+          <h3>Union-Find</h3>
+          <p>Tracks disjoint sets; union by rank and path compression keep it almost O(1).</p>
+          <div class="badges"><span>Find/Union <b>O(&alpha;(n))</b></span></div>
+        </a>
+
+        <a class="algo-card" href="data-structures/trie/trie.html">
+          <h3>Trie</h3>
+          <p>A prefix tree — words sharing a prefix share the same path from the root.</p>
+          <div class="badges"><span>Insert/Search <b>O(L)</b></span></div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Graph Algorithms</h2><span class="sub">3 algorithms</span></div>
+    <div class="panel-body">
+      <p class="intro">Build a directed or weighted graph by hand, then run the algorithm and watch it settle, relax, or reject one edge at a time.</p>
+      <div class="algo-grid">
+
+        <a class="algo-card" href="data-structures/dijkstra/dijkstra.html">
+          <h3>Dijkstra's Algorithm</h3>
+          <p>Shortest paths from one source, settling the closest unvisited vertex each step.</p>
+          <div class="badges"><span>O(V&sup2;)</span><span>Heap-backed O((V+E) log V)</span></div>
+        </a>
+
+        <a class="algo-card" href="data-structures/topological-sort/topological-sort.html">
+          <h3>Topological Sort</h3>
+          <p>Orders a DAG so every edge points forward — BFS with in-degree instead of visited.</p>
+          <div class="badges"><span>O(V + E)</span><span>Detects cycles</span></div>
+        </a>
+
+        <a class="algo-card" href="data-structures/kruskal-mst/kruskal-mst.html">
+          <h3>Kruskal's MST</h3>
+          <p>Sort every edge by weight, accept the cheapest ones that don't close a cycle.</p>
+          <div class="badges"><span>O(E log E)</span></div>
         </a>
 
       </div>
