@@ -72,6 +72,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; addEdge() / bfs() / dfs()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Loading…</p>
@@ -94,6 +101,62 @@
 (function(){
   "use strict";
 
+  var INIT_CODE=[
+    "void initGraph(Graph *g) {",
+    "  g->n = 0;",
+    "}"
+  ];
+  var ADD_VERTEX_CODE=[
+    "int addVertex(Graph *g, char label) {",
+    "  g->label[g->n] = label;",
+    "  g->deg[g->n] = 0;",
+    "  return g->n++;",
+    "}"
+  ];
+  var ADD_EDGE_CODE=[
+    "void addEdge(Graph *g, int a, int b) {",
+    "  g->adj[a][g->deg[a]++] = b;   // undirected: record both directions",
+    "  g->adj[b][g->deg[b]++] = a;",
+    "}"
+  ];
+  var REMOVE_EDGE_CODE=[
+    "void removeEdge(Graph *g, int a, int b) {",
+    "  int i;",
+    "  for (i = 0; i < g->deg[a]; i++)",
+    "    if (g->adj[a][i] == b) { g->adj[a][i] = g->adj[a][--g->deg[a]]; break; }",
+    "  for (i = 0; i < g->deg[b]; i++)",
+    "    if (g->adj[b][i] == a) { g->adj[b][i] = g->adj[b][--g->deg[b]]; break; }",
+    "}"
+  ];
+  var BFS_CODE=[
+    "void bfs(Graph *g, int start) {",
+    "  int visited[MAXV] = {0}, queue[MAXV], head = 0, tail = 0;",
+    "  visited[start] = 1;",
+    "  queue[tail++] = start;                 // enqueue start",
+    "  while (head < tail) {",
+    "    int cur = queue[head++];             // dequeue",
+    "    visit(cur);",
+    "    for (int i = 0; i < g->deg[cur]; i++) {",
+    "      int nb = g->adj[cur][i];",
+    "      if (!visited[nb]) {",
+    "        visited[nb] = 1;",
+    "        queue[tail++] = nb;               // discover + enqueue",
+    "      }",
+    "    }",
+    "  }",
+    "}"
+  ];
+  var DFS_CODE=[
+    "void dfs(Graph *g, int v, int *visited) {",
+    "  visited[v] = 1;",
+    "  visit(v);",
+    "  for (int i = 0; i < g->deg[v]; i++) {",
+    "    int nb = g->adj[v][i];",
+    "    if (!visited[nb]) dfs(g, nb, visited);   // recurse into the unvisited neighbor",
+    "  }",
+    "}"
+  ];
+
   function findNode(state, val){ return state.nodes.filter(function(n){ return n.val===val; })[0]; }
   function valOf(state, id){ var n=state.nodes.filter(function(x){return x.id===id;})[0]; return n?n.val:"?"; }
 
@@ -106,8 +169,8 @@
       })
     };
   }
-  function frame(state, nodeRoles, edgeActiveSet, phase, narr, ops){
-    return {struct: buildGraphStruct(state, nodeRoles||{}, edgeActiveSet||{}), phase:phase, narr:narr, ops:ops};
+  function frame(state, nodeRoles, edgeActiveSet, phase, narr, ops, code, codeLine){
+    return {struct: buildGraphStruct(state, nodeRoles||{}, edgeActiveSet||{}), phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
   }
 
   function opAddVertex(state, val){
@@ -117,7 +180,7 @@
     var id=state.nextId;
     var newState={nodes:state.nodes.concat([{id:id,val:val}]), edges:state.edges, opsCount:oc, nextId:id+1};
     var roles={}; roles[id]="left head landed";
-    return {frames:[frame(newState, roles, {}, "added-vertex", "Added vertex \""+val+"\".", oc)], state:newState};
+    return {frames:[frame(newState, roles, {}, "added-vertex", "Added vertex \""+val+"\".", oc, ADD_VERTEX_CODE, [1,3])], state:newState};
   }
   function opAddEdge(state, fromVal, toVal){
     var a=findNode(state,fromVal), b=findNode(state,toVal);
@@ -129,7 +192,7 @@
     var newState={nodes:state.nodes, edges:state.edges.concat([{from:a.id,to:b.id}]), opsCount:oc, nextId:state.nextId};
     var roles={}; roles[a.id]="left head"; roles[b.id]="left head";
     var eset={}; eset[a.id+":"+b.id]=true;
-    return {frames:[frame(newState, roles, eset, "added-edge", "Connected \""+fromVal+"\" and \""+toVal+"\".", oc)], state:newState};
+    return {frames:[frame(newState, roles, eset, "added-edge", "Connected \""+fromVal+"\" and \""+toVal+"\".", oc, ADD_EDGE_CODE, [1,2])], state:newState};
   }
   function opRemoveEdge(state, fromVal, toVal){
     var a=findNode(state,fromVal), b=findNode(state,toVal);
@@ -139,17 +202,16 @@
     var oc=(state.opsCount||0)+1;
     var roles={}; roles[a.id]="left head"; roles[b.id]="left head";
     var eset={}; eset[a.id+":"+b.id]=true;
-    var frames=[frame(state, roles, eset, "removing", "Removing the edge between \""+fromVal+"\" and \""+toVal+"\".", oc)];
+    var frames=[frame(state, roles, eset, "removing", "Removing the edge between \""+fromVal+"\" and \""+toVal+"\".", oc, REMOVE_EDGE_CODE, [1,3])];
     var edges=state.edges.filter(function(e){ return !((e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id)); });
     var newState={nodes:state.nodes, edges:edges, opsCount:oc, nextId:state.nextId};
-    frames.push(frame(newState, roles, {}, "removed", "Edge removed.", oc));
+    frames.push(frame(newState, roles, {}, "removed", "Edge removed.", oc, REMOVE_EDGE_CODE, [4,6]));
     return {frames:frames, state:newState};
   }
 
   function buildAdj(state){
     var adj={}; state.nodes.forEach(function(n){ adj[n.id]=[]; });
     state.edges.forEach(function(e){ adj[e.from].push(e.to); adj[e.to].push(e.from); });
-    Object.keys(adj).forEach(function(k){ adj[k].sort(function(a,b){return a-b;}); });
     return adj;
   }
   function visitedRoles(visited, currentId){
@@ -168,21 +230,21 @@
     var adj=buildAdj(state), visited={}, order=[];
     visited[start.id]=true;
     var queue=[start.id];
-    frames.push(frame(state, visitedRoles(visited,start.id), {}, "bfs-start", "BFS from \""+startVal+"\": enqueue it and mark it visited.", oc));
+    frames.push(frame(state, visitedRoles(visited,start.id), {}, "bfs-start", "BFS from \""+startVal+"\": enqueue it and mark it visited.", oc, BFS_CODE, [2,3]));
     while(queue.length){
       var cur=queue.shift();
       order.push(valOf(state,cur));
-      frames.push(frame(state, visitedRoles(visited,cur), {}, "visit", "Dequeue \""+valOf(state,cur)+"\" — visit order so far: ["+order.join(", ")+"].", oc));
+      frames.push(frame(state, visitedRoles(visited,cur), {}, "visit", "Dequeue \""+valOf(state,cur)+"\" — visit order so far: ["+order.join(", ")+"].", oc, BFS_CODE, [5,6]));
       adj[cur].forEach(function(nb){
         if(!visited[nb]){
           visited[nb]=true; queue.push(nb);
           var eset={}; eset[cur+":"+nb]=true;
           frames.push(frame(state, visitedRoles(visited,nb), eset, "discover",
-            "Edge to \""+valOf(state,nb)+"\" — unvisited, so mark it and enqueue it.", oc));
+            "Edge to \""+valOf(state,nb)+"\" — unvisited, so mark it and enqueue it.", oc, BFS_CODE, [9,11]));
         }
       });
     }
-    frames.push(frame(state, visitedRoles(visited), {}, "bfs-done", "BFS complete. Visit order: ["+order.join(", ")+"].", oc));
+    frames.push(frame(state, visitedRoles(visited), {}, "bfs-done", "BFS complete. Visit order: ["+order.join(", ")+"].", oc, BFS_CODE, 4));
     return {frames:frames, state:{nodes:state.nodes, edges:state.edges, opsCount:oc, nextId:state.nextId}};
   }
 
@@ -191,23 +253,32 @@
     if(!start) return {error:"Vertex \""+startVal+"\" doesn't exist."};
     var oc=(state.opsCount||0)+1, frames=[];
     var adj=buildAdj(state), visited={}, order=[];
-    frames.push(frame(state, {}, {}, "dfs-start", "DFS from \""+startVal+"\": explore as deep as possible before backtracking.", oc));
+    frames.push(frame(state, {}, {}, "dfs-start", "DFS from \""+startVal+"\": explore as deep as possible before backtracking.", oc, DFS_CODE, 0));
     (function visit(id, parentId){
       visited[id]=true; order.push(valOf(state,id));
       var eset={}; if(parentId!==undefined){ eset[parentId+":"+id]=true; }
-      frames.push(frame(state, visitedRoles(visited,id), eset, "visit", "Visit \""+valOf(state,id)+"\" — order so far: ["+order.join(", ")+"].", oc));
+      frames.push(frame(state, visitedRoles(visited,id), eset, "visit", "Visit \""+valOf(state,id)+"\" — order so far: ["+order.join(", ")+"].", oc, DFS_CODE, [1,2]));
       adj[id].forEach(function(nb){ if(!visited[nb]) visit(nb, id); });
     })(start.id, undefined);
-    frames.push(frame(state, visitedRoles(visited), {}, "dfs-done", "DFS complete. Visit order: ["+order.join(", ")+"].", oc));
+    frames.push(frame(state, visitedRoles(visited), {}, "dfs-done", "DFS complete. Visit order: ["+order.join(", ")+"].", oc, DFS_CODE, 6));
     return {frames:frames, state:{nodes:state.nodes, edges:state.edges, opsCount:oc, nextId:state.nextId}};
   }
 
   function init(){
-    var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"},{id:4,val:"E"}];
-    var edges=[{from:0,to:1},{from:0,to:2},{from:1,to:3},{from:2,to:3},{from:3,to:4}];
-    var state={nodes:nodes, edges:edges, opsCount:0, nextId:5};
-    return {state:state, frames:[frame(state, {}, {}, "start",
-      "A graph is a set of vertices connected by edges (seeded here with 5 vertices). BFS and DFS both visit every reachable vertex — just in a different order.", 0)]};
+    var state={nodes:[], edges:[], opsCount:0, nextId:0};
+    var frames=[frame(state, {}, {}, "start",
+      "Create the graph: no vertices yet. A graph is just vertices connected by edges — BFS and DFS will explore whichever ones exist.", 0, INIT_CODE, 1)];
+    ["A","B","C","D","E"].forEach(function(v){
+      var r=opAddVertex(state, v);
+      frames=frames.concat(r.frames);
+      state=r.state;
+    });
+    [["A","B"],["A","C"],["B","D"],["C","D"],["D","E"]].forEach(function(pair){
+      var r=opAddEdge(state, pair[0], pair[1]);
+      frames=frames.concat(r.frames);
+      state=r.state;
+    });
+    return {state:state, frames:frames};
   }
   function str(id){ return document.getElementById(id).value.trim(); }
 

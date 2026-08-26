@@ -52,6 +52,21 @@
 
       <p>This is the model behind road-network routing, social-network "friends of friends," dependency
       graphs (build systems, package managers), and the web itself — pages as vertices, links as edges.</p>
+
+      <p><b>Implementation:</b> the code panel below stores each vertex's neighbors as its own small array —
+      <code>g->adj[v]</code> — alongside a count, <code>g->deg[v]</code>, of how many it currently has. Adding
+      an edge is just appending to two arrays at once, one per endpoint, which is exactly why it's O(1). BFS
+      and DFS both boil down to "visit a vertex, then walk <code>g->adj[cur]</code> and recurse or enqueue
+      whatever isn't visited yet" — the only real difference between them is <em>which</em> data structure
+      holds the not-yet-visited vertices: BFS uses an explicit queue, DFS uses the call stack (recursion) as
+      an implicit one.</p>
+
+      <p><b>When it breaks:</b> add an edge to only one endpoint's array and forget the other, and the graph
+      quietly becomes directed without anyone deciding that on purpose — traversing from one side finds the
+      neighbor, but traversing from the other side never finds the way back. The other classic bug is the
+      <code>visited</code> check itself: skip it, or set it <em>after</em> the recursive call instead of
+      before, and a single cycle turns BFS or DFS into an infinite loop, since there's nothing left to stop
+      it from walking back around forever.</p>
     </div>
   </section>
 
@@ -63,6 +78,13 @@
         <div id="demoHost"></div>
       </div>
       <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; bfs() / dfs()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
@@ -85,11 +107,39 @@
 (function(){
   "use strict";
 
+  var BFS_CODE=[
+    "void bfs(Graph *g, int start) {",
+    "  int visited[MAXV] = {0}, queue[MAXV], head = 0, tail = 0;",
+    "  visited[start] = 1;",
+    "  queue[tail++] = start;                 // enqueue start",
+    "  while (head < tail) {",
+    "    int cur = queue[head++];             // dequeue",
+    "    visit(cur);",
+    "    for (int i = 0; i < g->deg[cur]; i++) {",
+    "      int nb = g->adj[cur][i];",
+    "      if (!visited[nb]) {",
+    "        visited[nb] = 1;",
+    "        queue[tail++] = nb;               // discover + enqueue",
+    "      }",
+    "    }",
+    "  }",
+    "}"
+  ];
+  var DFS_CODE=[
+    "void dfs(Graph *g, int v, int *visited) {",
+    "  visited[v] = 1;",
+    "  visit(v);",
+    "  for (int i = 0; i < g->deg[v]; i++) {",
+    "    int nb = g->adj[v][i];",
+    "    if (!visited[nb]) dfs(g, nb, visited);   // recurse into the unvisited neighbor",
+    "  }",
+    "}"
+  ];
+
   var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"},{id:4,val:"E"},{id:5,val:"F"}];
   var edges=[{from:0,to:1},{from:0,to:2},{from:1,to:3},{from:2,to:3},{from:3,to:4},{from:4,to:5},{from:2,to:5}];
   var adj={}; nodes.forEach(function(n){adj[n.id]=[];});
   edges.forEach(function(e){ adj[e.from].push(e.to); adj[e.to].push(e.from); });
-  Object.keys(adj).forEach(function(k){ adj[k].sort(function(a,b){return a-b;}); });
   function valOf(id){ return nodes.filter(function(n){return n.id===id;})[0].val; }
 
   function struct(nodeRoles, edgeActiveSet){
@@ -109,36 +159,36 @@
 
   function scriptFrames(){
     var frames=[];
-    function push(nodeRoles, edgeSet, narr){ frames.push({struct:struct(nodeRoles,edgeSet), narr:narr}); }
+    function push(nodeRoles, edgeSet, narr, code, codeLine){ frames.push({struct:struct(nodeRoles,edgeSet), narr:narr, code:code, codeLine:codeLine}); }
     push({},{}, "A small graph, 6 vertices.");
 
     // BFS from A
     (function(){
       var visited={}, order=[], queue=[0];
       visited[0]=true;
-      push(visitedRoles(visited,0), {}, "BFS from A: enqueue it.");
+      push(visitedRoles(visited,0), {}, "BFS from A: enqueue it.", BFS_CODE, [2,3]);
       while(queue.length){
         var cur=queue.shift();
         order.push(valOf(cur));
-        push(visitedRoles(visited,cur), {}, "Dequeue "+valOf(cur)+" — order so far: ["+order.join(", ")+"].");
+        push(visitedRoles(visited,cur), {}, "Dequeue "+valOf(cur)+" — order so far: ["+order.join(", ")+"].", BFS_CODE, [5,6]);
         adj[cur].forEach(function(nb){
-          if(!visited[nb]){ visited[nb]=true; queue.push(nb); var e={}; e[cur+":"+nb]=true; push(visitedRoles(visited,nb), e, "Discover "+valOf(nb)+", enqueue it."); }
+          if(!visited[nb]){ visited[nb]=true; queue.push(nb); var e={}; e[cur+":"+nb]=true; push(visitedRoles(visited,nb), e, "Discover "+valOf(nb)+", enqueue it.", BFS_CODE, [9,11]); }
         });
       }
-      push(visitedRoles(visited), {}, "BFS order: ["+order.join(", ")+"].");
+      push(visitedRoles(visited), {}, "BFS order: ["+order.join(", ")+"].", BFS_CODE, 4);
     })();
 
     // DFS from A
     (function(){
       var visited={}, order=[];
-      push({}, {}, "Now DFS from A, for comparison.");
+      push({}, {}, "Now DFS from A, for comparison.", DFS_CODE, 0);
       (function visit(id, parent){
         visited[id]=true; order.push(valOf(id));
         var e={}; if(parent!==undefined) e[parent+":"+id]=true;
-        push(visitedRoles(visited,id), e, "Visit "+valOf(id)+" — order so far: ["+order.join(", ")+"].");
+        push(visitedRoles(visited,id), e, "Visit "+valOf(id)+" — order so far: ["+order.join(", ")+"].", DFS_CODE, [1,2]);
         adj[id].forEach(function(nb){ if(!visited[nb]) visit(nb,id); });
       })(0, undefined);
-      push(visitedRoles(visited), {}, "DFS order: ["+order.join(", ")+"] — same vertices, different order than BFS.");
+      push(visitedRoles(visited), {}, "DFS order: ["+order.join(", ")+"] — same vertices, different order than BFS.", DFS_CODE, 6);
     })();
 
     return frames;
