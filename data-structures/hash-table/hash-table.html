@@ -46,6 +46,22 @@
       <p>This is the mechanism behind every language's built-in dictionary/map/object type (Python's
       <code>dict</code>, JavaScript's <code>Object</code>/<code>Map</code>, Java's <code>HashMap</code>) and
       behind database indexes built for fast exact-match lookups.</p>
+
+      <p><b>Implementation:</b> the code panel below backs each bucket with <code>Node *buckets[CAP]</code> —
+      a fixed-size array of chain heads, no bucket array resizing. Insert walks a bucket's chain once to
+      reject a duplicate key, then attaches the new node at whichever end that walk stopped: the bucket
+      pointer itself if the chain was empty, or the old tail's <code>next</code> if it wasn't. Delete and
+      search both walk the same chain with <code>strcmp</code>, comparing whole keys rather than just their
+      hashes — the hash only narrows which bucket to search, it never confirms a match by itself.</p>
+
+      <p><b>When it breaks:</b> this demo's hash function is deliberately weak — it just sums character
+      codes, so anagrams like <code>cat</code> and <code>act</code> hash identically and always collide,
+      exactly what the demo below shows. A real hash function needs to mix a key's bytes (position included)
+      so anagrams and near-duplicates scatter across buckets instead of piling into one. The other classic
+      failure is never resizing: even with a good hash function, a fixed <code>CAP</code> means chains grow
+      steadily longer as more keys arrive, and O(1) quietly degrades toward O(n). Production hash tables
+      watch the <em>load factor</em> (entries &divide; capacity) and, once it crosses some threshold, allocate
+      a bigger bucket array and rehash every existing key into it.</p>
     </div>
   </section>
 
@@ -57,6 +73,13 @@
       <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Chain at the active bucket</p>
       <div class="scroller"><div id="demoChain"></div></div>
       <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / deleteKey()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
@@ -79,33 +102,82 @@
   "use strict";
   var CAP=8;
   function hash(key){ var s=0; for(var i=0;i<key.length;i++) s+=key.charCodeAt(i); return s%CAP; }
+
+  var INIT_CODE=[
+    "void initTable(HashTable *t) {",
+    "  for (int i = 0; i < CAP; i++) t->buckets[i] = NULL;",
+    "}"
+  ];
+  var INSERT_CODE=[
+    "void insert(HashTable *t, const char *key) {",
+    "  unsigned idx = 0;",
+    "  for (int i = 0; key[i]; i++) idx += key[i];",
+    "  idx %= CAP;                                // hash(key) -> bucket index",
+    "  Node *cur = t->buckets[idx], *tail = NULL;",
+    "  while (cur) {",
+    "    if (strcmp(cur->key, key) == 0) return;    // already present",
+    "    tail = cur;",
+    "    cur = cur->next;",
+    "  }",
+    "  Node *node = malloc(sizeof(Node));",
+    "  strcpy(node->key, key);",
+    "  node->next = NULL;",
+    "  if (tail) tail->next = node;                 // chain onto the end",
+    "  else t->buckets[idx] = node;                 // first key in this bucket",
+    "}"
+  ];
+  var DELETE_CODE=[
+    "void deleteKey(HashTable *t, const char *key) {",
+    "  unsigned idx = 0;",
+    "  for (int i = 0; key[i]; i++) idx += key[i];",
+    "  idx %= CAP;",
+    "  Node *cur = t->buckets[idx], *prev = NULL;",
+    "  while (cur) {",
+    "    if (strcmp(cur->key, key) == 0) {          // found it",
+    "      if (prev) prev->next = cur->next;",
+    "      else t->buckets[idx] = cur->next;",
+    "      free(cur);",
+    "      return;",
+    "    }",
+    "    prev = cur;",
+    "    cur = cur->next;",
+    "  }",
+    "}"
+  ];
+
   function bucketCells(buckets, activeIdx, activeRole){
     return buckets.map(function(chain,i){ return {val:chain.length, role:i===activeIdx?activeRole:(chain.length?"":"dim")}; });
   }
-  function chainStruct(chain, activeRole, activeKey){
-    return {dir:"v", nullEnd:true, emptyText:"Empty bucket", nodes:chain.map(function(k){ return {val:k, role:(k===activeKey?activeRole:"")}; })};
+  function chainStruct(chain, activeRole, activeKey, landedKey){
+    return {dir:"v", nullEnd:true, emptyText:"Empty bucket",
+      linkLanded: chain.map(function(k){ return k===landedKey; }),
+      nodes:chain.map(function(k){ return {val:k, role:(k===activeKey?activeRole:"")}; })};
   }
 
   function scriptFrames(){
     var buckets=[]; for(var i=0;i<CAP;i++) buckets.push([]);
     var frames=[];
-    function push(idx, activeRole, key, narr){
-      frames.push({struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx]||[], activeRole, key)}, narr:narr});
+    function push(idx, activeRole, key, narr, code, codeLine, landedKey){
+      frames.push({struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx]||[], activeRole, key, landedKey)}, narr:narr, code:code, codeLine:codeLine});
     }
     function insert(key){
       var idx=hash(key);
-      push(idx,"","", "Hash \""+key+"\" — lands on bucket "+idx+".");
-      if(buckets[idx].length) push(idx,"",key, "Collision — chain onto bucket "+idx+".");
+      push(idx,"",key, "Hash \""+key+"\" — lands on bucket "+idx+".", INSERT_CODE, [1,3]);
+      var collision=buckets[idx].length>0;
+      var oldTail=collision?buckets[idx][buckets[idx].length-1]:undefined;
+      if(collision) push(idx,"",key, "Collision — walk the chain at bucket "+idx+" to its end.", INSERT_CODE, [5,9]);
       buckets[idx].push(key);
-      push(idx,"left head landed",key, "\""+key+"\" added to bucket "+idx+".");
+      push(idx,"left head landed",key, "\""+key+"\" added to bucket "+idx+".", INSERT_CODE, collision?13:14, collision?oldTail:key);
     }
     function del(key){
       var idx=hash(key);
-      push(idx,"left head",key, "Delete \""+key+"\" — found in bucket "+idx+".");
-      buckets[idx].splice(buckets[idx].indexOf(key),1);
-      push(idx,"",key, "\""+key+"\" removed from bucket "+idx+".");
+      push(idx,"left head",key, "Delete \""+key+"\" — found in bucket "+idx+".", DELETE_CODE, [5,6]);
+      var pos=buckets[idx].indexOf(key);
+      var predKey=pos>0?buckets[idx][pos-1]:undefined;
+      buckets[idx].splice(pos,1);
+      push(idx,"",key, "\""+key+"\" removed from bucket "+idx+".", DELETE_CODE, pos>0?7:8, predKey);
     }
-    push(undefined,"","", "An empty table, "+CAP+" buckets.");
+    push(undefined,"","", "Create the table: "+CAP+" empty buckets.", INIT_CODE, 1);
     insert("cat"); insert("dog"); insert("act"); insert("sun");
     del("dog");
     return frames;
