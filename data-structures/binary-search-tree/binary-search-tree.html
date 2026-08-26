@@ -47,6 +47,11 @@
       <p>The worst case happens when insertions arrive in already-sorted order, degenerating the tree into
       a straight line — no better than a linked list. Self-balancing variants like the AVL Tree exist
       specifically to rule that out.</p>
+
+      <p><b>When it breaks:</b> the two-children delete case is where bugs hide — splice out the in-order
+      successor without reattaching <em>its</em> right subtree first, and you silently drop an entire branch
+      of the tree. Forget the special case where the node being deleted is the root itself (no parent to
+      update) and you either crash or leave the tree pointing at a node that no longer exists.</p>
     </div>
   </section>
 
@@ -60,6 +65,13 @@
         </div>
       </div>
       <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / deleteNode()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
@@ -81,6 +93,44 @@
 (function(){
   "use strict";
 
+  var INSERT_CODE=[
+    "void insert(Node **root, int val) {",
+    "  Node *parent = NULL, *cur = *root;",
+    "  while (cur) {",
+    "    parent = cur;",
+    "    cur = (val < cur->val) ? cur->left : cur->right;",
+    "  }",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->left = n->right = NULL;",
+    "  if (!parent) *root = n;",
+    "  else if (val < parent->val) parent->left = n;",
+    "  else parent->right = n;",
+    "}"
+  ];
+  var DELETE_CODE=[
+    "void deleteNode(Node **root, int val) {",
+    "  Node *parent = NULL, *cur = *root;",
+    "  while (cur && cur->val != val) {",
+    "    parent = cur;",
+    "    cur = (val < cur->val) ? cur->left : cur->right;",
+    "  }",
+    "  if (!cur) return;                          // not found",
+    "",
+    "  if (cur->left && cur->right) {              // two children",
+    "    Node *succParent = cur, *succ = cur->right;",
+    "    while (succ->left) { succParent = succ; succ = succ->left; }",
+    "    cur->val = succ->val;",
+    "    parent = succParent; cur = succ;          // splice out succ below",
+    "  }",
+    "",
+    "  Node *child = cur->left ? cur->left : cur->right;",
+    "  if (!parent) *root = child;",
+    "  else if (parent->left == cur) parent->left = child;",
+    "  else parent->right = child;",
+    "  free(cur);",
+    "}"
+  ];
+
   function makeNode(val,id){ return {id:id, val:val, left:null, right:null}; }
   function toTreeNode(n, activeId, activeRole){
     if(!n) return null;
@@ -91,42 +141,42 @@
   function scriptFrames(){
     var nextId=0, root=null, frames=[];
     function node(v){ return {id:nextId++, val:v, left:null, right:null}; }
-    function push(activeId, activeRole, narr){ frames.push({struct:{root:toTreeNode(root,activeId,activeRole)}, narr:narr}); }
+    function push(activeId, activeRole, narr, code, codeLine){ frames.push({struct:{root:toTreeNode(root,activeId,activeRole)}, narr:narr, code:code, codeLine:codeLine}); }
     function insert(v){
-      if(!root){ push(undefined,"","Insert "+v+" — becomes the root."); root=node(v); push(root.id,"left head landed", v+" is the root."); return; }
-      push(root.id,"right","Insert "+v+".");
+      if(!root){ push(undefined,"","Insert "+v+" — becomes the root.",INSERT_CODE,8); root=node(v); push(root.id,"left head landed", v+" is the root.",INSERT_CODE,8); return; }
+      push(root.id,"right","Insert "+v+".",INSERT_CODE,[1,4]);
       var cur=root;
       while(true){
         if(v<cur.val){
-          if(!cur.left){ var n=node(v); cur.left=n; push(n.id,"left head landed", v+" placed left of "+cur.val+"."); return; }
-          cur=cur.left; push(cur.id,"right", v+" < parent — go left.");
+          if(!cur.left){ var n=node(v); cur.left=n; push(n.id,"left head landed", v+" placed left of "+cur.val+".",INSERT_CODE,9); return; }
+          cur=cur.left; push(cur.id,"right", v+" < parent — go left.",INSERT_CODE,4);
         } else {
-          if(!cur.right){ var n2=node(v); cur.right=n2; push(n2.id,"left head landed", v+" placed right of "+cur.val+"."); return; }
-          cur=cur.right; push(cur.id,"right", v+" > parent — go right.");
+          if(!cur.right){ var n2=node(v); cur.right=n2; push(n2.id,"left head landed", v+" placed right of "+cur.val+".",INSERT_CODE,10); return; }
+          cur=cur.right; push(cur.id,"right", v+" > parent — go right.",INSERT_CODE,4);
         }
       }
     }
     function del(v){
-      push(root.id,"right","Delete "+v+" — find it first.");
+      push(root.id,"right","Delete "+v+" — find it first.",DELETE_CODE,[1,5]);
       var parent=null, cur=root, isLeft=false;
-      while(cur && cur.val!==v){ push(cur.id,"right", v<cur.val?"go left":"go right"); parent=cur; if(v<cur.val){isLeft=true;cur=cur.left;} else {isLeft=false;cur=cur.right;} }
+      while(cur && cur.val!==v){ push(cur.id,"right", v<cur.val?"go left":"go right",DELETE_CODE,4); parent=cur; if(v<cur.val){isLeft=true;cur=cur.left;} else {isLeft=false;cur=cur.right;} }
       if(!cur) return;
-      push(cur.id,"left head","Found "+v+".");
+      push(cur.id,"left head","Found "+v+".",DELETE_CODE,6);
       function set(n){ if(!parent) root=n; else if(isLeft) parent.left=n; else parent.right=n; }
-      if(!cur.left && !cur.right){ set(null); push(undefined,"", v+" was a leaf — removed."); }
-      else if(!cur.left || !cur.right){ var c=cur.left||cur.right; set(c); push(c.id,"sorted landed", v+" had one child — it moves up."); }
+      if(!cur.left && !cur.right){ set(null); push(undefined,"", v+" was a leaf — removed.",DELETE_CODE,[15,19]); }
+      else if(!cur.left || !cur.right){ var c=cur.left||cur.right; set(c); push(c.id,"sorted landed", v+" had one child — it moves up.",DELETE_CODE,[15,19]); }
       else {
         var sp=cur, s=cur.right;
-        push(s.id,"right","Two children — find the in-order successor.");
-        while(s.left){ sp=s; s=s.left; push(s.id,"right","Keep going left to "+s.val+"."); }
+        push(s.id,"right","Two children — find the in-order successor.",DELETE_CODE,[8,9]);
+        while(s.left){ sp=s; s=s.left; push(s.id,"right","Keep going left to "+s.val+".",DELETE_CODE,10); }
         var sv=s.val;
-        push(s.id,"left head","Successor is "+sv+".");
+        push(s.id,"left head","Successor is "+sv+".",DELETE_CODE,11);
         cur.val=sv;
         if(sp===cur) sp.right=s.right; else sp.left=s.right;
-        push(cur.id,"sorted landed", v+" replaced by "+sv+".");
+        push(cur.id,"sorted landed", v+" replaced by "+sv+".",DELETE_CODE,[12,19]);
       }
     }
-    push(undefined,"","An empty tree.");
+    push(undefined,"","Create the tree: an empty root pointer.",INSERT_CODE,0);
     insert(50); insert(30); insert(70); insert(20); insert(40); insert(60); insert(80);
     del(30);
     del(50);

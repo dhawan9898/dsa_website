@@ -53,6 +53,17 @@
       <p>The guarantee — never worse than O(log n), no matter the insertion order — is what makes AVL
       trees (and relatives like red-black trees) the backbone of ordered sets/maps in standard libraries
       and database indexes.</p>
+
+      <p><b>Implementation:</b> the code panel below writes insert and delete <em>recursively</em> — unlike
+      the plain BST's iterative walk, AVL needs the call stack: rebalancing happens on the way back <em>up</em>
+      from wherever the tree actually changed, one ancestor at a time, and recursion is what gives you that
+      unwind for free.</p>
+
+      <p><b>When it breaks:</b> update a node's height <em>before</em> its children have finished rebalancing
+      (or skip the update entirely) and every balance-factor check above it works from stale data — either
+      missing a real imbalance or rotating when nothing was actually wrong. The other classic mistake is
+      stopping at the first rotation instead of continuing the unwind: fixing the nearest unbalanced node
+      doesn't guarantee an ancestor further up is still within [-1, +1].</p>
     </div>
   </section>
 
@@ -66,6 +77,13 @@
         </div>
       </div>
       <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
@@ -88,6 +106,30 @@
 (function(){
   "use strict";
 
+  var INSERT_CODE=[
+    "Node* insert(Node *node, int val) {",
+    "  if (!node) return makeNode(val);",
+    "  if (val < node->val) node->left = insert(node->left, val);",
+    "  else if (val > node->val) node->right = insert(node->right, val);",
+    "  else return node;                              // no duplicates",
+    "",
+    "  node->height = 1 + max(height(node->left), height(node->right));",
+    "  int bf = balanceFactor(node);",
+    "",
+    "  if (bf > 1) {",
+    "    if (balanceFactor(node->left) >= 0) return rotateRight(node);          // Left-Left",
+    "    node->left = rotateLeft(node->left);                                    // Left-Right",
+    "    return rotateRight(node);",
+    "  }",
+    "  if (bf < -1) {",
+    "    if (balanceFactor(node->right) <= 0) return rotateLeft(node);          // Right-Right",
+    "    node->right = rotateRight(node->right);                                 // Right-Left",
+    "    return rotateLeft(node);",
+    "  }",
+    "  return node;",
+    "}"
+  ];
+
   function h(n){ return n?n.height:0; }
   function updateHeight(n){ n.height=1+Math.max(h(n.left),h(n.right)); }
   function bfOf(n){ return h(n.left)-h(n.right); }
@@ -103,33 +145,33 @@
   function scriptFrames(){
     var idBox={n:0}, root=null, frames=[];
     function makeNode(v){ return {id:idBox.n++, val:v, left:null, right:null, height:1}; }
-    function push(activeId,activeRole,narr){ frames.push({struct:{root:toTreeNode(root,activeId,activeRole)}, narr:narr}); }
+    function push(activeId,activeRole,narr,codeLine){ frames.push({struct:{root:toTreeNode(root,activeId,activeRole)}, narr:narr, code:INSERT_CODE, codeLine:codeLine}); }
     function rebalance(node, setter){
       updateHeight(node);
       var bf=bfOf(node), result=node;
       if(bf>1){
-        if(bfOf(node.left)>=0){ push(node.id,"pivot","Left-left unbalanced at "+node.val+" — rotate right."); result=rotateRight(node); }
-        else { push(node.id,"pivot","Left-right unbalanced at "+node.val+" — rotate left then right."); node.left=rotateLeft(node.left); result=rotateRight(node); }
-        push(result.id,"sorted landed", result.val+" is the new subtree top.");
+        if(bfOf(node.left)>=0){ push(node.id,"pivot","Left-left unbalanced at "+node.val+" — rotate right.",[9,13]); result=rotateRight(node); }
+        else { push(node.id,"pivot","Left-right unbalanced at "+node.val+" — rotate left then right.",[9,13]); node.left=rotateLeft(node.left); result=rotateRight(node); }
+        push(result.id,"sorted landed", result.val+" is the new subtree top.",[9,13]);
       } else if(bf<-1){
-        if(bfOf(node.right)<=0){ push(node.id,"pivot","Right-right unbalanced at "+node.val+" — rotate left."); result=rotateLeft(node); }
-        else { push(node.id,"pivot","Right-left unbalanced at "+node.val+" — rotate right then left."); node.right=rotateRight(node.right); result=rotateLeft(node); }
-        push(result.id,"sorted landed", result.val+" is the new subtree top.");
+        if(bfOf(node.right)<=0){ push(node.id,"pivot","Right-right unbalanced at "+node.val+" — rotate left.",[14,18]); result=rotateLeft(node); }
+        else { push(node.id,"pivot","Right-left unbalanced at "+node.val+" — rotate right then left.",[14,18]); node.right=rotateRight(node.right); result=rotateLeft(node); }
+        push(result.id,"sorted landed", result.val+" is the new subtree top.",[14,18]);
       }
       setter(result);
     }
     function insert(v){
-      if(!root){ push(undefined,"","Insert "+v+" — becomes the root."); root=makeNode(v); push(root.id,"left head landed", v+" is the root."); return; }
-      push(root.id,"right","Insert "+v+".");
+      if(!root){ push(undefined,"","Insert "+v+" — becomes the root.",1); root=makeNode(v); push(root.id,"left head landed", v+" is the root.",1); return; }
+      push(root.id,"right","Insert "+v+".",[2,3]);
       (function ins(node,setter){
-        if(!node){ var n=makeNode(v); push(n.id,"left head landed", v+" placed as a new leaf."); setter(n); return; }
-        push(node.id,"right", v<node.val ? (v+" < "+node.val+" — go left.") : (v+" > "+node.val+" — go right."));
+        if(!node){ var n=makeNode(v); push(n.id,"left head landed", v+" placed as a new leaf.",1); setter(n); return; }
+        push(node.id,"right", v<node.val ? (v+" < "+node.val+" — go left.") : (v+" > "+node.val+" — go right."), v<node.val?2:3);
         if(v<node.val) ins(node.left, function(x){node.left=x;});
         else ins(node.right, function(x){node.right=x;});
         rebalance(node, setter);
       })(root, function(n){ root=n; });
     }
-    push(undefined,"","An empty AVL tree.");
+    push(undefined,"","Create the tree: an empty root pointer.",1);
     insert(10); insert(20); insert(30);
     insert(40); insert(50);
     insert(25);
