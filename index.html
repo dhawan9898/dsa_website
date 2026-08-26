@@ -277,6 +277,28 @@
     </div>
   </section>
 
+  <section class="panel">
+    <div class="panel-head"><h2>Algorithmic Techniques</h2><span class="sub">2 techniques</span></div>
+    <div class="panel-body">
+      <p class="intro">Two different shapes of clever: one explores every path and undoes the ones that fail, the other sorts once and never looks back.</p>
+      <div class="algo-grid">
+
+        <a class="algo-card" href="techniques/n-queens/n-queens.html">
+          <h3>N-Queens</h3>
+          <p>Place a queen, recurse into the next row; hit a dead end, undo and try the next column.</p>
+          <div class="badges"><span>O(N!) worst case</span><span>Space O(N)</span></div>
+        </a>
+
+        <a class="algo-card" href="techniques/activity-selection/activity-selection.html">
+          <h3>Activity Selection</h3>
+          <p>Sort by finish time, then keep any activity that doesn't overlap the last one kept.</p>
+          <div class="badges"><span>O(N log N)</span><span>Space O(N)</span></div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
   <footer>
     Algorithm pages build the full sequence of steps up front and play it back. Data structure pages work a
     little differently — the structure stays alive between operations, so you can push, then pop, then

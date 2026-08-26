@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activity Selection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .timeline{display:flex;flex-direction:column;gap:6px;min-width:400px}
+  .timeline-row{display:flex;align-items:center;gap:8px;height:30px}
+  .timeline-label{flex:0 0 20px;font-family:"IBM Plex Mono",monospace;font-weight:600;text-align:center}
+  .timeline-track{position:relative;flex:1 1 auto;height:26px;background:#fff;border:1px solid var(--faint);border-radius:3px}
+  .timeline-bar{position:absolute;top:2px;bottom:2px;border-radius:3px;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;white-space:nowrap;overflow:hidden;
+    transition:left .2s var(--ease),width .2s var(--ease),background .2s var(--ease),outline-color .2s var(--ease),opacity .2s var(--ease)}
+  .timeline-bar.pending{background:#fff;border:1px solid var(--faint);color:var(--ink)}
+  .timeline-bar.trying{background:#fff;border:1px solid var(--plot);outline:3px solid var(--plot);outline-offset:-2px;color:var(--ink)}
+  .timeline-bar.selected{background:var(--seal);border:1px solid var(--seal);color:#fff}
+  .timeline-bar.rejected{background:var(--stamp);border:1px solid var(--stamp);color:#fff;opacity:.5}
+  .timeline-ruler{display:flex;align-items:center;gap:8px;height:14px;margin-top:2px}
+  .timeline-ruler .timeline-label{visibility:hidden}
+  .timeline-ruler-track{position:relative;flex:1 1 auto;height:14px}
+  .timeline-ruler-track .tick{position:absolute;top:0;transform:translateX(-50%);font-family:"IBM Plex Mono",monospace;font-size:9.5px;color:var(--ink-soft)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Greedy &middot; Sort &middot; Scan &middot; Never Reconsider</p>
+      <h1>Activity&nbsp;Selection</h1>
+    </div>
+    <p class="note">Given a set of activities with start and end times, pick the largest possible group that never overlaps.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>One resource — one meeting room, one server, one runway — and a list of activities, each wanting it
+      for a fixed <code>[start, end)</code> window. Two activities <em>conflict</em> if their windows overlap
+      (touching at a single instant, one ending exactly when the next begins, is fine). The goal: schedule the
+      <em>maximum number</em> of activities with no conflicts. Unlike <a href="../n-queens/n-queens.html">N-Queens</a>,
+      there's no need to explore and undo — a single greedy pass, made safe by the right sort order, solves it
+      exactly.</p>
+
+      <p><b>Implementation:</b> sort every activity by <em>finish</em> time, earliest first. Then scan once,
+      left to right, keeping a running <code>lastEnd</code> — the finish time of the most recently selected
+      activity. Any activity whose start is at or after <code>lastEnd</code> gets selected (it can't conflict
+      with anything already chosen); anything else is skipped for good and never reconsidered. That's the
+      entire algorithm: one sort, one pass, no backtracking.</p>
+
+      <table class="notes-table">
+        <tr><th>Step</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Sort by finish time</td><td><code>qsort</code> on <code>end</code></td><td>O(N log N)</td></tr>
+        <tr><td>Single scan</td><td>Compare each start to <code>lastEnd</code></td><td>O(N)</td></tr>
+        <tr><td>Total</td><td></td><td><b>O(N log N)</b>, dominated by the sort</td></tr>
+      </table>
+
+      <p><b>Why finish time, specifically:</b> the activity that finishes soonest can always be part of
+      <em>some</em> optimal schedule — whatever an optimal solution picked for that first slot, swapping in the
+      earliest-finishing activity instead leaves at least as much room for everything after it, so it can never
+      make the schedule worse. Repeating that argument on whatever's left after each pick is what makes the
+      greedy choice safe at every step, all the way through — no combination of "skip this one, take two
+      later" can ever beat it.</p>
+
+      <p><b>Common mistake:</b> sorting by <em>duration</em> instead, on the intuition that shorter activities
+      leave more room. It's a natural guess and a classic trap. Take A(0&ndash;3), B(2&ndash;4), C(3&ndash;6):
+      B is shortest (length 2, versus 3 for the others), but B conflicts with <em>both</em> A and C, so picking
+      it first — and never reconsidering, same as any greedy pass — strands you at just 1 activity. Sorting by
+      finish time instead picks A first (it finishes at 3), correctly skips B (starts at 2, before A ends), and
+      still catches C (starts at 3, exactly when A ends) — 2 activities, the true optimum. Sorting by
+      <em>start</em> time fails the same way, for the same reason: neither says anything about how much room a
+      pick leaves behind.</p>
+
+      <p>Space is just O(N) for the sorted copy — no recursion, no call stack growing and shrinking, which is
+      the clearest contrast with <a href="../n-queens/n-queens.html">N-Queens</a>' backtracking search: a
+      greedy algorithm never explores more than one path, because it never needs to look back.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; the same 6-activity example, sorted then scanned once</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="timeline" id="timelineHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+      <div class="legend">
+        <span class="key"><i class="swatch right"></i> being considered</span>
+        <span class="key"><i class="swatch found"></i> selected</span>
+        <span class="key"><i class="swatch left"></i> rejected (overlaps)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; cmpByEnd() / selectActivities()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="activity-selection-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try the A/B/C duration counterexample above in the visualizer's Randomize control — generate a few
+    sets and notice the greedy pass never needs to undo a choice, unlike N-Queens next door.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int cmpByEnd(const void *a, const void *b) {",
+    "  return ((Activity*)a)->end - ((Activity*)b)->end;",
+    "}",
+    "",
+    "int selectActivities(Activity acts[], int n, int chosen[]) {",
+    "  qsort(acts, n, sizeof(Activity), cmpByEnd);        // earliest finish time first",
+    "  int count = 0, lastEnd = -1;",
+    "  for (int i = 0; i < n; i++) {",
+    "    if (acts[i].start >= lastEnd) {                   // doesn't overlap the last pick",
+    "      chosen[count++] = i;",
+    "      lastEnd = acts[i].end;",
+    "    }",
+    "  }",
+    "  return count;",
+    "}"
+  ];
+
+  var FIXED=[
+    {id:"E", start:5, end:9}, {id:"B", start:2, end:5}, {id:"F", start:8, end:10},
+    {id:"A", start:1, end:3}, {id:"D", start:6, end:8}, {id:"C", start:4, end:6}
+  ];
+
+  function renderTimeline(host, timeline){
+    host.innerHTML="";
+    var maxEnd=1;
+    timeline.forEach(function(a){ if(a.end>maxEnd) maxEnd=a.end; });
+    timeline.forEach(function(a){
+      var row=document.createElement("div"); row.className="timeline-row";
+      var label=document.createElement("div"); label.className="timeline-label"; label.textContent=a.id;
+      var track=document.createElement("div"); track.className="timeline-track";
+      var bar=document.createElement("div"); bar.className="timeline-bar "+a.role;
+      bar.style.left=(a.start/maxEnd*100)+"%";
+      bar.style.width=Math.max(3,(a.end-a.start)/maxEnd*100)+"%";
+      bar.textContent=a.start+"–"+a.end;
+      track.appendChild(bar);
+      row.appendChild(label); row.appendChild(track);
+      host.appendChild(row);
+    });
+    var ruler=document.createElement("div"); ruler.className="timeline-ruler";
+    var rlabel=document.createElement("div"); rlabel.className="timeline-label"; rlabel.textContent="·";
+    var rtrack=document.createElement("div"); rtrack.className="timeline-ruler-track";
+    var step=Math.max(1,Math.round(maxEnd/8));
+    for(var t=0;t<=maxEnd;t+=step){
+      var tick=document.createElement("span"); tick.className="tick"; tick.style.left=(t/maxEnd*100)+"%"; tick.textContent=t;
+      rtrack.appendChild(tick);
+    }
+    ruler.appendChild(rlabel); ruler.appendChild(rtrack);
+    host.appendChild(ruler);
+  }
+
+  function scriptFrames(){
+    var original=FIXED.map(function(a){ return {id:a.id, start:a.start, end:a.end}; });
+    var sorted=original.slice().sort(function(a,b){ return a.end-b.end; });
+    var n=sorted.length;
+    var roles=new Array(n).fill("pending");
+    var frames=[], lastEnd=-1, selCount=0, chosenIds=[];
+
+    function snap(){
+      return sorted.map(function(a,i){ return {id:a.id, start:a.start, end:a.end, role:roles[i]}; });
+    }
+    function push(timeline, narr, codeLine){
+      frames.push({timeline:timeline, narr:narr, code:CODE, codeLine:codeLine});
+    }
+
+    push(original.map(function(a){ return {id:a.id, start:a.start, end:a.end, role:"pending"}; }),
+      "Start with "+n+" activities, in input order.", 4);
+    push(snap(), "Sort by finish time — earliest deadline first.", 5);
+
+    for(var i=0;i<n;i++){
+      var a=sorted[i];
+      roles[i]="trying";
+      var frontier = selCount===0 ? "nothing is selected yet, so any start time qualifies" : ("the last pick finishes at "+lastEnd);
+      push(snap(), "Consider "+a.id+" ("+a.start+"–"+a.end+"): "+frontier+".", 8);
+      if(a.start>=lastEnd){
+        roles[i]="selected"; selCount++; lastEnd=a.end; chosenIds.push(a.id);
+        push(snap(), a.id+" starts at "+a.start+" — no overlap, so select it. It now finishes at "+a.end+".", [9,10]);
+      } else {
+        roles[i]="rejected";
+        push(snap(), a.id+" starts at "+a.start+", before the last pick finishes at "+lastEnd+" — it overlaps, so reject it.", 8);
+      }
+    }
+    push(snap(), "Done — selected "+selCount+" of "+n+" activities: "+chosenIds.join(", ")+".", 13);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      renderTimeline(document.getElementById("timelineHost"), frame.timeline);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>
