@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointers in C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Addresses &middot; & and * &middot; Pass by Reference</p>
+      <h1>Pointers&nbsp;in&nbsp;C</h1>
+    </div>
+    <p class="note">A pointer is just a variable whose value happens to be a memory address — nothing more mysterious than that.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Every variable lives somewhere in memory, at its own address. A <b>pointer</b> is just a variable
+      whose <em>value</em> is one of those addresses — <code>int *p</code> declares <code>p</code> as
+      "a pointer to an int," meaning whatever address it holds should have an <code>int</code> stored there.
+      Two operators do all the work: <code>&amp;x</code> means "give me <code>x</code>'s address" (turns a
+      variable into a pointer to it), and <code>*p</code> means "go to the address <code>p</code> holds and
+      read (or write) what's stored there" — called <b>dereferencing</b>.</p>
+
+      <p>The single biggest reason pointers exist is that C passes arguments <b>by value</b>: a function
+      gets its own copy of whatever you pass it, so changes inside the function never touch the caller's
+      original variable — unless what you pass is an address. Passing <code>&amp;a</code> instead of
+      <code>a</code> still copies a value into the function (the address itself), but that copied address
+      still points at the caller's real variable, so writing through it with <code>*pa = ...</code> changes
+      the original. That's how <a href="#swap-demo">the classic swap function</a> below actually swaps two
+      variables — no other way to do it in C.</p>
+
+      <p><b>Implementation:</b> pointer arithmetic is exactly the address formula from
+      <a href="../arrays-memory/arrays-memory.html">Arrays &amp; Memory</a> — <code>arr + i</code> computes
+      the same address as <code>&amp;arr[i]</code>, and <code>*(arr + i)</code> reads the same value as
+      <code>arr[i]</code>. Array indexing in C isn't a separate mechanism from pointers; it's pointer
+      arithmetic with friendlier syntax.</p>
+
+      <p><b>When it breaks:</b> four classic bugs, all from treating an address as more trustworthy than it
+      is. Dereferencing a <b>NULL</b> pointer (one explicitly set to point at nothing) crashes immediately —
+      loud, but at least obvious. A <b>dangling pointer</b> — one that still holds the address of memory
+      that's already been freed — is worse: the address looks valid, so <code>*p</code> might silently
+      return garbage, or corrupt whatever now legitimately lives at that address, often far from the line
+      that freed it. A <b>memory leak</b> is the mirror case: losing the only pointer to some allocated
+      memory before freeing it means nothing can ever free it again. And an <b>uninitialized pointer</b> —
+      declared but never set to point anywhere in particular — holds whatever garbage address happened to be
+      sitting in memory, so dereferencing it is undefined behavior from the very first use.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="swap-demo">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; swapping two variables through pointers</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="varHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; swap()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <footer>
+    Next: every "node" on this site's linked structures — <a href="../../data-structures/linked-list/linked-list.html">linked
+    list</a>, <a href="../../data-structures/binary-search-tree/binary-search-tree.html">BST</a>,
+    <a href="../../data-structures/trie/trie.html">trie</a> — is exactly this: a pointer field holding the
+    address of the next thing, instead of two integer variables.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "void swap(int *pa, int *pb) {",
+    "  int temp = *pa;      // read through pa",
+    "  *pa = *pb;           // write through pa",
+    "  *pb = temp;          // write through pb",
+    "}"
+  ];
+
+  var ADDR_A=0x2000, ADDR_B=0x2004;
+  function hex(n){ return "0x"+n.toString(16).toUpperCase(); }
+
+  function ptrLabel(addr){ return addr===ADDR_A ? "→a" : (addr===ADDR_B ? "→b" : "·"); }
+
+  function scriptFrames(){
+    var a=5, b=10, frames=[];
+    function push(vals, roles, narr, codeLine){
+      frames.push({
+        cells:[
+          {val:vals.a, role:roles.a||"", label:hex(ADDR_A)},
+          {val:vals.b, role:roles.b||"", label:hex(ADDR_B)},
+          {val:vals.pa!==undefined?ptrLabel(vals.pa):"·", role:roles.pa||"", label:"pa"},
+          {val:vals.pb!==undefined?ptrLabel(vals.pb):"·", role:roles.pb||"", label:"pb"}
+        ],
+        narr:narr, code:CODE, codeLine:codeLine
+      });
+    }
+    push({a:a,b:b}, {}, "Two variables, a and b, at their own addresses in memory.", undefined);
+    push({a:a,b:b,pa:ADDR_A,pb:ADDR_B}, {a:"left head",pa:"left head landed"}, "pa = &a: pa now holds a's address, "+hex(ADDR_A)+".", undefined);
+    push({a:a,b:b,pa:ADDR_A,pb:ADDR_B}, {b:"right head",pb:"right head landed"}, "pb = &b: pb now holds b's address, "+hex(ADDR_B)+".", undefined);
+    var temp=a;
+    push({a:a,b:b,pa:ADDR_A,pb:ADDR_B}, {a:"left head",pa:"left head"}, "Call swap(pa, pb). Inside: temp = *pa reads through pa — temp = "+temp+".", 1);
+    a=b;
+    push({a:a,b:b,pa:ADDR_A,pb:ADDR_B}, {a:"left head landed",pb:"right head"}, "*pa = *pb: write "+b+" into whatever pa points at. a becomes "+a+".", 2);
+    b=temp;
+    push({a:a,b:b,pa:ADDR_A,pb:ADDR_B}, {b:"right head landed",pa:"left head"}, "*pb = temp: write "+temp+" into whatever pb points at. b becomes "+b+".", 3);
+    push({a:a,b:b,pa:ADDR_A,pb:ADDR_B}, {a:"left head landed",b:"right head landed"}, "swap returns. a = "+a+", b = "+b+" — genuinely swapped, because swap wrote through the addresses it was given, not to copies.", 4);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 1300,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("varHost"), frame.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>
