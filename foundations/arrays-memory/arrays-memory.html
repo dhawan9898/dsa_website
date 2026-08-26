@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arrays &amp; Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Contiguous Memory &middot; O(1) Indexing</p>
+      <h1>Arrays&nbsp;&amp;&nbsp;Memory</h1>
+    </div>
+    <p class="note">Why indexing into an array is O(1): it's one multiplication and one addition, no matter how big the array is or which index you ask for.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>An array is a block of memory just large enough to hold every element, back to back, with nothing
+      in between — that's what <b>contiguous</b> means. Because every element is the same fixed size (an
+      <code>int</code> is always 4 bytes, say), the computer never has to search for element <code>i</code>:
+      it can compute exactly where that element starts with one multiplication and one addition —
+      <code>address = base + i &times; elementSize</code> — and jump straight there. That single piece of
+      arithmetic, not a search, is the entire reason array indexing is O(1): it costs exactly the same
+      whether <code>i</code> is 0 or 999,999, and exactly the same on an array of 10 elements or 10 million.</p>
+
+      <p><b>Implementation:</b> the demo below makes that formula concrete instead of abstract — watch the
+      exact address get computed for a few different indices, including the very last one, and notice it's
+      always the same one-step arithmetic. This is also why arrays can't grow: the memory right after the
+      last element might already belong to something else, so "adding one more slot" isn't possible in
+      place — it means allocating an entirely new, bigger block and copying everything over.</p>
+
+      <p><b>Stack vs. heap:</b> a fixed-size local array like <code>int arr[10];</code> is allocated on the
+      <a href="../recursion/recursion.html">call stack</a> — fast, automatic, and freed the instant the
+      function returns, but its size has to be known at compile time and it can't outlive the function. A
+      dynamically-sized array via <code>malloc(n * sizeof(int))</code> lives on the <b>heap</b> instead: its
+      size can depend on a runtime value, and it survives until explicitly freed — which is also the risk,
+      since nothing frees it automatically. Forgetting to is a memory leak; freeing it and using it anyway is
+      a dangling-pointer bug, the same class of mistake covered on the
+      <a href="../pointers/pointers.html">Pointers in C</a> page.</p>
+
+      <p><b>When it breaks:</b> C never checks array bounds for you. Reading or writing <code>arr[n]</code>
+      on an array of size <code>n</code> doesn't raise a clean error — the address formula still computes a
+      valid-looking address, it's just one element past the block C actually gave you, so the read or write
+      silently touches whatever memory happens to sit there next. That's <b>undefined behavior</b>: sometimes
+      it does nothing visible, sometimes it corrupts an unrelated variable, and sometimes it crashes the
+      program much later, far from the line that actually caused it.</p>
+
+      <p>One more thing Big-O deliberately can't see: because array elements are contiguous, reading them in
+      order lets the CPU pull a whole neighborhood of them into fast cache memory at once, so later reads in
+      that same walk are often almost free. A <a href="../../data-structures/linked-list/linked-list.html">linked
+      list</a> traversal is the same O(n), but its nodes can be scattered anywhere in memory — same Big-O,
+      often meaningfully slower in practice. Big-O counts <em>operations</em>, not memory layout.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; computing an address for every index</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="arrHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <footer>
+    Next: see this in action on any array-backed page — <a href="../../data-structures/stack/stack.html">Stack</a>,
+    <a href="../../data-structures/circular-queue/circular-queue.html">Circular Queue</a>, or any sort — every
+    one of them leans on O(1) indexing to make its own guarantees hold.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var BASE=0x1000, ELSIZE=4;
+  var arr=[42,17,8,99,3];
+
+  function hex(n){ return "0x"+n.toString(16).toUpperCase(); }
+  function cellsFor(activeIdx){
+    return arr.map(function(v,i){
+      return {val:v, role:(i===activeIdx?"left head landed":""), label:hex(BASE+i*ELSIZE)};
+    });
+  }
+
+  function scriptFrames(){
+    var frames=[];
+    function push(activeIdx, narr){ frames.push({cells:cellsFor(activeIdx), narr:narr}); }
+
+    push(undefined, "Five ints, laid out back to back starting at "+hex(BASE)+". Each label below is that slot's real address.");
+    push(0, "arr[0]: address = base + 0 × "+ELSIZE+" = "+hex(BASE)+" — element 0 sits right at the base address.");
+    push(1, "arr[1]: address = "+hex(BASE)+" + 1 × "+ELSIZE+" = "+hex(BASE+ELSIZE)+".");
+    push(3, "arr[3]: address = "+hex(BASE)+" + 3 × "+ELSIZE+" = "+hex(BASE+3*ELSIZE)+" — one multiply, one add, same as before.");
+    push(4, "arr[4] — the last element: address = "+hex(BASE)+" + 4 × "+ELSIZE+" = "+hex(BASE+4*ELSIZE)+". Exactly as cheap as arr[0] was.");
+    push(undefined, "That's O(1): the arithmetic doesn't get any more expensive as the index or the array size grows.");
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 1300,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("arrHost"), frame.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>
