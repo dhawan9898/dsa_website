@@ -69,6 +69,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / deleteKey() / search()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Loading…</p>
@@ -92,14 +99,67 @@
   var CAP=8;
   function hash(key){ var s=0; for(var i=0;i<key.length;i++) s+=key.charCodeAt(i); return s%CAP; }
 
+  var INIT_CODE=[
+    "void initTable(HashTable *t) {",
+    "  for (int i = 0; i < CAP; i++) t->buckets[i] = NULL;",
+    "}"
+  ];
+  var INSERT_CODE=[
+    "void insert(HashTable *t, const char *key) {",
+    "  unsigned idx = 0;",
+    "  for (int i = 0; key[i]; i++) idx += key[i];",
+    "  idx %= CAP;                                // hash(key) -> bucket index",
+    "  Node *cur = t->buckets[idx], *tail = NULL;",
+    "  while (cur) {",
+    "    if (strcmp(cur->key, key) == 0) return;    // already present",
+    "    tail = cur;",
+    "    cur = cur->next;",
+    "  }",
+    "  Node *node = malloc(sizeof(Node));",
+    "  strcpy(node->key, key);",
+    "  node->next = NULL;",
+    "  if (tail) tail->next = node;                 // chain onto the end",
+    "  else t->buckets[idx] = node;                 // first key in this bucket",
+    "}"
+  ];
+  var DELETE_CODE=[
+    "void deleteKey(HashTable *t, const char *key) {",
+    "  unsigned idx = 0;",
+    "  for (int i = 0; key[i]; i++) idx += key[i];",
+    "  idx %= CAP;",
+    "  Node *cur = t->buckets[idx], *prev = NULL;",
+    "  while (cur) {",
+    "    if (strcmp(cur->key, key) == 0) {          // found it",
+    "      if (prev) prev->next = cur->next;",
+    "      else t->buckets[idx] = cur->next;",
+    "      free(cur);",
+    "      return;",
+    "    }",
+    "    prev = cur;",
+    "    cur = cur->next;",
+    "  }",
+    "}"
+  ];
+  var SEARCH_CODE=[
+    "Node *search(HashTable *t, const char *key) {",
+    "  unsigned idx = 0;",
+    "  for (int i = 0; key[i]; i++) idx += key[i];",
+    "  idx %= CAP;",
+    "  for (Node *cur = t->buckets[idx]; cur; cur = cur->next)",
+    "    if (strcmp(cur->key, key) == 0) return cur;   // match",
+    "  return NULL;                                     // walked the whole chain, not found",
+    "}"
+  ];
+
   function bucketCells(buckets, activeIdx, activeRole){
     return buckets.map(function(chain,i){
       return { val: chain.length, role: i===activeIdx ? activeRole : (chain.length?"":"dim") };
     });
   }
-  function chainStruct(chain, activeRole, activeKey){
+  function chainStruct(chain, activeRole, activeKey, landedKey){
     return {
       dir:"v", nullEnd:true, emptyText:"Empty bucket",
+      linkLanded: chain.map(function(k){ return k===landedKey; }),
       nodes: chain.map(function(k){ return {val:k, role:(k===activeKey?activeRole:"")}; })
     };
   }
@@ -109,17 +169,19 @@
     var oc=(state.opsCount||0)+1;
     var buckets=state.buckets.map(function(b){ return b.slice(); });
     var idx=hash(key), frames=[];
-    function frame(activeRole, phase, narr){
-      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key)}, phase:phase, narr:narr, ops:oc};
+    function frame(activeRole, phase, narr, code, codeLine, landedKey){
+      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key, landedKey)}, phase:phase, narr:narr, ops:oc, code:code, codeLine:codeLine};
     }
-    frames.push(frame("", "hash", "Hash \""+key+"\": sum its character codes and take mod "+CAP+" — lands on bucket "+idx+"."));
+    frames.push(frame("", "hash", "Hash \""+key+"\": sum its character codes and take mod "+CAP+" — lands on bucket "+idx+".", INSERT_CODE, [1,3]));
     if(buckets[idx].indexOf(key)>=0) return {error:"\""+key+"\" is already in the table (bucket "+idx+")."};
     var collision=buckets[idx].length>0;
+    var oldTail=collision?buckets[idx][buckets[idx].length-1]:undefined;
     if(collision){
-      frames.push(frame("", "collision", "Bucket "+idx+" already holds "+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+" — a collision. Chain \""+key+"\" onto the end."));
+      frames.push(frame("", "collision", "Bucket "+idx+" already holds "+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+" — a collision. Walk the chain to its end before attaching \""+key+"\".", INSERT_CODE, [5,9]));
     }
     buckets[idx].push(key);
-    frames.push(frame("left head landed", "inserted", "\""+key+"\" added to bucket "+idx+"."+(collision?" Chain length is now "+buckets[idx].length+".":"")));
+    var landedKey=collision?oldTail:key;
+    frames.push(frame("left head landed", "inserted", "\""+key+"\" added to bucket "+idx+"."+(collision?" Chain length is now "+buckets[idx].length+".":""), INSERT_CODE, collision?13:14, landedKey));
     return {frames:frames, state:{buckets:buckets, opsCount:oc}};
   }
   function opDelete(state, key){
@@ -127,15 +189,16 @@
     var oc=(state.opsCount||0)+1;
     var buckets=state.buckets.map(function(b){ return b.slice(); });
     var idx=hash(key), frames=[];
-    function frame(activeRole, phase, narr){
-      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key)}, phase:phase, narr:narr, ops:oc};
+    function frame(activeRole, phase, narr, code, codeLine, landedKey){
+      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key, landedKey)}, phase:phase, narr:narr, ops:oc, code:code, codeLine:codeLine};
     }
-    frames.push(frame("", "hash", "Hash \""+key+"\": lands on bucket "+idx+". Search that bucket's chain for it."));
+    frames.push(frame("", "hash", "Hash \""+key+"\": lands on bucket "+idx+". Walk that bucket's chain to find it.", DELETE_CODE, [1,4]));
     var pos=buckets[idx].indexOf(key);
     if(pos<0) return {error:"\""+key+"\" isn't in the table."};
-    frames.push(frame("left head", "found", "Found \""+key+"\" in bucket "+idx+"."));
+    frames.push(frame("left head", "found", "Found \""+key+"\" in bucket "+idx+".", DELETE_CODE, [5,6]));
+    var predKey=pos>0?buckets[idx][pos-1]:undefined;
     buckets[idx].splice(pos,1);
-    frames.push(frame("", "deleted", "\""+key+"\" removed from bucket "+idx+"."+(buckets[idx].length ? (" "+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+" remain in the chain.") : " The bucket is now empty.")));
+    frames.push(frame("", "deleted", "\""+key+"\" removed from bucket "+idx+"."+(buckets[idx].length ? (" "+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+" remain in the chain.") : " The bucket is now empty."), DELETE_CODE, pos>0?7:8, predKey));
     return {frames:frames, state:{buckets:buckets, opsCount:oc}};
   }
   function opSearch(state, key){
@@ -143,24 +206,29 @@
     var oc=(state.opsCount||0)+1;
     var buckets=state.buckets.map(function(b){ return b.slice(); });
     var idx=hash(key), frames=[];
-    function frame(activeRole, phase, narr){
-      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key)}, phase:phase, narr:narr, ops:oc};
+    function frame(activeRole, phase, narr, code, codeLine){
+      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key)}, phase:phase, narr:narr, ops:oc, code:code, codeLine:codeLine};
     }
-    frames.push(frame("", "hash", "Hash \""+key+"\": lands on bucket "+idx+"."));
+    frames.push(frame("", "hash", "Hash \""+key+"\": lands on bucket "+idx+".", SEARCH_CODE, [1,3]));
     var found=buckets[idx].indexOf(key)>=0;
-    if(found) frames.push(frame("found", "found", "\""+key+"\" found in bucket "+idx+"."));
-    else frames.push(frame("", "not-found", "\""+key+"\" isn't in bucket "+idx+"'s chain ("+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+") — not present."));
+    if(found) frames.push(frame("found", "found", "\""+key+"\" found in bucket "+idx+".", SEARCH_CODE, 5));
+    else frames.push(frame("", "not-found", "\""+key+"\" isn't in bucket "+idx+"'s chain ("+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+") — not present.", SEARCH_CODE, 6));
     return {frames:frames, state:{buckets:buckets, opsCount:oc}};
   }
 
   function init(){
-    var buckets=[]; for(var i=0;i<CAP;i++) buckets.push([]);
-    ["cat","dog","ax","sun"].forEach(function(k){ buckets[hash(k)].push(k); });
-    var state={buckets:buckets, opsCount:0};
-    return {state:state, frames:[{
-      struct:{buckets:bucketCells(buckets,undefined,""), chain:chainStruct([],"")},
-      phase:"start", narr:"A hash table hashes each key to a bucket index, then chains colliding keys together in that bucket as a small linked list (seeded here with 4 keys).", ops:0
-    }]};
+    var state={buckets:[], opsCount:0};
+    for(var i=0;i<CAP;i++) state.buckets.push([]);
+    var frames=[{
+      struct:{buckets:bucketCells(state.buckets,undefined,""), chain:chainStruct([],"")},
+      phase:"start", narr:"Create the table: "+CAP+" empty buckets. A hash function will turn each key into one of these "+CAP+" indices.", ops:0, code:INIT_CODE, codeLine:1
+    }];
+    ["cat","dog","ax","sun"].forEach(function(k){
+      var r=opInsert(state, k);
+      frames=frames.concat(r.frames);
+      state=r.state;
+    });
+    return {state:state, frames:frames};
   }
 
   VizDS.init({
