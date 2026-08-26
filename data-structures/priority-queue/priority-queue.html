@@ -47,6 +47,13 @@
       <p>Used for Dijkstra's and Prim's algorithms (always expand the cheapest known option next), OS task
       schedulers, and event simulations that need to process the next-soonest event regardless of when it
       was scheduled.</p>
+
+      <p><b>When it breaks:</b> get the comparison backwards (say, after switching a max-heap to a min-heap
+      without also re-validating the existing array) and the heap still <em>looks</em> complete — every slot
+      filled, correct shape — while silently violating the one property that actually matters, so the "next"
+      value extracted is no longer the right one. Off-by-one on the size counter is the other classic:
+      forget to grow it on insert, or shrink it on extract, and sift-up/sift-down compare against a stale
+      slot that's either garbage or about to be overwritten.</p>
     </div>
   </section>
 
@@ -60,6 +67,13 @@
         </div>
       </div>
       <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / extractMax()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
@@ -82,6 +96,35 @@
 (function(){
   "use strict";
 
+  var INSERT_CODE=[
+    "void insert(Heap *h, int val) {",
+    "  h->items[h->size] = val;",
+    "  int i = h->size++;",
+    "  while (i > 0) {",
+    "    int parent = (i - 1) / 2;",
+    "    if (h->items[i] <= h->items[parent]) break;   // max-heap",
+    "    swap(&h->items[i], &h->items[parent]);",
+    "    i = parent;",
+    "  }",
+    "}"
+  ];
+  var EXTRACT_CODE=[
+    "int extractMax(Heap *h) {",
+    "  int top = h->items[0];",
+    "  h->items[0] = h->items[--h->size];",
+    "  int i = 0;",
+    "  while (1) {",
+    "    int l = 2*i+1, r = 2*i+2, best = i;",
+    "    if (l < h->size && h->items[l] > h->items[best]) best = l;",
+    "    if (r < h->size && h->items[r] > h->items[best]) best = r;",
+    "    if (best == i) break;",
+    "    swap(&h->items[i], &h->items[best]);",
+    "    i = best;",
+    "  }",
+    "  return top;",
+    "}"
+  ];
+
   function toTreeFromHeap(heap, activeIdx, activeRole, otherIdx){
     function build(i){
       if(i>=heap.length) return null;
@@ -93,39 +136,39 @@
 
   function scriptFrames(){
     var heap=[], frames=[];
-    function push(activeIdx, activeRole, narr, otherIdx){ frames.push({struct:{root:toTreeFromHeap(heap,activeIdx,activeRole,otherIdx)}, narr:narr}); }
+    function push(activeIdx, activeRole, narr, otherIdx, code, codeLine){ frames.push({struct:{root:toTreeFromHeap(heap,activeIdx,activeRole,otherIdx)}, narr:narr, code:code, codeLine:codeLine}); }
     function insert(v){
       heap.push(v);
       var i=heap.length-1;
-      push(i,"left head landed","Insert "+v+" at index "+i+".");
+      push(i,"left head landed","Insert "+v+" at index "+i+".",undefined,INSERT_CODE,[1,2]);
       while(i>0){
         var p=Math.floor((i-1)/2);
         if(heap[i]>heap[p]){
-          push(i,"right","Sift up past "+heap[p]+".",p);
+          push(i,"right","Sift up past "+heap[p]+".",p,INSERT_CODE,[5,7]);
           var t=heap[i]; heap[i]=heap[p]; heap[p]=t; i=p;
-          push(i,"left head landed", v+" now at index "+i+".");
-        } else { push(i,"left head","Settled."); break; }
+          push(i,"left head landed", v+" now at index "+i+".",undefined,INSERT_CODE,7);
+        } else { push(i,"left head","Settled.",undefined,INSERT_CODE,5); break; }
       }
     }
     function extract(){
       var top=heap[0];
-      push(0,"left head","Extract the max, "+top+".");
+      push(0,"left head","Extract the max, "+top+".",undefined,EXTRACT_CODE,1);
       var last=heap.pop();
-      if(!heap.length){ push(undefined,"", top+" removed — heap empty."); return; }
+      if(!heap.length){ push(undefined,"", top+" removed — heap empty.",undefined,EXTRACT_CODE,2); return; }
       heap[0]=last;
-      push(0,"left head landed", "Move last leaf "+last+" to root, sift down.");
+      push(0,"left head landed", "Move last leaf "+last+" to root, sift down.",undefined,EXTRACT_CODE,2);
       var i=0;
       while(true){
         var l=2*i+1,r=2*i+2,best=i;
         if(l<heap.length && heap[l]>heap[best]) best=l;
         if(r<heap.length && heap[r]>heap[best]) best=r;
-        if(best===i){ push(i,"left head landed","Settled."); break; }
-        push(best,"right","Swap up past "+heap[i]+".",i);
+        if(best===i){ push(i,"left head landed","Settled.",undefined,EXTRACT_CODE,8); break; }
+        push(best,"right","Swap up past "+heap[i]+".",i,EXTRACT_CODE,[6,9]);
         var t=heap[i]; heap[i]=heap[best]; heap[best]=t; i=best;
-        push(i,"left head landed", last+" now at index "+i+".");
+        push(i,"left head landed", last+" now at index "+i+".",undefined,EXTRACT_CODE,10);
       }
     }
-    push(undefined,"","An empty max-heap.");
+    push(undefined,"","Create the heap: an empty array.",undefined,INSERT_CODE,0);
     insert(40); insert(70); insert(20); insert(90); insert(55);
     extract(); extract();
     return frames;

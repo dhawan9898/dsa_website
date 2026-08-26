@@ -66,6 +66,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / extractMax() / peek()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Loading…</p>
@@ -88,6 +95,40 @@
 (function(){
   "use strict";
 
+  var INSERT_CODE=[
+    "void insert(Heap *h, int val) {",
+    "  h->items[h->size] = val;",
+    "  int i = h->size++;",
+    "  while (i > 0) {",
+    "    int parent = (i - 1) / 2;",
+    "    if (h->items[i] <= h->items[parent]) break;   // max-heap",
+    "    swap(&h->items[i], &h->items[parent]);",
+    "    i = parent;",
+    "  }",
+    "}"
+  ];
+  var EXTRACT_CODE=[
+    "int extractMax(Heap *h) {",
+    "  int top = h->items[0];",
+    "  h->items[0] = h->items[--h->size];",
+    "  int i = 0;",
+    "  while (1) {",
+    "    int l = 2*i+1, r = 2*i+2, best = i;",
+    "    if (l < h->size && h->items[l] > h->items[best]) best = l;",
+    "    if (r < h->size && h->items[r] > h->items[best]) best = r;",
+    "    if (best == i) break;",
+    "    swap(&h->items[i], &h->items[best]);",
+    "    i = best;",
+    "  }",
+    "  return top;",
+    "}"
+  ];
+  var PEEK_CODE=[
+    "int peek(Heap *h) {",
+    "  return h->items[0];",
+    "}"
+  ];
+
   function cmp(mode,a,b){ return mode==="max" ? a>b : a<b; }
   function toTreeFromHeap(heap, activeIdx, activeRole, otherIdx){
     function build(i){
@@ -97,8 +138,8 @@
     }
     return build(0);
   }
-  function frame(state, activeIdx, activeRole, phase, narr, ops, otherIdx){
-    return {struct:{root: toTreeFromHeap(state.heap, activeIdx, activeRole, otherIdx)}, phase:phase, narr:narr, ops:ops};
+  function frame(state, activeIdx, activeRole, phase, narr, ops, otherIdx, code, codeLine){
+    return {struct:{root: toTreeFromHeap(state.heap, activeIdx, activeRole, otherIdx)}, phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
   }
 
   function opInsert(state, val){
@@ -107,22 +148,22 @@
     heap.push(val);
     var i=heap.length-1, frames=[];
     var st=function(){ return {heap:heap, mode:state.mode}; };
-    frames.push(frame(st(), i, "left head landed", "insert-start", "Insert "+val+" at the next open leaf, index "+i+".", oc));
+    frames.push(frame(st(), i, "left head landed", "insert-start", "Insert "+val+" at the next open leaf, index "+i+".", oc, undefined, INSERT_CODE, [1,2]));
     while(i>0){
       var parent=Math.floor((i-1)/2);
       if(cmp(state.mode, heap[i], heap[parent])){
         frames.push(frame(st(), i, "right", "compare",
-          heap[i]+" "+(state.mode==="max"?"is greater than":"is less than")+" its parent "+heap[parent]+" — sift up.", oc, parent));
+          heap[i]+" "+(state.mode==="max"?"is greater than":"is less than")+" its parent "+heap[parent]+" — sift up.", oc, parent, INSERT_CODE, [5,7]));
         var tmp=heap[i]; heap[i]=heap[parent]; heap[parent]=tmp;
         i=parent;
-        frames.push(frame(st(), i, "left head landed", "sift-up", val+" moves to index "+i+".", oc));
+        frames.push(frame(st(), i, "left head landed", "sift-up", val+" moves to index "+i+".", oc, undefined, INSERT_CODE, 7));
       } else {
         frames.push(frame(st(), i, "left head", "settled",
-          heap[i]+" is not "+(state.mode==="max"?"greater":"less")+" than its parent "+heap[parent]+" — the heap property holds. Done.", oc));
+          heap[i]+" is not "+(state.mode==="max"?"greater":"less")+" than its parent "+heap[parent]+" — the heap property holds. Done.", oc, undefined, INSERT_CODE, 5));
         return {frames:frames, state:{heap:heap, mode:state.mode, opsCount:oc}};
       }
     }
-    frames.push(frame(st(), 0, "left head landed", "settled", val+" reached the root.", oc));
+    frames.push(frame(st(), 0, "left head landed", "settled", val+" reached the root.", oc, undefined, INSERT_CODE, 3));
     return {frames:frames, state:{heap:heap, mode:state.mode, opsCount:oc}};
   }
 
@@ -132,15 +173,15 @@
     var heap=state.heap.slice(), frames=[];
     var st=function(){ return {heap:heap, mode:state.mode}; };
     var top=heap[0];
-    frames.push(frame(st(), 0, "left head", "extract-start", "Extract the "+(state.mode==="max"?"maximum":"minimum")+": "+top+" at the root.", oc));
+    frames.push(frame(st(), 0, "left head", "extract-start", "Extract the "+(state.mode==="max"?"maximum":"minimum")+": "+top+" at the root.", oc, undefined, EXTRACT_CODE, 1));
     var last=heap.pop();
     if(!heap.length){
-      frames.push(frame(st(), undefined, "", "extracted", top+" removed. The heap is now empty.", oc));
+      frames.push(frame(st(), undefined, "", "extracted", top+" removed. The heap is now empty.", oc, undefined, EXTRACT_CODE, 2));
       return {frames:frames, state:{heap:heap, mode:state.mode, opsCount:oc}};
     }
     heap[0]=last;
     frames.push(frame(st(), 0, "left head landed", "moved-last",
-      "Move the last leaf, "+last+", to the root, then sift it down to restore the heap property.", oc));
+      "Move the last leaf, "+last+", to the root, then sift it down to restore the heap property.", oc, undefined, EXTRACT_CODE, 2));
     var i=0;
     while(true){
       var l=2*i+1, r=2*i+2, best=i;
@@ -148,13 +189,13 @@
       if(r<heap.length && cmp(state.mode, heap[r], heap[best])) best=r;
       if(best===i){
         frames.push(frame(st(), i, "left head landed", "settled",
-          heap[i]+" is not "+(state.mode==="max"?"smaller":"larger")+" than either child — the heap property holds. Done.", oc));
+          heap[i]+" is not "+(state.mode==="max"?"smaller":"larger")+" than either child — the heap property holds. Done.", oc, undefined, EXTRACT_CODE, 8));
         break;
       }
-      frames.push(frame(st(), best, "right", "compare", "Child "+heap[best]+" belongs above "+heap[i]+" — swap.", oc, i));
+      frames.push(frame(st(), best, "right", "compare", "Child "+heap[best]+" belongs above "+heap[i]+" — swap.", oc, i, EXTRACT_CODE, [6,9]));
       var tmp=heap[i]; heap[i]=heap[best]; heap[best]=tmp;
       i=best;
-      frames.push(frame(st(), i, "left head landed", "sift-down", last+" moves to index "+i+".", oc));
+      frames.push(frame(st(), i, "left head landed", "sift-down", last+" moves to index "+i+".", oc, undefined, EXTRACT_CODE, 10));
     }
     return {frames:frames, state:{heap:heap, mode:state.mode, opsCount:oc}};
   }
@@ -163,7 +204,7 @@
     if(!state.heap.length) return {error:"The heap is empty — nothing to peek at."};
     var oc=(state.opsCount||0)+1;
     return {frames:[frame(state, 0, "left head", "peek",
-      "Peek: the "+(state.mode==="max"?"maximum":"minimum")+" is "+state.heap[0]+", at the root.", oc)],
+      "Peek: the "+(state.mode==="max"?"maximum":"minimum")+" is "+state.heap[0]+", at the root.", oc, undefined, PEEK_CODE, 1)],
       state:{heap:state.heap.slice(), mode:state.mode, opsCount:oc}};
   }
 
@@ -177,25 +218,16 @@
       state:{heap:[], mode:newMode, opsCount:oc}};
   }
 
-  function buildInitialHeap(mode, values){
-    var heap=[];
-    values.forEach(function(v){
-      heap.push(v);
-      var i=heap.length-1;
-      while(i>0){
-        var p=Math.floor((i-1)/2);
-        if(cmp(mode, heap[i], heap[p])){ var t=heap[i]; heap[i]=heap[p]; heap[p]=t; i=p; } else break;
-      }
-    });
-    return heap;
-  }
-
   function init(){
-    var mode="max";
-    var heap=buildInitialHeap(mode, [50,30,70,20,40,45]);
-    var state={heap:heap, mode:mode, opsCount:0};
-    return {state:state, frames:[frame(state, undefined, "", "start",
-      "A binary heap keeps every parent ≥ its children in a max-heap (seeded here). It's a complete binary tree, so it's stored compactly in an array — child i's parent lives at (i-1)/2.", 0)]};
+    var state={heap:[], mode:"max", opsCount:0};
+    var frames=[frame(state, undefined, "", "start",
+      "Create the heap: an empty array. A binary heap keeps every parent ≥ its children (max-heap here) and is always a complete tree, so it's stored compactly with no pointers at all.", 0, undefined, INSERT_CODE, 0)];
+    [50,30,70,20,40,45].forEach(function(v){
+      var r=opInsert(state, v);
+      frames=frames.concat(r.frames);
+      state=r.state;
+    });
+    return {state:state, frames:frames};
   }
   function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
 
