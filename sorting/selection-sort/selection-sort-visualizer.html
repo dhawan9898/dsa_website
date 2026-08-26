@@ -63,6 +63,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; selectionSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -83,12 +90,28 @@
 (function(){
   "use strict";
 
+  var CODE=[
+    "void selectionSort(int arr[], int n) {",
+    "  for (int i = 0; i < n - 1; i++) {",
+    "    int minIdx = i;",
+    "    for (int j = i + 1; j < n; j++) {",
+    "      if (arr[j] < arr[minIdx]) minIdx = j;",
+    "    }",
+    "    if (minIdx != i) {",
+    "      int tmp = arr[i];",
+    "      arr[i] = arr[minIdx];",
+    "      arr[minIdx] = tmp;",
+    "    }",
+    "  }",
+    "}"
+  ];
+
   function build(input){
     var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0;
     function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp}); }
+    function push(r,phase,narr,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,code:CODE,codeLine:codeLine,moves:moves}); }
 
-    push(roles(),"start","Selection sort keeps a growing sorted prefix at the front. Each pass finds the smallest value in the unsorted remainder and swaps it into the next open slot.");
+    push(roles(),"start","Selection sort keeps a growing sorted prefix at the front. Each pass finds the smallest value in the unsorted remainder and swaps it into the next open slot.",1);
 
     for(var i=0;i<n-1;i++){
       var minIdx=i;
@@ -99,13 +122,13 @@
         cmp++;
         var better=a[j]<a[minIdx];
         push(r,"compare","Compare candidate minimum "+a[minIdx]+" (index "+minIdx+") with "+a[j]+" (index "+j+"). "+
-          (better ? "New minimum found." : "Current minimum stays."));
+          (better ? "New minimum found." : "Current minimum stays."),4);
         if(better){
           minIdx=j;
           var r2=roles();
           for(var k2=0;k2<i;k2++) r2[k2]="sorted";
           r2[minIdx]="left head";
-          push(r2,"new-min","Index "+minIdx+" ("+a[minIdx]+") is now the smallest value seen in this pass.");
+          push(r2,"new-min","Index "+minIdx+" ("+a[minIdx]+") is now the smallest value seen in this pass.",4);
         }
       }
       var rBefore=roles();
@@ -116,14 +139,15 @@
         var r3=roles();
         for(var k4=0;k4<i;k4++) r3[k4]="sorted";
         r3[i]="sorted landed";
-        push(r3,"swap","Swap the minimum into index "+i+": the array now reads ["+a.join(", ")+"].");
+        push(r3,"swap","Swap the minimum into index "+i+": the array now reads ["+a.join(", ")+"].",[7,9],
+          [{from:i,to:minIdx},{from:minIdx,to:i}]);
       } else {
         var r4=roles();
         for(var k5=0;k5<=i;k5++) r4[k5]="sorted";
-        push(r4,"no-swap","Index "+i+" already holds the smallest remaining value, so no swap is needed.");
+        push(r4,"no-swap","Index "+i+" already holds the smallest remaining value, so no swap is needed.",6);
       }
     }
-    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.");
+    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.",12);
     return frames;
   }
 

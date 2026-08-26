@@ -112,6 +112,19 @@ input[type=range]{accent-color:var(--stamp);width:150px}
   text-transform:uppercase;color:var(--ink-soft)}
 .stats b{font-size:19px;font-weight:600;color:var(--ink);letter-spacing:0;display:block}
 
+/* ---------- code panel (mirrors shared/theme.css — kept in sync by hand,
+   since this page is intentionally self-contained, see CLAUDE.md) ---------- */
+.code-panel{font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;
+  border:1px solid var(--rule);background:#fff;padding:4px 0;max-height:340px;
+  overflow-y:auto;overflow-x:auto}
+.code-line{display:flex;gap:14px;padding:1px 14px;border-left:4px solid transparent;
+  transition:background .2s var(--ease),border-color .2s var(--ease)}
+.code-ln{flex:0 0 22px;text-align:right;color:#B9C4B4}
+.code-src{white-space:pre;color:var(--ink-soft)}
+.code-line.active{background:rgba(190,58,29,.07);border-color:var(--stamp)}
+.code-line.active .code-src{color:var(--ink);font-weight:500}
+.code-line.active .code-ln{color:var(--stamp);font-weight:600}
+
 /* ---------- shared cells ---------- */
 .cell{border:1px solid var(--rule);background:#fff;display:flex;align-items:center;justify-content:center;
   font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:clamp(11px,2.4vw,15px);
@@ -293,6 +306,13 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; mergeSort() / merge()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -310,10 +330,35 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
 <script>
 (function(){
   "use strict";
-  var S={frames:[],cur:0,playing:false,timer:null,spec:null,els:{},links:[]};
+  var S={frames:[],cur:0,playing:false,timer:null,spec:null,els:{},links:[],codeArr:null,codeEls:null};
   function $(id){return document.getElementById(id);}
   function div(c){var d=document.createElement("div");d.className=c;return d;}
   function key(lo,hi){return lo+"-"+hi;}
+
+  var CODE=[
+    "void mergeSort(int arr[], int lo, int hi) {",
+    "  if (lo == hi) return;              // one element is already sorted",
+    "  int mid = (lo + hi) / 2;",
+    "  mergeSort(arr, lo, mid);",
+    "  mergeSort(arr, mid + 1, hi);",
+    "  merge(arr, lo, mid, hi);",
+    "}",
+    "",
+    "void merge(int arr[], int lo, int mid, int hi) {",
+    "  int L[MAXN], R[MAXN];",
+    "  int nl = mid - lo + 1, nr = hi - mid;",
+    "  for (int x = 0; x < nl; x++) L[x] = arr[lo + x];",
+    "  for (int x = 0; x < nr; x++) R[x] = arr[mid + 1 + x];",
+    "",
+    "  int i = 0, j = 0, k = lo;",
+    "  while (i < nl && j < nr) {",
+    "    if (L[i] <= R[j]) arr[k++] = L[i++];   // tie goes left: keeps it stable",
+    "    else arr[k++] = R[j++];",
+    "  }",
+    "  while (i < nl) arr[k++] = L[i++];        // copy whatever remains",
+    "  while (j < nr) arr[k++] = R[j++];",
+    "}"
+  ];
 
   /* ---------------- frame generation ---------------- */
   function build(input){
@@ -327,18 +372,18 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
     function push(o){
       frames.push({nodes:snapNodes(),active:o.active||null,heads:o.heads||null,
         fresh:(o.fresh===undefined?null:o.fresh),bench:o.bench||null,
-        phase:o.phase,narr:o.narr,cmp:cmp,wrt:wrt});
+        phase:o.phase,narr:o.narr,cmp:cmp,wrt:wrt,code:CODE,codeLine:o.codeLine});
     }
 
     node[key(0,a.length-1)]={state:"pending",vals:a.slice()};
-    push({phase:"start",active:key(0,a.length-1),
+    push({phase:"start",active:key(0,a.length-1),codeLine:0,
       narr:"The whole array is one unsorted run. Merge sort cuts it in half, then cuts the halves, until every piece holds a single number — then it merges the pieces back together in order."});
 
     function msort(lo,hi){
       var id=key(lo,hi);
       if(lo===hi){
         node[id].state="sorted";
-        push({phase:"leaf",active:id,
+        push({phase:"leaf",active:id,codeLine:1,
           narr:"Index "+lo+" holds "+a[lo]+" by itself. One number is already a sorted run, so this branch stops here."});
         return;
       }
@@ -346,7 +391,7 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
       node[id].state="split";
       node[key(lo,mid)]={state:"pending",vals:a.slice(lo,mid+1)};
       node[key(mid+1,hi)]={state:"pending",vals:a.slice(mid+1,hi+1)};
-      push({phase:"divide",active:id,
+      push({phase:"divide",active:id,codeLine:[2,4],
         narr:"Split "+lo+"–"+hi+" at "+mid+": left half "+lo+"–"+mid+" gets ["+a.slice(lo,mid+1).join(", ")+
              "], right half "+(mid+1)+"–"+hi+" gets ["+a.slice(mid+1,hi+1).join(", ")+"]. No comparing yet — this is only cutting."});
       msort(lo,mid);
@@ -369,7 +414,7 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
 
       node[id].state="merge";
       node[id].vals=blank.slice();
-      push({phase:"merge",active:id,heads:heads(),bench:bench({}),
+      push({phase:"merge",active:id,heads:heads(),bench:bench({}),codeLine:[9,14],
         narr:"Both halves of "+lo+"–"+hi+" are sorted now: ["+L.join(", ")+"] and ["+R.join(", ")+
              "]. Empty the parent and refill it by repeatedly taking the smaller of the two front values."});
 
@@ -377,7 +422,7 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
         cmp++;
         var takeL=L[i]<=R[j];
         var sign=L[i]<R[j]?"<":(L[i]>R[j]?">":"=");
-        push({phase:"compare",active:id,heads:heads(),
+        push({phase:"compare",active:id,heads:heads(),codeLine:16,
           bench:bench({verdict:{l:L[i],r:R[j],sign:sign,takeL:takeL}}),
           narr:"Compare the front of each half: "+L[i]+" "+sign+" "+R[j]+". "+
                (sign==="=" ? "Equal, so take the left one — that is what keeps the sort stable."
@@ -387,29 +432,29 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
         out.push(v);
         node[id].vals[out.length-1]=v;
         a[lo+out.length-1]=v;wrt++;
-        push({phase:"take",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),
+        push({phase:"take",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),codeLine:(takeL?16:17),
           narr:"Take "+v+" from the "+(takeL?"left":"right")+" half into slot "+(out.length)+" of "+n+
                ". "+(n-out.length===0?"That fills the run.":(n-out.length)+" slot"+((n-out.length)===1?"":"s")+" still empty.")});
       }
       while(i<L.length){
         out.push(L[i]);node[id].vals[out.length-1]=L[i];a[lo+out.length-1]=L[i];i++;wrt++;
-        push({phase:"drain",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),
+        push({phase:"drain",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),codeLine:19,
           narr:"The right half is used up, so nothing is left to compare against. Copy "+out[out.length-1]+" straight down from the left half."});
       }
       while(j<R.length){
         out.push(R[j]);node[id].vals[out.length-1]=R[j];a[lo+out.length-1]=R[j];j++;wrt++;
-        push({phase:"drain",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),
+        push({phase:"drain",active:id,heads:heads(),fresh:out.length-1,bench:bench({landed:true}),codeLine:20,
           narr:"The left half is used up, so nothing is left to compare against. Copy "+out[out.length-1]+" straight down from the right half."});
       }
 
       node[id].state="sorted";
       node[lid].state="used";node[rid].state="used";
-      push({phase:"done-seg",active:id,bench:bench({}),
+      push({phase:"done-seg",active:id,bench:bench({}),codeLine:6,
         narr:"Indices "+lo+"–"+hi+" are now a single sorted run: ["+out.join(", ")+"]. It travels back up as one half of the next merge."});
     }
 
     msort(0,a.length-1);
-    push({phase:"done",active:key(0,a.length-1),
+    push({phase:"done",active:key(0,a.length-1),codeLine:6,
       narr:"Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+wrt+" writes for "+a.length+" numbers."});
     return frames;
   }
@@ -473,6 +518,36 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
     }
   }
 
+  /* ---------------- code panel (mirrors shared/engine.js's renderCode by hand) ---------------- */
+  function codeLineSet(codeLine){
+    if(codeLine===undefined||codeLine===null)return[];
+    if(typeof codeLine==="number")return[codeLine];
+    var out=[];for(var i=codeLine[0];i<=codeLine[1];i++)out.push(i);
+    return out;
+  }
+  function renderCode(code,codeLine){
+    var host=$("codeHost");if(!host)return;
+    if(code&&code!==S.codeArr){
+      host.innerHTML="";S.codeArr=code;S.codeEls=[];
+      for(var i=0;i<code.length;i++){
+        var line=div("code-line");
+        line.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
+        line.lastChild.textContent=code[i];
+        host.appendChild(line);S.codeEls.push(line);
+      }
+    }
+    if(!S.codeEls)return;
+    var active=codeLineSet(codeLine);
+    for(var j=0;j<S.codeEls.length;j++){
+      S.codeEls[j].className="code-line"+(active.indexOf(j)>=0?" active":"");
+    }
+    if(active.length&&S.codeEls[active[0]]){
+      var hostR=host.getBoundingClientRect(),lineR=S.codeEls[active[0]].getBoundingClientRect();
+      if(lineR.top<hostR.top)host.scrollTop+=(lineR.top-hostR.top);
+      else if(lineR.bottom>hostR.bottom)host.scrollTop+=(lineR.bottom-hostR.bottom);
+    }
+  }
+
   /* ---------------- rendering ---------------- */
   function render(){
     var f=S.frames[S.cur];if(!f)return;
@@ -504,6 +579,7 @@ footer{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft
     if(f.active&&S.els[f.active])keepInView(S.els[f.active].box);
 
     renderBench(f);
+    renderCode(f.code,f.codeLine);
     $("narr").textContent=f.narr;
     $("sCmp").textContent=f.cmp;
     $("sWrt").textContent=f.wrt;
