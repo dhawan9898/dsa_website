@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shell Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Shrink the Gap &middot; Insert &middot; Repeat</p>
+      <h1>Shell&nbsp;Sort</h1>
+    </div>
+    <p class="note">Insertion sort with a twist: compares elements far apart first, then shrinks that gap every pass until it reaches 1.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Plain insertion sort is fast on nearly-sorted data but slow whenever a small value starts out far
+      from where it belongs — it has to shift past every value in between, one slot at a time. Shell sort's
+      fix: run insertion sort on far-apart elements first. With a <b>gap</b> of <code>g</code>, it insertion-
+      sorts every <code>g</code>-th element as its own interleaved sequence, moving badly-placed values a
+      long way in a single swap. The gap then shrinks — typically halved — each pass, until it reaches 1,
+      which is just an ordinary insertion sort pass, but over data that's now already close to sorted.</p>
+
+      <table class="notes-table">
+        <tr><th>Case</th><th>Time</th></tr>
+        <tr><td>Depends on gap sequence</td><td>roughly <b>O(n&sup1;&middot;&sup3;&#8776;)</b> for the halving sequence used here</td></tr>
+        <tr><td>Space</td><td><b>O(1)</b> &mdash; sorts in place</td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel below is exactly insertion sort with every <code>1</code>
+      replaced by <code>gap</code> — the inner comparison, the shift, and the step all move by
+      <code>gap</code> positions instead of one. That's the whole trick: no new mechanism, just insertion
+      sort's existing shift logic running across a wider stride, shrunk pass by pass until the stride is 1
+      again.</p>
+
+      <p><b>Common mistake:</b> forgetting that the final pass <em>must</em> bring the gap down to exactly 1
+      — skip it (say, by stopping once the gap rounds down to 0 one step early) and the array ends up only
+      "mostly" sorted, since elements that were never compared within one gap of each other can still be out
+      of order relative to one another.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; eight values, start to finish</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; shellSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="shell-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: open the visualizer and compare the very first gap-4 pass against a plain insertion sort on the
+    same array — see how far values jump in a single swap.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "void shellSort(int arr[], int n) {",
+    "  for (int gap = n / 2; gap >= 1; gap /= 2) {",
+    "    for (int i = gap; i < n; i++) {",
+    "      int j = i;",
+    "      while (j >= gap && arr[j - gap] > arr[j]) {",
+    "        int tmp = arr[j - gap];",
+    "        arr[j - gap] = arr[j];",
+    "        arr[j] = tmp;",
+    "        j -= gap;",
+    "      }",
+    "    }",
+    "  }",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var a=[9,8,3,7,5,6,4,1], n=a.length, frames=[];
+    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
+    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
+
+    var gap=Math.floor(n/2);
+    push(new Array(n).fill(""),"Start with gap = "+gap+": compare and shift elements that are "+gap+" apart.",1);
+
+    while(gap>=1){
+      for(var i=gap;i<n;i++){
+        var j=i;
+        while(j>=gap){
+          var r=new Array(n).fill("");
+          r[j-gap]="right head"; r[j]="left head";
+          var willSwap=a[j-gap]>a[j];
+          push(r,"Compare "+a[j-gap]+" and "+a[j]+", "+gap+" apart. "+(willSwap?"Out of order — swap.":"Already in order."),4);
+          if(!willSwap) break;
+          var tmp=a[j-gap]; a[j-gap]=a[j]; a[j]=tmp;
+          var r2=new Array(n).fill(""); r2[j-gap]="left head landed";
+          push(r2,"Swapped across the gap: "+a[j-gap]+" moves "+gap+" steps left.",[5,7]);
+          j-=gap;
+        }
+      }
+      gap=Math.floor(gap/2);
+      if(gap>=1){
+        var rg=new Array(n).fill("");
+        push(rg,"Gap shrinks to "+gap+".",1);
+      }
+    }
+    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",11);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

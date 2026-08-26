@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dijkstra's Algorithm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Shortest Paths &middot; Weighted &middot; Directed</p>
+      <h1>Dijkstra&#8217;s&nbsp;Algorithm</h1>
+    </div>
+    <p class="note">Finds the shortest distance from one starting vertex to every other vertex in a weighted graph with no negative edges.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Dijkstra's algorithm finds the shortest path from a single source to every other vertex in a
+      weighted graph. It's greedy: keep a running "best known distance" for every vertex (0 for the source,
+      infinity for everyone else), and repeatedly <b>settle</b> the closest unvisited vertex — once a vertex
+      is settled, its distance is final and never changes again. Settling a vertex <b>relaxes</b> every edge
+      leaving it: if going through the just-settled vertex would beat a neighbor's current best distance,
+      that neighbor's distance improves.</p>
+
+      <table class="notes-table">
+        <tr><th>Version</th><th>Time</th></tr>
+        <tr><td>Linear scan for the minimum (shown here)</td><td><b>O(V&sup2;)</b></td></tr>
+        <tr><td>Binary heap priority queue</td><td><b>O((V + E) log V)</b></td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel below picks the next vertex to settle with a plain linear
+      scan over every unvisited vertex — simple, and fine for the small graphs here, but it's the O(V&sup2;)
+      part. Swapping that scan for a <a href="../priority-queue/priority-queue.html">binary heap</a> (always
+      pull the minimum-distance vertex in O(log V) instead of scanning for it) is the standard optimization,
+      and it's the exact same heap already covered on this site — Dijkstra is one of the two textbook
+      reasons a priority queue exists in the first place.</p>
+
+      <p><b>Common mistake:</b> Dijkstra's greedy guarantee — once settled, a distance is final — only holds
+      because edge weights are non-negative. With a negative edge, a path discovered <em>after</em> a vertex
+      is settled could still be shorter, but the algorithm never looks back to check. Running it unmodified
+      on a graph with negative weights doesn't crash — it just silently returns wrong distances. (Bellman-Ford
+      is the standard fix when negative edges are possible.)</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; shortest paths from A</span></div>
+    <div class="panel-body">
+      <div class="graphwrap" id="demoWrap">
+        <svg class="links" id="demoLinks"></svg>
+        <div id="demoNodes"></div>
+      </div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; dijkstra()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="dijkstra-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — build a graph where the direct edge from the start looks cheapest at first,
+    then add a longer-looking two-hop path that's actually cheaper overall, and watch the relaxation catch it.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "void dijkstra(Graph *g, int src, int dist[], int n) {",
+    "  int visited[MAXV] = {0};",
+    "  for (int i = 0; i < n; i++) dist[i] = INF;",
+    "  dist[src] = 0;",
+    "",
+    "  for (int count = 0; count < n; count++) {",
+    "    int u = -1;",
+    "    for (int i = 0; i < n; i++)                       // pick the closest unvisited vertex",
+    "      if (!visited[i] && (u == -1 || dist[i] < dist[u])) u = i;",
+    "    if (u == -1 || dist[u] == INF) break;                // remaining vertices are unreachable",
+    "    visited[u] = 1;",
+    "    for (int i = 0; i < g->deg[u]; i++) {                // relax every neighbor of u",
+    "      int v = g->adj[u][i], w = g->weight[u][i];",
+    "      if (dist[u] + w < dist[v]) dist[v] = dist[u] + w;   // found a shorter path",
+    "    }",
+    "  }",
+    "}"
+  ];
+
+  var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"}];
+  var edges=[{from:0,to:1,weight:4},{from:0,to:2,weight:1},{from:2,to:1,weight:1},{from:1,to:3,weight:2},{from:2,to:3,weight:6}];
+  var adj={}; nodes.forEach(function(n){adj[n.id]=[];});
+  edges.forEach(function(e){ adj[e.from].push({to:e.to, weight:e.weight}); });
+  function valOf(id){ return nodes.filter(function(n){return n.id===id;})[0].val; }
+
+  function scriptFrames(){
+    var dist={}, visited={}, frames=[];
+    nodes.forEach(function(n){ dist[n.id]=Infinity; });
+    dist[0]=0;
+
+    function push(curU, edgeKey, narr, codeLine){
+      frames.push({struct:{
+        nodes: nodes.map(function(n){
+          var role = n.id===curU ? "left head landed" : (visited[n.id]?"sorted":"");
+          var d=dist[n.id];
+          return {id:n.id, val:n.val, role:role, label:(d===Infinity)?"∞":String(d)};
+        }),
+        edges: edges.map(function(e){
+          var key=e.from+":"+e.to;
+          return {from:e.from, to:e.to, weight:e.weight, active: key===edgeKey};
+        })
+      }, narr:narr, code:CODE, codeLine:codeLine});
+    }
+
+    push(undefined, null, "Distance to A is 0, everything else starts at infinity.", [1,3]);
+    while(true){
+      var u=null;
+      nodes.forEach(function(n){ if(!visited[n.id] && (u===null || dist[n.id]<dist[u])) u=n.id; });
+      if(u===null || dist[u]===Infinity) break;
+      visited[u]=true;
+      push(u, null, "Settle "+valOf(u)+": distance "+dist[u]+" is now final.", 10);
+      adj[u].forEach(function(edge){
+        var v=edge.to, w=edge.weight, candidate=dist[u]+w;
+        if(candidate<dist[v]){
+          dist[v]=candidate;
+          push(u, u+":"+v, "Relax "+valOf(u)+"→"+valOf(v)+" (weight "+w+"): "+dist[u]+"+"+w+" improves "+valOf(v)+" to "+candidate+".", 13);
+        } else {
+          push(u, u+":"+v, "Edge "+valOf(u)+"→"+valOf(v)+" doesn't improve "+valOf(v)+".", 13);
+        }
+      });
+      if(Object.keys(visited).length>=nodes.length) break;
+    }
+    push(undefined, null, "All vertices settled — every shortest distance from A is final.", 16);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      DSRender.graph(document.getElementById("demoNodes"), document.getElementById("demoLinks"), frame.struct, {directed:true});
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

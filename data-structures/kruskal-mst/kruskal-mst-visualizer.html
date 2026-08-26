@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kruskal's MST Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="kruskal-mst.html">&larr; Kruskal's MST notes</a>
+      <p class="eyebrow">Minimum Spanning Tree &middot; Cheapest Edges First</p>
+      <h1>Kruskal&#8217;s&nbsp;MST&nbsp;Visualizer</h1>
+    </div>
+    <p class="note">Sort every edge by weight, then greedily accept the cheapest one that doesn't close a cycle — Union-Find answers "would this close a cycle?" in almost constant time.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Build the graph</h2><span class="sub">undirected &middot; weighted</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld narrow"><span>Vertex label</span><input type="text" id="vLabel" value="F" autocomplete="off"></label>
+        <button id="btnAddVertex" class="primary">Add Vertex</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="fld narrow"><span>From</span><input type="text" id="eFrom" value="A" autocomplete="off"></label>
+        <label class="fld narrow"><span>To</span><input type="text" id="eTo" value="D" autocomplete="off"></label>
+        <label class="fld narrow"><span>Weight</span><input type="number" id="eWeight" value="1" min="1"></label>
+        <button id="btnAddEdge" class="primary">Add Edge</button>
+        <button id="btnRemoveEdge">Remove Edge</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="btnRun" class="primary">Run Kruskal's</button>
+      </div>
+      <p class="hint" id="hint">Watch the A-B edge get rejected — A and B are already connected through B-C-A by the time it's considered.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The graph</h2><span class="sub">green edges are in the MST so far</span></div>
+    <div class="panel-body">
+      <div class="graphwrap" id="graphWrap">
+        <svg class="links" id="graphLinks"></svg>
+        <div id="graphNodes"></div>
+      </div>
+      <div class="legend">
+        <span class="key"><i class="swatch right"></i> edge being considered</span>
+        <span class="key"><i class="swatch sorted"></i> accepted into the MST</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; kruskalMST()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Sorting the edges costs O(E log E); the loop then does at most E finds and V unions, each amortized
+    O(&alpha;(V)) with <a href="../union-find/union-find.html">Union-Find</a> — so the whole algorithm is
+    dominated by the sort, O(E log E). A spanning tree on V vertices always has exactly V&minus;1 edges,
+    which is why the loop can stop the instant it has that many.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int cmpEdges(const void *a, const void *b) {",
+    "  return ((Edge*)a)->weight - ((Edge*)b)->weight;",
+    "}",
+    "",
+    "int kruskalMST(Edge edges[], int m, int n, Edge mst[]) {",
+    "  qsort(edges, m, sizeof(Edge), cmpEdges);              // cheapest edges first",
+    "  int parent[MAXV]; for (int i = 0; i < n; i++) parent[i] = i;",
+    "  int count = 0, total = 0;",
+    "",
+    "  for (int i = 0; i < m && count < n - 1; i++) {",
+    "    int a = find(parent, edges[i].from), b = find(parent, edges[i].to);",
+    "    if (a != b) {                                         // endpoints in different sets: no cycle",
+    "      parent[a] = b;                                       // union them",
+    "      mst[count++] = edges[i];",
+    "      total += edges[i].weight;",
+    "    }",
+    "  }",
+    "  return total;",
+    "}"
+  ];
+
+  function findNode(state, val){ return state.nodes.filter(function(n){ return n.val===val; })[0]; }
+  function valOf(state, id){ var n=state.nodes.filter(function(x){return x.id===id;})[0]; return n?n.val:"?"; }
+  function findRoot(parent, x){ while(parent[x]!==x) x=parent[x]; return x; }
+
+  function frame(state, inMst, curEdgeKey, phase, narr, ops, codeLine){
+    var g={
+      nodes: state.nodes.map(function(n){ return {id:n.id, val:n.val, role:""}; }),
+      edges: state.edges.map(function(e){
+        var key=e.from+":"+e.to;
+        return {from:e.from, to:e.to, weight:e.weight, active: key===curEdgeKey, settled: !!inMst[key]};
+      })
+    };
+    return {struct:g, phase:phase, narr:narr, ops:ops, code:CODE, codeLine:codeLine};
+  }
+
+  function opAddVertex(state, val){
+    if(!val) return {error:"Enter a label for the new vertex."};
+    if(findNode(state,val)) return {error:"Vertex \""+val+"\" already exists."};
+    var oc=(state.opsCount||0)+1;
+    var id=state.nextId;
+    var newState={nodes:state.nodes.concat([{id:id,val:val}]), edges:state.edges, opsCount:oc, nextId:id+1};
+    return {frames:[frame(newState, {}, null, "added-vertex", "Added vertex \""+val+"\".", oc, 5)], state:newState};
+  }
+  function opAddEdge(state, fromVal, toVal, weight){
+    var a=findNode(state,fromVal), b=findNode(state,toVal);
+    if(!a || !b) return {error:"Both vertices must already exist."};
+    if(a.id===b.id) return {error:"Can't connect a vertex to itself."};
+    if(!isFinite(weight) || weight<=0) return {error:"Weight must be a positive number."};
+    var exists=state.edges.some(function(e){ return (e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id); });
+    if(exists) return {error:"That edge already exists."};
+    var oc=(state.opsCount||0)+1;
+    var newState={nodes:state.nodes, edges:state.edges.concat([{from:a.id,to:b.id,weight:weight}]), opsCount:oc, nextId:state.nextId};
+    return {frames:[frame(newState, {}, a.id+":"+b.id, "added-edge", "Connected \""+fromVal+"\" and \""+toVal+"\" with weight "+weight+".", oc, 5)], state:newState};
+  }
+  function opRemoveEdge(state, fromVal, toVal){
+    var a=findNode(state,fromVal), b=findNode(state,toVal);
+    if(!a || !b) return {error:"Both vertices must exist."};
+    var found=state.edges.some(function(e){ return (e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id); });
+    if(!found) return {error:"There's no edge between \""+fromVal+"\" and \""+toVal+"\"."};
+    var oc=(state.opsCount||0)+1;
+    var edges=state.edges.filter(function(e){ return !((e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id)); });
+    var newState={nodes:state.nodes, edges:edges, opsCount:oc, nextId:state.nextId};
+    return {frames:[frame(newState, {}, null, "removed-edge", "Removed the edge between \""+fromVal+"\" and \""+toVal+"\".", oc, 5)], state:newState};
+  }
+
+  function opRun(state){
+    if(state.nodes.length<2) return {error:"Add at least two vertices first."};
+    var oc=(state.opsCount||0)+1, frames=[];
+    var sorted=state.edges.slice().sort(function(x,y){ return x.weight-y.weight; });
+    frames.push(frame(state, {}, null, "sort", "Sort all "+sorted.length+" edges by weight, cheapest first: "+sorted.map(function(e){return valOf(state,e.from)+"-"+valOf(state,e.to)+"("+e.weight+")";}).join(", ")+".", oc, 5));
+
+    var parent={}; state.nodes.forEach(function(n){ parent[n.id]=n.id; });
+    frames.push(frame(state, {}, null, "init-uf", "Start Union-Find: every vertex is its own set.", oc, 6));
+
+    var inMst={}, count=0, total=0, n=state.nodes.length;
+    for(var i=0;i<sorted.length && count<n-1;i++){
+      var e=sorted[i], key=e.from+":"+e.to;
+      var ra=findRoot(parent,e.from), rb=findRoot(parent,e.to);
+      if(ra!==rb){
+        parent[ra]=rb;
+        inMst[key]=true; count++; total+=e.weight;
+        frames.push(frame(state, inMst, key, "accept", "\""+valOf(state,e.from)+"\"-\""+valOf(state,e.to)+"\" (weight "+e.weight+"): different sets — accept it into the MST. Running total: "+total+".", oc, [12,14]));
+      } else {
+        frames.push(frame(state, inMst, key, "reject", "\""+valOf(state,e.from)+"\"-\""+valOf(state,e.to)+"\" (weight "+e.weight+"): both endpoints are already connected — accepting it would close a cycle. Skip it.", oc, 11));
+      }
+    }
+    frames.push(frame(state, inMst, null, "done", "MST complete: "+count+" edges, total weight "+total+".", oc, 17));
+    return {frames:frames, state:{nodes:state.nodes, edges:state.edges, opsCount:oc, nextId:state.nextId}};
+  }
+
+  function init(){
+    var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"},{id:4,val:"E"}];
+    var edges=[
+      {from:0,to:1,weight:4},{from:0,to:2,weight:2},{from:1,to:2,weight:1},{from:1,to:3,weight:5},
+      {from:2,to:3,weight:8},{from:2,to:4,weight:10},{from:3,to:4,weight:2},{from:1,to:4,weight:6}
+    ];
+    var state={nodes:nodes, edges:edges, opsCount:0, nextId:5};
+    return {state:state, frames:[frame(state, {}, null, "start",
+      "An undirected, weighted graph (seeded with 5 vertices). Kruskal's finds the cheapest set of edges that connects every vertex with no cycles.", 0, 5)]};
+  }
+  function str(id){ return document.getElementById(id).value.trim(); }
+  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      addVertex: { btn:"btnAddVertex", enterOn:"vLabel", run: function(state){ return opAddVertex(state, str("vLabel")); } },
+      addEdge: { btn:"btnAddEdge", run: function(state){ return opAddEdge(state, str("eFrom"), str("eTo"), num("eWeight")); } },
+      removeEdge: { btn:"btnRemoveEdge", run: function(state){ return opRemoveEdge(state, str("eFrom"), str("eTo")); } },
+      run: { btn:"btnRun", run: function(state){ return opRun(state); } }
+    },
+    renderExtra: function(f){ DSRender.graph(document.getElementById("graphNodes"), document.getElementById("graphLinks"), f.struct, {}); },
+    statLabels: [{key:"ops",label:"Operations"}]
+  });
+})();
+</script>
+</body>
+</html>

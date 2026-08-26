@@ -65,6 +65,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; quickSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -85,9 +92,26 @@
 (function(){
   "use strict";
 
+  var CODE=[
+    "void quickSort(int arr[], int lo, int hi) {",
+    "  if (lo >= hi) return;",
+    "  int pivot = arr[hi];",
+    "  int i = lo - 1;",
+    "  for (int j = lo; j < hi; j++) {",
+    "    if (arr[j] <= pivot) {",
+    "      i++;",
+    "      swap(&arr[i], &arr[j]);",
+    "    }",
+    "  }",
+    "  swap(&arr[i + 1], &arr[hi]);   // pivot lands at i+1",
+    "  quickSort(arr, lo, i);",
+    "  quickSort(arr, i + 2, hi);",
+    "}"
+  ];
+
   function build(input){
     var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0, fixed=new Array(n).fill(false);
-    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp}); }
+    function push(r,phase,narr,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,code:CODE,codeLine:codeLine,moves:moves}); }
     function baseRoles(lo,hi){
       var r=new Array(n).fill("");
       for(var idx=0; idx<n; idx++){
@@ -97,18 +121,18 @@
       return r;
     }
 
-    push(baseRoles(0,n-1),"start","Quick sort picks a pivot, partitions the array around it, then recurses on each side. No merge step is needed — once partitioning finishes, the pivot is already where it belongs.");
+    push(baseRoles(0,n-1),"start","Quick sort picks a pivot, partitions the array around it, then recurses on each side. No merge step is needed — once partitioning finishes, the pivot is already where it belongs.",0);
 
     function qsort(lo,hi){
       if(lo>hi) return;
       if(lo===hi){
         fixed[lo]=true;
-        push(baseRoles(lo,hi),"leaf","Index "+lo+" holds "+a[lo]+" alone — a single element is already in its correct position.");
+        push(baseRoles(lo,hi),"leaf","Index "+lo+" holds "+a[lo]+" alone — a single element is already in its correct position.",1);
         return;
       }
       var pivot=a[hi];
       var r0=baseRoles(lo,hi); r0[hi]="pivot";
-      push(r0,"pivot","Partitioning "+lo+"–"+hi+": pick "+pivot+" (index "+hi+") as the pivot. Everything ≤ pivot will end up on its left, everything greater on its right.");
+      push(r0,"pivot","Partitioning "+lo+"–"+hi+": pick "+pivot+" (index "+hi+") as the pivot. Everything ≤ pivot will end up on its left, everything greater on its right.",[2,3]);
 
       var i=lo-1;
       for(var j=lo;j<hi;j++){
@@ -119,18 +143,19 @@
         cmp++;
         var takeIn=a[j]<=pivot;
         push(r,"compare","Compare "+a[j]+" (index "+j+") with the pivot "+pivot+". "+
-          (takeIn ? "Not greater than the pivot, so it belongs in the left region." : "Greater than the pivot, so it stays on the right for now."));
+          (takeIn ? "Not greater than the pivot, so it belongs in the left region." : "Greater than the pivot, so it stays on the right for now."),5);
         if(takeIn){
           i++;
           if(i!==j){
             var tmp=a[i]; a[i]=a[j]; a[j]=tmp; swp++;
             var r2=baseRoles(lo,hi);
             r2[hi]="pivot"; r2[i]="left head landed"; r2[j]="right head landed";
-            push(r2,"swap","Swap "+a[i]+" and "+a[j]+" so the ≤-pivot region grows to include index "+i+".");
+            push(r2,"swap","Swap "+a[i]+" and "+a[j]+" so the ≤-pivot region grows to include index "+i+".",[6,7],
+              [{from:i,to:j},{from:j,to:i}]);
           } else {
             var r3=baseRoles(lo,hi);
             r3[hi]="pivot"; r3[i]="left head";
-            push(r3,"no-swap","Index "+i+" is already inside the ≤-pivot region, so no swap is needed.");
+            push(r3,"no-swap","Index "+i+" is already inside the ≤-pivot region, so no swap is needed.",6);
           }
         }
       }
@@ -138,14 +163,15 @@
       var tmp2=a[p]; a[p]=a[hi]; a[hi]=tmp2; swp++;
       fixed[p]=true;
       var r4=baseRoles(lo,hi); r4[p]="sorted landed";
-      push(r4,"place-pivot","Swap the pivot into index "+p+". Everything left of it is ≤ "+a[p]+" and everything right is greater — the pivot is now in its final sorted position.");
+      push(r4,"place-pivot","Swap the pivot into index "+p+". Everything left of it is ≤ "+a[p]+" and everything right is greater — the pivot is now in its final sorted position.",10,
+        [{from:p,to:hi},{from:hi,to:p}]);
 
       qsort(lo,p-1);
       qsort(p+1,hi);
     }
 
     qsort(0,n-1);
-    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.");
+    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.",13);
     return frames;
   }
 

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counting Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Count &middot; Accumulate &middot; Place</p>
+      <h1>Counting&nbsp;Sort</h1>
+    </div>
+    <p class="note">No comparisons at all: count how often each value appears, turn those counts into output positions, then place every value directly where it belongs.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Every sort covered so far is <b>comparison-based</b> — it decides order by asking "is this bigger
+      than that?" — and every comparison-based sort is provably at best O(n log n). Counting sort sidesteps
+      the question entirely: if every value is a non-negative integer within some known range, you can count
+      how many times each one appears, turn those counts into exact output positions with a running total,
+      then place every value straight into its slot. No comparisons, no swaps — the trade is needing to know
+      the value range up front, and paying for an array sized to it.</p>
+
+      <table class="notes-table">
+        <tr><th>Case</th><th>Time</th></tr>
+        <tr><td>Every case</td><td><b>O(n + k)</b>, where k is the value range</td></tr>
+        <tr><td>Space</td><td><b>O(n + k)</b> &mdash; the count array plus the output array</td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel's middle loop — <code>count[v] += count[v - 1]</code> — turns
+      raw occurrence counts into a running total, so <code>count[v]</code> ends up meaning "how many values
+      are &le; v", which is exactly the one-past-the-end output index for the last copy of v. The final loop
+      walks the <em>input</em> backwards specifically so that when two equal values are placed, the one that
+      appeared earlier in the input still lands in the earlier output slot — that's what makes counting sort
+      <b>stable</b>.</p>
+
+      <p><b>Common mistake:</b> walking the placement loop forwards instead of backwards still produces a
+      correctly <em>sorted</em> array — every value lands in a valid slot for its size — but silently breaks
+      stability, since equal values now land in reversed relative order. It's the same trap merge sort's
+      tie-handling has, from the opposite direction.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; seven values, start to finish</span></div>
+    <div class="panel-body">
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 4px">Input</p>
+      <div class="scroller"><div class="array-row" id="demoInput"></div></div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Counts, by value</p>
+      <div class="scroller"><div class="array-row" id="demoCounts"></div></div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Output</p>
+      <div class="scroller"><div class="array-row" id="demoOutput"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; countingSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="counting-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try a range that's much larger than the count of numbers in the visualizer — watch the count array
+    balloon even though almost every bucket stays empty.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "void countingSort(int arr[], int n, int output[]) {",
+    "  int max = 0;",
+    "  for (int i = 0; i < n; i++) if (arr[i] > max) max = arr[i];",
+    "  int count[MAXV] = {0};",
+    "  for (int i = 0; i < n; i++) count[arr[i]]++;              // count occurrences",
+    "  for (int v = 1; v <= max; v++) count[v] += count[v - 1];  // running total -> positions",
+    "  for (int i = n - 1; i >= 0; i--) {                         // stable: walk backwards",
+    "    int pos = --count[arr[i]];",
+    "    output[pos] = arr[i];",
+    "  }",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var a=[4,2,2,8,3,3,1], n=a.length, frames=[];
+    var max=0; for(var i=0;i<n;i++) if(a[i]>max) max=a[i];
+    var counts=new Array(max+1).fill(0);
+    var output=new Array(n).fill(null);
+
+    function cellsOf(vals,roles){ return vals.map(function(v,i){ return {val:(v===null?"·":v), role:(roles&&roles[i])||""}; }); }
+    function push(narr,codeLine,inR,cR,outR){
+      frames.push({struct:{input:cellsOf(a,inR), counts:cellsOf(counts,cR), output:cellsOf(output,outR)}, narr:narr, code:CODE, codeLine:codeLine});
+    }
+
+    push("Count how often each value from 0 to "+max+" appears.",[1,3]);
+    for(var i2=0;i2<n;i2++){
+      counts[a[i2]]++;
+      var inR=new Array(n).fill(""); inR[i2]="left head";
+      var cR=new Array(max+1).fill(""); cR[a[i2]]="left head landed";
+      push("Read "+a[i2]+" and increment count["+a[i2]+"] to "+counts[a[i2]]+".",4,inR,cR);
+    }
+    push("Turn counts into positions with a running total.",5);
+    for(var v=1; v<=max; v++){
+      counts[v]+=counts[v-1];
+      var cR2=new Array(max+1).fill(""); cR2[v]="left head landed"; cR2[v-1]="right head";
+      push("count["+v+"] += count["+(v-1)+"] = "+counts[v]+".",5,null,cR2);
+    }
+    for(var j=n-1;j>=0;j--){
+      var val=a[j];
+      counts[val]--;
+      output[counts[val]]=val;
+      var inR2=new Array(n).fill(""); inR2[j]="left head";
+      var cR3=new Array(max+1).fill(""); cR3[val]="right head landed";
+      var outR=new Array(n).fill(""); outR[counts[val]]="sorted landed";
+      push("Place "+val+" into output index "+counts[val]+".",8,inR2,cR3,outR);
+    }
+    push("Sorted: ["+output.join(", ")+"].",9);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoInput"), frame.struct.input);
+      DSRender.slots(document.getElementById("demoCounts"), frame.struct.counts);
+      DSRender.slots(document.getElementById("demoOutput"), frame.struct.output);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -63,6 +63,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertionSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -83,12 +90,26 @@
 (function(){
   "use strict";
 
+  var CODE=[
+    "void insertionSort(int arr[], int n) {",
+    "  for (int i = 1; i < n; i++) {",
+    "    int key = arr[i];",
+    "    int j = i - 1;",
+    "    while (j >= 0 && arr[j] > key) {",
+    "      arr[j + 1] = arr[j];   // shift right",
+    "      j--;",
+    "    }",
+    "    arr[j + 1] = key;        // key found its spot",
+    "  }",
+    "}"
+  ];
+
   function build(input){
     var a=input.slice(), n=a.length, frames=[], cmp=0, wrt=0;
     function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,wrt:wrt}); }
+    function push(r,phase,narr,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,wrt:wrt,code:CODE,codeLine:codeLine,moves:moves}); }
 
-    push(roles(),"start","Insertion sort grows a sorted prefix one element at a time: each new element walks left, swapping past every larger value, until it finds its place.");
+    push(roles(),"start","Insertion sort grows a sorted prefix one element at a time: each new element walks left, swapping past every larger value, until it finds its place.",0);
     var rInit=roles(); rInit[0]="sorted";
     push(rInit,"init","Index 0 holds "+a[0]+" by itself — a single element is trivially a sorted run.");
 
@@ -96,7 +117,7 @@
       var r0=roles();
       for(var k=0;k<i;k++) r0[k]="sorted";
       r0[i]="left head";
-      push(r0,"key","Take the next value, "+a[i]+" at index "+i+", as the key to insert into the sorted prefix on its left.");
+      push(r0,"key","Take the next value, "+a[i]+" at index "+i+", as the key to insert into the sorted prefix on its left.",[2,3]);
 
       var j=i;
       while(j>0){
@@ -106,20 +127,21 @@
         cmp++;
         var willSwap=a[j-1]>a[j];
         push(r,"compare","Compare the key "+a[j]+" with "+a[j-1]+" to its left. "+
-          (willSwap ? "Larger, so shift it right and keep walking left." : "Not larger — the key has found its spot."));
+          (willSwap ? "Larger, so shift it right and keep walking left." : "Not larger — the key has found its spot."),4);
         if(!willSwap) break;
         var tmp=a[j-1]; a[j-1]=a[j]; a[j]=tmp; wrt++;
         var r2=roles();
         for(var k3=0;k3<i;k3++) r2[k3]="sorted";
         r2[j-1]="left head landed";
-        push(r2,"shift","Shifted: "+a[j-1]+" moves one step left, past "+a[j]+".");
+        push(r2,"shift","Shifted: "+a[j-1]+" moves one step left, past "+a[j]+".",[5,6],
+          [{from:j-1,to:j},{from:j,to:j-1}]);
         j--;
       }
       var rEnd=roles();
       for(var k4=0;k4<=i;k4++) rEnd[k4]="sorted";
-      push(rEnd,"placed","The key has settled at index "+j+". The sorted prefix now covers indices 0–"+i+".");
+      push(rEnd,"placed","The key has settled at index "+j+". The sorted prefix now covers indices 0–"+i+".",8);
     }
-    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+wrt+" shifts for "+n+" numbers.");
+    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+wrt+" shifts for "+n+" numbers.",10);
     return frames;
   }
 

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kruskal's MST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Minimum Spanning Tree &middot; Cheapest Edges First</p>
+      <h1>Kruskal&#8217;s&nbsp;MST</h1>
+    </div>
+    <p class="note">Finds the cheapest possible set of edges that connects every vertex in a weighted graph, with no cycles.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A <b>minimum spanning tree</b> (MST) is the cheapest possible subset of a connected, undirected,
+      weighted graph's edges that still connects every vertex — always exactly <code>V&minus;1</code> edges for
+      <code>V</code> vertices, and no cycles (a cycle would mean some edge in it could be removed for free).
+      Kruskal's algorithm builds one greedily: sort every edge by weight, then walk the sorted list accepting
+      an edge whenever its two endpoints aren't already connected, and skipping it when they are — accepting
+      it would only close a cycle, never help connect anything new.</p>
+
+      <p>"Are these two vertices already connected?" is exactly the question
+      <a href="../union-find/union-find.html">Union-Find</a> answers in almost constant time: two vertices
+      are connected exactly when <code>find</code> returns the same root for both. That's why Kruskal's and
+      Union-Find are taught together — the graph algorithm's core decision <em>is</em> a disjoint-set query.</p>
+
+      <table class="notes-table">
+        <tr><th>Step</th><th>Cost</th></tr>
+        <tr><td>Sort E edges</td><td><b>O(E log E)</b></td></tr>
+        <tr><td>E finds + up to V&minus;1 unions</td><td><b>O(E &middot; &alpha;(V))</b>, effectively O(E)</td></tr>
+        <tr><td>Total</td><td><b>O(E log E)</b> &mdash; dominated by the sort</td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel below stops the loop the instant <code>count</code> reaches
+      <code>n - 1</code> — a spanning tree on <code>n</code> vertices needs exactly that many edges and never
+      more, so once it's found there's no reason to keep scanning the (possibly much longer) sorted list.</p>
+
+      <p><b>Common mistake:</b> checking whether an edge's endpoints are equal by comparing the vertices
+      themselves instead of their <em>roots</em> — <code>edges[i].from == edges[i].to</code> only catches a
+      self-loop, not the far more common case of two different vertices that are already connected through
+      some other path. Cycle detection has to go through <code>find</code>, not a direct comparison.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; accept, accept, reject a cycle, accept</span></div>
+    <div class="panel-body">
+      <div class="graphwrap" id="demoWrap">
+        <svg class="links" id="demoLinks"></svg>
+        <div id="demoNodes"></div>
+      </div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; kruskalMST()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="kruskal-mst-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — build a graph with one very expensive edge that's the <em>only</em> connection to
+    an isolated vertex, and watch Kruskal's accept it anyway once every cheaper edge has been considered.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int cmpEdges(const void *a, const void *b) {",
+    "  return ((Edge*)a)->weight - ((Edge*)b)->weight;",
+    "}",
+    "",
+    "int kruskalMST(Edge edges[], int m, int n, Edge mst[]) {",
+    "  qsort(edges, m, sizeof(Edge), cmpEdges);              // cheapest edges first",
+    "  int parent[MAXV]; for (int i = 0; i < n; i++) parent[i] = i;",
+    "  int count = 0, total = 0;",
+    "",
+    "  for (int i = 0; i < m && count < n - 1; i++) {",
+    "    int a = find(parent, edges[i].from), b = find(parent, edges[i].to);",
+    "    if (a != b) {                                         // endpoints in different sets: no cycle",
+    "      parent[a] = b;                                       // union them",
+    "      mst[count++] = edges[i];",
+    "      total += edges[i].weight;",
+    "    }",
+    "  }",
+    "  return total;",
+    "}"
+  ];
+
+  var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"}];
+  var edges=[{from:0,to:1,weight:1},{from:1,to:2,weight:2},{from:0,to:2,weight:3},{from:2,to:3,weight:4}];
+  function valOf(id){ return nodes.filter(function(n){return n.id===id;})[0].val; }
+  function findRoot(parent,x){ while(parent[x]!==x) x=parent[x]; return x; }
+
+  function scriptFrames(){
+    var frames=[];
+    function push(inMst, curKey, narr, codeLine){
+      frames.push({struct:{
+        nodes: nodes.map(function(n){ return {id:n.id, val:n.val, role:""}; }),
+        edges: edges.map(function(e){
+          var key=e.from+":"+e.to;
+          return {from:e.from, to:e.to, weight:e.weight, active: key===curKey, settled: !!inMst[key]};
+        })
+      }, narr:narr, code:CODE, codeLine:codeLine});
+    }
+
+    var sorted=edges.slice().sort(function(x,y){ return x.weight-y.weight; });
+    push({}, null, "Sort edges by weight: "+sorted.map(function(e){return valOf(e.from)+"-"+valOf(e.to)+"("+e.weight+")";}).join(", ")+".", 5);
+
+    var parent={}; nodes.forEach(function(n){ parent[n.id]=n.id; });
+    var inMst={}, count=0, total=0, n=nodes.length;
+    for(var i=0;i<sorted.length && count<n-1;i++){
+      var e=sorted[i], key=e.from+":"+e.to;
+      var ra=findRoot(parent,e.from), rb=findRoot(parent,e.to);
+      if(ra!==rb){
+        parent[ra]=rb; inMst[key]=true; count++; total+=e.weight;
+        push(inMst, key, valOf(e.from)+"-"+valOf(e.to)+" ("+e.weight+"): accept, total now "+total+".", [12,14]);
+      } else {
+        push(inMst, key, valOf(e.from)+"-"+valOf(e.to)+" ("+e.weight+"): already connected — would close a cycle. Skip.", 11);
+      }
+    }
+    push(inMst, null, "MST complete: "+count+" edges, total weight "+total+".", 17);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 1000,
+    renderExtra: function(frame){
+      DSRender.graph(document.getElementById("demoNodes"), document.getElementById("demoLinks"), frame.struct, {});
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

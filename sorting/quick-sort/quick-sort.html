@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quick Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Pick a Pivot &middot; Partition &middot; Recurse</p>
+      <h1>Quick&nbsp;Sort</h1>
+    </div>
+    <p class="note">Picks a pivot, partitions the range around it so everything smaller ends up on the left and everything larger on the right, then recurses on each side.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Quick sort also divides and conquers, but unlike merge sort it does the work <em>before</em>
+      recursing, not after. Pick a <b>pivot</b> (the code below always uses the last element of the range),
+      then <b>partition</b>: walk the range and shuffle everything &le; the pivot to the left, everything
+      greater to the right. Once the walk finishes, swap the pivot into the boundary between those two
+      groups — it's now in its exact final sorted position, permanently, and the algorithm recurses into the
+      two sides on either side of it.</p>
+
+      <table class="notes-table">
+        <tr><th>Case</th><th>Time</th></tr>
+        <tr><td>Average</td><td><b>O(n log n)</b></td></tr>
+        <tr><td>Worst (already sorted, last-element pivot)</td><td><b>O(n&sup2;)</b></td></tr>
+        <tr><td>Space</td><td><b>O(log n)</b> average &mdash; recursion stack only, sorts in place</td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel's partition step (Lomuto's scheme) tracks a single boundary
+      index <code>i</code>: everything at or before <code>i</code> is known &le; the pivot. Every time the
+      scan finds another value that qualifies, <code>i</code> advances and that value swaps into place —
+      one pass, one boundary, no extra array needed, which is why quick sort's space cost is just the
+      recursion stack rather than merge sort's O(n) temporary buffer.</p>
+
+      <p><b>Common mistake:</b> always picking the <em>same</em> position as pivot (the last element, as
+      here) is what causes the O(n&sup2;) worst case — a sorted or reverse-sorted input keeps producing the
+      most unbalanced possible split, one side of size <code>n-1</code> every single time. Real
+      implementations often pick a pivot at random, or the median of a few sampled elements, specifically to
+      make that worst case astronomically unlikely rather than one sorted-input away.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; six values, start to finish</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; quickSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="quick-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try a sorted array in the visualizer and watch every partition become as unbalanced as possible —
+    the worst case, live.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "void quickSort(int arr[], int lo, int hi) {",
+    "  if (lo >= hi) return;",
+    "  int pivot = arr[hi];",
+    "  int i = lo - 1;",
+    "  for (int j = lo; j < hi; j++) {",
+    "    if (arr[j] <= pivot) {",
+    "      i++;",
+    "      swap(&arr[i], &arr[j]);",
+    "    }",
+    "  }",
+    "  swap(&arr[i + 1], &arr[hi]);   // pivot lands at i+1",
+    "  quickSort(arr, lo, i);",
+    "  quickSort(arr, i + 2, hi);",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var a=[8,3,7,4,9,2], n=a.length, frames=[], fixed=new Array(n).fill(false);
+    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
+    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
+    function baseRoles(lo,hi){
+      var r=new Array(n).fill("");
+      for(var idx=0;idx<n;idx++){ if(fixed[idx]) r[idx]="sorted"; else if(idx<lo||idx>hi) r[idx]="dim"; }
+      return r;
+    }
+
+    push(baseRoles(0,n-1),"Pick a pivot, partition everything else around it, then recurse on each side.",0);
+
+    function qsort(lo,hi){
+      if(lo>hi) return;
+      if(lo===hi){ fixed[lo]=true; push(baseRoles(lo,hi),"Index "+lo+" holds "+a[lo]+" alone — already placed.",1); return; }
+      var pivot=a[hi];
+      var r0=baseRoles(lo,hi); r0[hi]="pivot";
+      push(r0,"Partitioning "+lo+"–"+hi+": pivot is "+pivot+".",[2,3]);
+
+      var i=lo-1;
+      for(var j=lo;j<hi;j++){
+        var r=baseRoles(lo,hi); r[hi]="pivot"; r[j]="right head"; if(i>=lo) r[i]="left head";
+        var takeIn=a[j]<=pivot;
+        push(r,"Compare "+a[j]+" with the pivot "+pivot+". "+(takeIn?"Belongs on the left.":"Stays on the right for now."),5);
+        if(takeIn){
+          i++;
+          if(i!==j){
+            var tmp=a[i]; a[i]=a[j]; a[j]=tmp;
+            var r2=baseRoles(lo,hi); r2[hi]="pivot"; r2[i]="left head landed"; r2[j]="right head landed";
+            push(r2,"Swap "+a[i]+" and "+a[j]+".",[6,7]);
+          }
+        }
+      }
+      var p=i+1;
+      var tmp2=a[p]; a[p]=a[hi]; a[hi]=tmp2;
+      fixed[p]=true;
+      var r4=baseRoles(lo,hi); r4[p]="sorted landed";
+      push(r4,"Swap the pivot into index "+p+" — its final position.",10);
+
+      qsort(lo,p-1);
+      qsort(p+1,hi);
+    }
+
+    qsort(0,n-1);
+    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",13);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

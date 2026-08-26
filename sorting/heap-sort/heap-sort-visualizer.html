@@ -88,6 +88,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; siftDown() / heapSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -178,6 +185,26 @@
   window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(drawLinks,120); });
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(drawLinks);
 
+  var CODE=[
+    "void siftDown(int arr[], int root, int size) {",
+    "  int largest = root, left = 2*root+1, right = 2*root+2;",
+    "  if (left < size && arr[left] > arr[largest]) largest = left;",
+    "  if (right < size && arr[right] > arr[largest]) largest = right;",
+    "  if (largest != root) {",
+    "    swap(&arr[root], &arr[largest]);",
+    "    siftDown(arr, largest, size);",
+    "  }",
+    "}",
+    "",
+    "void heapSort(int arr[], int n) {",
+    "  for (int i = n / 2 - 1; i >= 0; i--) siftDown(arr, i, n);   // build max-heap",
+    "  for (int end = n - 1; end > 0; end--) {",
+    "    swap(&arr[0], &arr[end]);       // move max to the end",
+    "    siftDown(arr, 0, end);          // re-heapify what's left",
+    "  }",
+    "}"
+  ];
+
   function build(input){
     var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0, finalized=new Array(n).fill(false);
     rebuildTree(n);
@@ -187,9 +214,9 @@
       for(var idx=0; idx<n; idx++) if(finalized[idx]) r[idx]="sorted";
       return r;
     }
-    function push(r,phase,narr){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp}); }
+    function push(r,phase,narr,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,code:CODE,codeLine:codeLine,moves:moves}); }
 
-    push(roles(),"start","Heap sort first arranges the array into a max-heap — a binary tree, stored flat in the array, where every parent is at least as large as its children — then repeatedly moves the largest value to the end.");
+    push(roles(),"start","Heap sort first arranges the array into a max-heap — a binary tree, stored flat in the array, where every parent is at least as large as its children — then repeatedly moves the largest value to the end.",10);
 
     function siftDown(root,size){
       var largest=root, left=2*root+1, right=2*root+2;
@@ -198,7 +225,7 @@
         cmp++;
         var leftBigger=a[left]>a[largest];
         push(r1,"compare","Compare parent "+a[largest]+" (index "+largest+") with its left child "+a[left]+" (index "+left+"). "+
-          (leftBigger ? "The child is larger." : "The parent stays the largest so far."));
+          (leftBigger ? "The child is larger." : "The parent stays the largest so far."),2);
         if(leftBigger) largest=left;
       }
       if(right<size){
@@ -206,30 +233,32 @@
         cmp++;
         var rightBigger=a[right]>a[largest];
         push(r2,"compare","Compare the current largest "+a[largest]+" (index "+largest+") with the right child "+a[right]+" (index "+right+"). "+
-          (rightBigger ? "The child is larger." : "The current value stays largest."));
+          (rightBigger ? "The child is larger." : "The current value stays largest."),3);
         if(rightBigger) largest=right;
       }
       if(largest!==root){
         var tmp=a[root]; a[root]=a[largest]; a[largest]=tmp; swp++;
         var r3=roles(); r3[root]="right head landed"; r3[largest]="left head landed";
-        push(r3,"sift","Swap "+a[root]+" and "+a[largest]+": the larger child rises to index "+root+". Keep sifting down from index "+largest+".");
+        push(r3,"sift","Swap "+a[root]+" and "+a[largest]+": the larger child rises to index "+root+". Keep sifting down from index "+largest+".",[5,6],
+          [{from:root,to:largest},{from:largest,to:root}]);
         siftDown(largest,size);
       }
     }
 
-    push(roles(),"heapify-start","Build the max-heap first: work from the last parent node up to the root, sifting each one down into place.");
+    push(roles(),"heapify-start","Build the max-heap first: work from the last parent node up to the root, sifting each one down into place.",11);
     for(var i=Math.floor(n/2)-1;i>=0;i--) siftDown(i,n);
-    push(roles(),"heapify-done","The array is now a max-heap: index 0 holds the largest value, "+a[0]+".");
+    push(roles(),"heapify-done","The array is now a max-heap: index 0 holds the largest value, "+a[0]+".",12);
 
     for(var end=n-1; end>0; end--){
       var tmp2=a[0]; a[0]=a[end]; a[end]=tmp2; swp++;
       finalized[end]=true;
       var r4=roles(); r4[end]="sorted landed"; r4[0]="left head landed";
-      push(r4,"extract","Move the heap's largest value, "+a[end]+", from the root to index "+end+" — its final sorted position.");
+      push(r4,"extract","Move the heap's largest value, "+a[end]+", from the root to index "+end+" — its final sorted position.",13,
+        [{from:0,to:end},{from:end,to:0}]);
       siftDown(0,end);
     }
     finalized[0]=true;
-    push(roles(),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.");
+    push(roles(),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.",16);
     return frames;
   }
 

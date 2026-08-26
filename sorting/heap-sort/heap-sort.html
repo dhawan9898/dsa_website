@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heap Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <p class="eyebrow">Heapify &middot; Extract Max &middot; Sift Down</p>
+      <h1>Heap&nbsp;Sort</h1>
+    </div>
+    <p class="note">Arranges the array into a max-heap, then repeatedly pulls the largest value from the root and re-heapifies what's left.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>Heap sort borrows the <a href="../../data-structures/priority-queue/priority-queue.html">binary
+      heap</a>'s core operation, sift-down, and applies it twice over. First, <b>build a max-heap</b> out of
+      the whole array in place: work backwards from the last non-leaf node to the root, sifting each one
+      down so every parent ends up &ge; its children. Second, <b>repeatedly extract</b>: the root is always
+      the largest remaining value, so swap it to the end of the unsorted region, shrink that region by one,
+      and sift the new root down to restore the heap property — over and over until one element is left.</p>
+
+      <table class="notes-table">
+        <tr><th>Case</th><th>Time</th></tr>
+        <tr><td>Every case</td><td><b>O(n log n)</b> &mdash; n extractions, each an O(log n) sift-down</td></tr>
+        <tr><td>Space</td><td><b>O(1)</b> &mdash; the heap lives in the same array being sorted</td></tr>
+      </table>
+
+      <p><b>Implementation:</b> the code panel below stores the heap the same way the
+      <a href="../../data-structures/priority-queue/priority-queue.html">priority queue</a> does — no
+      pointers, just index arithmetic: node <code>i</code>'s children live at <code>2i+1</code> and
+      <code>2i+2</code>. That's what makes heap sort's O(1) space possible where merge sort needs O(n): the
+      sorted output grows at the <em>end</em> of the very array the heap is stored in, one extraction at a
+      time, with nothing copied out.</p>
+
+      <p><b>Common mistake:</b> sifting down from the root without first fixing up its <em>children's</em>
+      subtrees. Sift-down only assumes the two child subtrees are already valid heaps — which is exactly why
+      the build phase works backwards from the bottom up. Sifting forwards from the root on an unheapified
+      array simply produces the wrong heap.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; five values, start to finish</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; siftDown() / heapSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="heap-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: open the visualizer to see the same array as a tree — index arithmetic on the array below is
+    exactly the tree shown there, just flattened.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "void siftDown(int arr[], int root, int size) {",
+    "  int largest = root, left = 2*root+1, right = 2*root+2;",
+    "  if (left < size && arr[left] > arr[largest]) largest = left;",
+    "  if (right < size && arr[right] > arr[largest]) largest = right;",
+    "  if (largest != root) {",
+    "    swap(&arr[root], &arr[largest]);",
+    "    siftDown(arr, largest, size);",
+    "  }",
+    "}",
+    "",
+    "void heapSort(int arr[], int n) {",
+    "  for (int i = n / 2 - 1; i >= 0; i--) siftDown(arr, i, n);   // build max-heap",
+    "  for (int end = n - 1; end > 0; end--) {",
+    "    swap(&arr[0], &arr[end]);       // move max to the end",
+    "    siftDown(arr, 0, end);          // re-heapify what's left",
+    "  }",
+    "}"
+  ];
+
+  function scriptFrames(){
+    var a=[4,10,3,5,1], n=a.length, frames=[], finalized=new Array(n).fill(false);
+    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
+    function roles(){ var r=new Array(n).fill(""); for(var i=0;i<n;i++) if(finalized[i]) r[i]="sorted"; return r; }
+    function push(r,narr,codeLine){ frames.push({struct:{cells:cells(r)}, narr:narr, code:CODE, codeLine:codeLine}); }
+
+    push(roles(),"Build a max-heap first: work from the last parent node up to the root.",10);
+
+    function siftDown(root,size){
+      var largest=root, left=2*root+1, right=2*root+2;
+      if(left<size){
+        var r1=roles(); r1[largest]="left head"; r1[left]="right head";
+        var leftBigger=a[left]>a[largest];
+        push(r1,"Compare parent "+a[largest]+" with left child "+a[left]+". "+(leftBigger?"Child is larger.":"Parent stays largest."),2);
+        if(leftBigger) largest=left;
+      }
+      if(right<size){
+        var r2=roles(); r2[largest]="left head"; r2[right]="right head";
+        var rightBigger=a[right]>a[largest];
+        push(r2,"Compare current largest "+a[largest]+" with right child "+a[right]+". "+(rightBigger?"Child is larger.":"Stays largest."),3);
+        if(rightBigger) largest=right;
+      }
+      if(largest!==root){
+        var tmp=a[root]; a[root]=a[largest]; a[largest]=tmp;
+        var r3=roles(); r3[root]="right head landed"; r3[largest]="left head landed";
+        push(r3,"Swap "+a[root]+" and "+a[largest]+": the larger child rises.",[5,6]);
+        siftDown(largest,size);
+      }
+    }
+
+    for(var i=Math.floor(n/2)-1;i>=0;i--) siftDown(i,n);
+    push(roles(),"The array is now a max-heap: index 0 holds the largest value, "+a[0]+".",11);
+
+    for(var end=n-1; end>0; end--){
+      var tmp2=a[0]; a[0]=a[end]; a[end]=tmp2;
+      finalized[end]=true;
+      var r4=roles(); r4[end]="sorted landed"; r4[0]="left head landed";
+      push(r4,"Move the largest value, "+a[end]+", to index "+end+" — its final sorted position.",13);
+      siftDown(0,end);
+    }
+    finalized[0]=true;
+    push(roles(),"Sorted: ["+a.join(", ")+"].",16);
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 900,
+    renderExtra: function(frame){
+      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>

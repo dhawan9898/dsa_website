@@ -68,6 +68,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; binarySearch()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -88,6 +95,19 @@
 (function(){
   "use strict";
 
+  var CODE=[
+    "int binarySearch(int arr[], int n, int target) {",
+    "  int lo = 0, hi = n - 1;",
+    "  while (lo <= hi) {",
+    "    int mid = (lo + hi) / 2;",
+    "    if (arr[mid] == target) return mid;       // found it",
+    "    else if (arr[mid] < target) lo = mid + 1;  // go right",
+    "    else hi = mid - 1;                         // go left",
+    "  }",
+    "  return -1;                                   // range emptied out",
+    "}"
+  ];
+
   function build(input, target){
     var a=input.slice(), n=a.length, frames=[], cmp=0;
     function roles(){ return new Array(n).fill(""); }
@@ -95,9 +115,9 @@
       for(var k=0;k<lo;k++) r[k]="dim";
       for(var k2=hi+1;k2<n;k2++) r[k2]="dim";
     }
-    function push(r,phase,narr,range){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,range:range}); }
+    function push(r,phase,narr,range,codeLine){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,range:range,code:CODE,codeLine:codeLine}); }
 
-    push(roles(),"start","Binary search only works on sorted data. Each step compares the target, "+target+", to the middle of the current range and throws away the half that can't contain it.",n);
+    push(roles(),"start","Binary search only works on sorted data. Each step compares the target, "+target+", to the middle of the current range and throws away the half that can't contain it.",n,1);
 
     var lo=0, hi=n-1;
     while(lo<=hi){
@@ -110,21 +130,21 @@
       if(hi!==mid) r[hi]="right";
       cmp++;
       if(a[mid]===target){
-        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). Equal — this is it.",range);
+        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). Equal — this is it.",range,4);
         var rf=roles(); dimOutside(rf,lo,hi); rf[mid]="found";
-        push(rf,"found","Found "+target+" at index "+mid+" after "+cmp+" comparison"+(cmp===1?"":"s")+".",1);
+        push(rf,"found","Found "+target+" at index "+mid+" after "+cmp+" comparison"+(cmp===1?"":"s")+".",1,4);
         return frames;
       } else if(a[mid]<target){
-        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). "+target+" is larger, so it can only be to the right — eliminate indices "+lo+"–"+mid+".",range);
+        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). "+target+" is larger, so it can only be to the right — eliminate indices "+lo+"–"+mid+".",range,5);
         lo=mid+1;
       } else {
-        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). "+target+" is smaller, so it can only be to the left — eliminate indices "+mid+"–"+hi+".",range);
+        push(r,"compare","Compare target "+target+" with the middle value "+a[mid]+" (index "+mid+"). "+target+" is smaller, so it can only be to the left — eliminate indices "+mid+"–"+hi+".",range,6);
         hi=mid-1;
       }
     }
     var rNo=roles();
     for(var k3=0;k3<n;k3++) rNo[k3]="dim";
-    push(rNo,"not-found","The range is empty and "+target+" was never seen — it isn't present. "+cmp+" comparisons made.",0);
+    push(rNo,"not-found","The range is empty and "+target+" was never seen — it isn't present. "+cmp+" comparisons made.",0,8);
     return frames;
   }
 

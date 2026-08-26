@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Union-Find Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="union-find.html">&larr; Union-Find notes</a>
+      <p class="eyebrow">Disjoint Sets &middot; Find &middot; Union</p>
+      <h1>Union&#8209;Find&nbsp;Visualizer</h1>
+    </div>
+    <p class="note">Every element points at a parent; walk those pointers to find a set's root, and compress the path flat on the way.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Operate on the sets</h2><span class="sub">8 elements &middot; union by rank + path compression</span></div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="fld narrow"><span>Find</span><input type="number" id="findVal" value="3" min="0" max="7"></label>
+        <button id="btnFind" class="primary">Find</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="fld narrow"><span>Union A</span><input type="number" id="unionA" value="0" min="0" max="7"></label>
+        <label class="fld narrow"><span>Union B</span><input type="number" id="unionB" value="1" min="0" max="7"></label>
+        <button id="btnUnion" class="primary">Union</button>
+      </div>
+      <p class="hint" id="hint">Union two elements' sets, then Find a third to watch path compression flatten its walk to the root.</p>
+      <div class="row" style="margin-top:14px">
+        <button id="play" class="primary">Play</button>
+        <button id="back">&#9664; Back</button>
+        <button id="fwd">Step &#9654;</button>
+        <button id="reset">Reset</button>
+        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
+      </div>
+      <div class="stats" id="statsHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Parent pointers</h2><span class="sub">cell value = parent[i] &middot; index below</span></div>
+    <div class="panel-body">
+      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
+      <div class="legend">
+        <span class="key"><i class="swatch left"></i> element being walked / just found / just rewritten</span>
+        <span class="key"><i class="swatch right"></i> root being compared during union</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; find() / unionSets()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Running commentary</h2></div>
+    <div class="panel-body">
+      <p class="narr" id="narr">Loading…</p>
+      <div class="log" id="log"><ul></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    Union by rank keeps every tree shallow (never taller than log n), and path compression flattens a tree
+    every time it's walked — together they make find/union run in amortized <b>O(&alpha;(n))</b>, the inverse
+    Ackermann function, which is so slow-growing it's effectively constant for any array size that could
+    exist in memory.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var CODE=[
+    "int find(int parent[], int x) {",
+    "  if (parent[x] != x)",
+    "    parent[x] = find(parent, parent[x]);   // path compression",
+    "  return parent[x];",
+    "}",
+    "",
+    "void unionSets(int parent[], int rank[], int a, int b) {",
+    "  int ra = find(parent, a), rb = find(parent, b);",
+    "  if (ra == rb) return;                       // already the same set",
+    "  if (rank[ra] < rank[rb]) { int t = ra; ra = rb; rb = t; }",
+    "  parent[rb] = ra;                             // attach smaller-rank tree under larger",
+    "  if (rank[ra] == rank[rb]) rank[ra]++;",
+    "}"
+  ];
+
+  function cellsFor(parent, activeIdxs, activeRole){
+    var roles={};
+    activeIdxs.forEach(function(idx){ roles[idx]=activeRole; });
+    return parent.map(function(p,i){ return {val:p, role:roles[i]||"", ptr:(p===i?"ROOT":"")}; });
+  }
+  function frame(parent, activeIdxs, activeRole, phase, narr, ops, codeLine){
+    return {struct:{cells:cellsFor(parent, activeIdxs, activeRole)}, phase:phase, narr:narr, ops:ops, code:CODE, codeLine:codeLine};
+  }
+
+  function doWalk(parent, x, frames, oc){
+    var path=[x];
+    while(parent[path[path.length-1]]!==path[path.length-1]){
+      var cur=path[path.length-1], nxt=parent[cur];
+      frames.push(frame(parent, [cur], "left head", "walk", "parent["+cur+"] = "+nxt+" — not a root, step up.", oc, [1,2]));
+      path.push(nxt);
+    }
+    var root=path[path.length-1];
+    frames.push(frame(parent, [root], "left head landed", "root-found", "Reached "+root+": parent["+root+"] = "+root+" — this is the root.", oc, 3));
+    if(path.length>2){
+      var compressed=path.slice(0,path.length-1);
+      compressed.forEach(function(node){ parent[node]=root; });
+      frames.push(frame(parent, compressed, "left head landed", "compress", "Path compression: "+compressed.join(", ")+" now point directly at root "+root+".", oc, 2));
+    }
+    return root;
+  }
+
+  function opFind(state, x){
+    if(!isFinite(x) || x<0 || x>=state.n) return {error:"Enter an element between 0 and "+(state.n-1)+"."};
+    var oc=(state.opsCount||0)+1;
+    var parent=state.parent.slice();
+    var frames=[];
+    doWalk(parent, x, frames, oc);
+    return {frames:frames, state:{parent:parent, rank:state.rank.slice(), n:state.n, opsCount:oc}};
+  }
+
+  function opUnion(state, a, b){
+    if(!isFinite(a)||a<0||a>=state.n||!isFinite(b)||b<0||b>=state.n) return {error:"Enter two elements between 0 and "+(state.n-1)+"."};
+    var oc=(state.opsCount||0)+1;
+    var parent=state.parent.slice(), rank=state.rank.slice();
+    var frames=[];
+    var ra=doWalk(parent, a, frames, oc);
+    var rb=doWalk(parent, b, frames, oc);
+    if(ra===rb){
+      frames.push(frame(parent, [ra], "found", "done", "Elements "+a+" and "+b+" are already in the same set (root "+ra+") — nothing to do.", oc, 8));
+      return {frames:frames, state:{parent:parent, rank:rank, n:state.n, opsCount:oc}};
+    }
+    frames.push(frame(parent, [ra,rb], "right head", "compare-rank", "Compare rank["+ra+"] = "+rank[ra]+" with rank["+rb+"] = "+rank[rb]+" to decide which tree hangs under the other.", oc, 9));
+    if(rank[ra]<rank[rb]){ var t=ra; ra=rb; rb=t; }
+    parent[rb]=ra;
+    frames.push(frame(parent, [ra,rb], "left head landed", "attach", "Attach root "+rb+" under root "+ra+".", oc, 10));
+    if(rank[ra]===rank[rb]){
+      rank[ra]++;
+      frames.push(frame(parent, [ra], "left head landed", "rank-bump", "Equal ranks — bump rank["+ra+"] to "+rank[ra]+".", oc, 11));
+    }
+    return {frames:frames, state:{parent:parent, rank:rank, n:state.n, opsCount:oc}};
+  }
+
+  function init(){
+    var n=8, parent=[], rank=new Array(n).fill(0);
+    for(var i=0;i<n;i++) parent.push(i);
+    var state={parent:parent, rank:rank, n:n, opsCount:0};
+    return {state:state, frames:[frame(parent, [], "", "start", "Create "+n+" singleton sets: every element starts out as its own root.", 0, 1)]};
+  }
+  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+
+  VizDS.init({
+    init: init,
+    ops: {
+      find: { btn:"btnFind", enterOn:"findVal", run: function(state){ return opFind(state, num("findVal")); } },
+      union: { btn:"btnUnion", enterOn:"unionB", run: function(state){ return opUnion(state, num("unionA"), num("unionB")); } }
+    },
+    renderExtra: function(frame){ DSRender.slots(document.getElementById("arrayHost"), frame.struct.cells); },
+    statLabels: [{key:"ops",label:"Operations"}]
+  });
+})();
+</script>
+</body>
+</html>

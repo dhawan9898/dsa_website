@@ -62,6 +62,13 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; shellSort()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Running commentary</h2></div>
     <div class="panel-body">
       <p class="narr" id="narr">Load an array to begin.</p>
@@ -82,16 +89,32 @@
 (function(){
   "use strict";
 
+  var CODE=[
+    "void shellSort(int arr[], int n) {",
+    "  for (int gap = n / 2; gap >= 1; gap /= 2) {",
+    "    for (int i = gap; i < n; i++) {",
+    "      int j = i;",
+    "      while (j >= gap && arr[j - gap] > arr[j]) {",
+    "        int tmp = arr[j - gap];",
+    "        arr[j - gap] = arr[j];",
+    "        arr[j] = tmp;",
+    "        j -= gap;",
+    "      }",
+    "    }",
+    "  }",
+    "}"
+  ];
+
   function build(input){
     var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0;
     function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr,gap){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,gap:gap}); }
+    function push(r,phase,narr,gap,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,gap:gap,code:CODE,codeLine:codeLine,moves:moves}); }
 
     var gap=Math.floor(n/2);
-    push(roles(),"start","Shell sort is insertion sort with a twist: it first compares elements far apart (a large gap), then shrinks the gap each pass until it reaches 1 — a final ordinary insertion sort pass.",gap);
+    push(roles(),"start","Shell sort is insertion sort with a twist: it first compares elements far apart (a large gap), then shrinks the gap each pass until it reaches 1 — a final ordinary insertion sort pass.",gap,1);
 
     while(gap>=1){
-      push(roles(),"gap-start","New gap = "+gap+". Compare and shift elements that are "+gap+" apart.",gap);
+      push(roles(),"gap-start","New gap = "+gap+". Compare and shift elements that are "+gap+" apart.",gap,1);
       for(var i=gap;i<n;i++){
         var j=i;
         while(j>=gap){
@@ -100,18 +123,19 @@
           cmp++;
           var willSwap=a[j-gap]>a[j];
           push(r,"compare","Compare "+a[j-gap]+" (index "+(j-gap)+") with "+a[j]+" (index "+j+"), "+gap+" apart. "+
-            (willSwap ? "Out of order, so swap them." : "Already in order, so leave them."),gap);
+            (willSwap ? "Out of order, so swap them." : "Already in order, so leave them."),gap,4);
           if(!willSwap) break;
           var tmp=a[j-gap]; a[j-gap]=a[j]; a[j]=tmp; swp++;
           var r2=roles();
           r2[j-gap]="left head landed";
-          push(r2,"swap","Swapped across the gap: "+a[j-gap]+" moves "+gap+" steps left, past "+a[j]+".",gap);
+          push(r2,"swap","Swapped across the gap: "+a[j-gap]+" moves "+gap+" steps left, past "+a[j]+".",gap,[5,7],
+            [{from:j-gap,to:j},{from:j,to:j-gap}]);
           j-=gap;
         }
       }
       gap=Math.floor(gap/2);
     }
-    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.",0);
+    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.",0,12);
     return frames;
   }
 
