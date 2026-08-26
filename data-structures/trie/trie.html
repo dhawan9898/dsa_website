@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
+      <p class="eyebrow">Prefix Tree &middot; One Node Per Shared Letter</p>
+      <h1>Trie</h1>
+    </div>
+    <p class="note">A tree built for storing words, where words that share a prefix share the same path from the root.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-body notes">
+      <p>A trie (from re<b>trie</b>val, usually pronounced "try") stores a set of strings as a tree where
+      each edge is one character. Start at the root and follow the path spelled by a word's letters, one
+      node per letter; a special flag on a node marks "a word ends here." Because every word that shares a
+      prefix walks the exact same nodes for that prefix, storing <code>car</code>, <code>care</code>, and
+      <code>cart</code> together needs only one path for <code>c-a-r</code>, branching into three separate
+      tails right where the words actually differ.</p>
+
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Insert</td><td>Walk/create one node per character</td><td><b>O(L)</b></td></tr>
+        <tr><td>Search</td><td>Walk one node per character, check <code>isEnd</code></td><td><b>O(L)</b></td></tr>
+        <tr><td>Starts With</td><td>Same walk, skip the <code>isEnd</code> check</td><td><b>O(L)</b></td></tr>
+        <tr><td>Delete</td><td>Walk down, unmark, walk back up pruning dead ends</td><td><b>O(L)</b></td></tr>
+      </table>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);margin-top:-6px">L = length of the word — never depends on how many other words are stored.</p>
+
+      <p><b>Implementation:</b> the code panel below gives every node an array of child pointers indexed by
+      letter (<code>children['a'..'z']</code>) plus an <code>isEnd</code> flag. <code>search</code> and
+      <code>startsWith</code> are almost the same function — the only difference is what they check once the
+      walk finishes: a search demands <code>isEnd</code>, a prefix check is satisfied just by the path
+      existing at all. That distinction matters: after inserting only <code>"car"</code>, searching for
+      <code>"ca"</code> correctly fails (it's a prefix, not a stored word) while <code>startsWith("ca")</code>
+      correctly succeeds.</p>
+
+      <p><b>Common mistake:</b> deleting a word by just unmarking its final node's <code>isEnd</code> flag
+      and stopping there leaves every node on its path allocated forever, even ones no other word needs —
+      a slow memory leak. The fix is walking back up from the deleted word's end, freeing each node whose
+      subtree is now completely empty, but stopping the moment a node is either the end of a <em>different</em>
+      word or still has another child — deleting <code>"care"</code> after also inserting <code>"car"</code>
+      must stop pruning at the shared <code>r</code>, not remove it.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; insert three words, search, then delete</span></div>
+    <div class="panel-body">
+      <div class="scroller">
+        <div class="treewrap" id="demoWrap">
+          <svg class="links" id="demoLinks"></svg>
+          <div id="demoNodes"></div>
+        </div>
+      </div>
+      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / search()</span></div>
+    <div class="panel-body">
+      <div class="code-panel" id="codeHost"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="trie-visualizer.html">Open the interactive visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: try it yourself — insert a handful of words sharing a prefix, then delete all but one and watch
+    the trie prune itself back down, one dead branch at a time.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ds-engine.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var INSERT_CODE=[
+    "void insert(Trie *t, const char *word) {",
+    "  Node *cur = t->root;",
+    "  for (int i = 0; word[i]; i++) {",
+    "    int idx = word[i] - 'a';",
+    "    if (!cur->children[idx]) {",
+    "      cur->children[idx] = makeNode();            // create the missing branch",
+    "      cur->childCount++;",
+    "    }",
+    "    cur = cur->children[idx];",
+    "  }",
+    "  cur->isEnd = 1;                                   // mark the last node as a complete word",
+    "}"
+  ];
+  var SEARCH_CODE=[
+    "int search(Trie *t, const char *word) {",
+    "  Node *cur = t->root;",
+    "  for (int i = 0; word[i]; i++) {",
+    "    int idx = word[i] - 'a';",
+    "    if (!cur->children[idx]) return 0;              // branch doesn't exist",
+    "    cur = cur->children[idx];",
+    "  }",
+    "  return cur->isEnd;                                 // a full word, not just a prefix",
+    "}"
+  ];
+
+  function makeNode(ch){ return {ch:ch, isEnd:false, isRoot:false, children:{}}; }
+  function makeRoot(){ return {ch:"", isEnd:false, isRoot:true, children:{}}; }
+
+  var Tree={boxEls:{}, links:[]};
+  function div(c){ var d=document.createElement("div"); d.className=c; return d; }
+
+  function renderTrieTree(root, activePath, activeRole){
+    var nodesHost=document.getElementById("demoNodes");
+    nodesHost.innerHTML="";
+    Tree.boxEls={}; Tree.links=[];
+    var counter=0;
+    var activeSet={}; if(activePath!==undefined) activeSet[activePath]=true;
+
+    function place(node, path, parentEl){
+      var id=counter++;
+      var wrap=div("tnode");
+      var box=div("tbox");
+      var role=activeSet[path]?activeRole:"";
+      var cell=div("cell"+(role?" "+role:""));
+      cell.textContent=node.isRoot?"•":node.ch;
+      box.appendChild(cell);
+      wrap.appendChild(box);
+      if(node.isEnd){ var lab=div("tlabel"); lab.textContent="word"; wrap.appendChild(lab); }
+      Tree.boxEls[id]=box;
+      var childKeys=Object.keys(node.children).sort();
+      if(childKeys.length){
+        var kidsWrap=div("tkids");
+        childKeys.forEach(function(k){
+          var childId=place(node.children[k], path+k, kidsWrap);
+          Tree.links.push({p:id, c:childId});
+        });
+        wrap.appendChild(kidsWrap);
+      }
+      parentEl.appendChild(wrap);
+      return id;
+    }
+    place(root, "", nodesHost);
+    drawLinks();
+  }
+  function drawLinks(){
+    var svg=document.getElementById("demoLinks"), wrapEl=document.getElementById("demoWrap");
+    if(!wrapEl) return;
+    if(!Tree.links.length){ svg.innerHTML=""; return; }
+    var base=wrapEl.getBoundingClientRect();
+    svg.setAttribute("viewBox","0 0 "+wrapEl.offsetWidth+" "+wrapEl.offsetHeight);
+    svg.setAttribute("width",wrapEl.offsetWidth);
+    svg.setAttribute("height",wrapEl.offsetHeight);
+    var out="";
+    Tree.links.forEach(function(L){
+      var pb=Tree.boxEls[L.p], cb=Tree.boxEls[L.c];
+      if(!pb||!cb) return;
+      var pr=pb.getBoundingClientRect(), cr=cb.getBoundingClientRect();
+      var x1=pr.left+pr.width/2-base.left, y1=pr.bottom-base.top;
+      var x2=cr.left+cr.width/2-base.left, y2=cr.top-base.top;
+      var my=y1+(y2-y1)/2;
+      out+='<path d="M'+x1+' '+y1+' V'+my+' H'+x2+' V'+y2+'"></path>';
+    });
+    svg.innerHTML=out;
+  }
+  var rt;
+  window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(drawLinks,120); });
+
+  function scriptFrames(){
+    var root=makeRoot(), frames=[];
+    function push(activePath, activeRole, narr, code, codeLine){
+      frames.push({struct:{root:root, path:activePath, role:activeRole}, narr:narr, code:code, codeLine:codeLine});
+    }
+    function insert(word){
+      var cur=root, path="";
+      for(var i=0;i<word.length;i++){
+        var ch=word[i];
+        if(!cur.children[ch]){
+          cur.children[ch]=makeNode(ch);
+          push(path+ch, "left head landed", "Create node \""+(path+ch)+"\".", INSERT_CODE, [4,7]);
+        } else {
+          push(path+ch, "left head", "Follow existing branch to \""+(path+ch)+"\".", INSERT_CODE, 8);
+        }
+        cur=cur.children[ch]; path+=ch;
+      }
+      cur.isEnd=true;
+      push(path, "left head landed", "\""+word+"\" is now a complete word.", INSERT_CODE, 10);
+    }
+    function search(word){
+      var cur=root, path="";
+      for(var i=0;i<word.length;i++){
+        var ch=word[i];
+        if(!cur.children[ch]){ push(path, "", "No branch for \""+ch+"\" — \""+word+"\" isn't in the trie.", SEARCH_CODE, 4); return; }
+        cur=cur.children[ch]; path+=ch;
+        push(path, "left head", "Follow \""+ch+"\" to \""+path+"\".", SEARCH_CODE, [4,5]);
+      }
+      push(path, "found", cur.isEnd ? "\""+word+"\" is a complete word." : "\""+word+"\" is only a prefix, not a stored word.", SEARCH_CODE, 7);
+    }
+
+    push("", "", "An empty trie: just the root.", INSERT_CODE, 1);
+    insert("car"); insert("care"); insert("cat");
+    search("care");
+    search("ca");
+    return frames;
+  }
+
+  VizDS.loopDemo({
+    frames: scriptFrames(),
+    intervalMs: 950,
+    renderExtra: function(frame){
+      renderTrieTree(frame.struct.root, frame.struct.path, frame.struct.role);
+      document.getElementById("demoNarr").textContent = frame.narr;
+    }
+  });
+})();
+</script>
+</body>
+</html>
