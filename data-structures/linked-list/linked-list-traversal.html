@@ -98,7 +98,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — walking [4, 8, 2] from head to NULL</p>
-        <div class="scroller"><div id="travList"></div></div>
+        <div class="ll-stage"><div id="travStage" class="ll-host"></div><svg class="ll-svg" id="travSvg"></svg></div>
         <p class="narr" id="travNarr">&nbsp;</p>
         <div class="code-panel" id="travCode"></div>
       </div>
@@ -125,7 +125,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — searching [4, 8, 2] for 8</p>
-        <div class="scroller"><div id="searchList"></div></div>
+        <div class="ll-stage"><div id="searchStage" class="ll-host"></div><svg class="ll-svg" id="searchSvg"></svg></div>
         <p class="narr" id="searchNarr">&nbsp;</p>
         <div class="code-panel" id="searchCode"></div>
       </div>
@@ -153,7 +153,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — updating index 2 of [4, 8, 2] to 5</p>
-        <div class="scroller"><div id="updList"></div></div>
+        <div class="ll-stage"><div id="updStage" class="ll-host"></div><svg class="ll-svg" id="updSvg"></svg></div>
         <p class="narr" id="updNarr">&nbsp;</p>
         <div class="code-panel" id="updCode"></div>
       </div>
@@ -205,52 +205,29 @@
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ll-anim.js"></script>
 <script>
 (function(){
   "use strict";
-
-  function lineSet(cl){
-    if(cl==null) return [];
-    if(typeof cl==="number") return [cl];
-    var a=[]; for(var i=cl[0];i<=cl[1];i++) a.push(i); return a;
+  function N(id,val,row,col,o){ o=o||{}; return {id:id,val:val,row:row,col:col,cls:o.cls,ptrs:o.ptrs,next:o.next,nextCls:o.nextCls}; }
+  function play(stage,svg,narr,codeHost,code,frames){
+    LLAnim.play({ host:document.getElementById(stage), svg:document.getElementById(svg),
+      narrEl:document.getElementById(narr), codeHost:document.getElementById(codeHost),
+      code:code, frames:frames, ms:1700 });
   }
-  function panelCode(hostId, lines, cl){
-    var host=document.getElementById(hostId);
-    if(!host._els){
-      host.innerHTML=""; host._els=[];
-      lines.forEach(function(src,i){
-        var d=document.createElement("div"); d.className="code-line";
-        d.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
-        d.lastChild.textContent=src;
-        host.appendChild(d); host._els.push(d);
-      });
-    }
-    var set=lineSet(cl);
-    host._els.forEach(function(el,j){ el.className="code-line"+(set.indexOf(j)>=0?" active":""); });
-  }
-  function seq(vals, ai, ar, ll){
-    return {
-      dir:"h", nullEnd:true, emptyText:"Empty list — HEAD is NULL",
-      nodes: vals.map(function(v,i){ return {val:v, role:(i===ai?ar:""), ptr:(i===0?"HEAD":"")}; }),
-      linkActive: vals.map(function(_,i){ return i===ai; }),
-      linkLanded: vals.map(function(_,i){ return i===ll; })
-    };
-  }
-  function F(vals, ai, ar, ll, narr, code){ return {struct:seq(vals,ai,ar,ll), narr:narr, codeLine:code}; }
-  function run(o){
-    var i=0;
-    function step(){
-      var f=o.frames[i];
-      DSRender.sequence(document.getElementById(o.listId), f.struct);
-      document.getElementById(o.narrId).textContent=f.narr;
-      panelCode(o.codeId, o.code, f.codeLine);
-      i=(i+1)%o.frames.length;
-    }
-    step(); setInterval(step, o.ms||1500);
+  var base=[ ['a',4],['b',8],['c',2] ];  // the list [4,8,2]
+  function chain(active, ptrsOn, foundId){
+    return base.map(function(p,i){
+      var id=p[0];
+      var o={ next:(i<base.length-1?base[i+1][0]:'null') };
+      if(id===active) o.cls=(id===foundId?'found':'active');
+      var pt=[]; if(i===0) pt.push('HEAD'); if(ptrsOn && ptrsOn[id]) pt=pt.concat(ptrsOn[id]);
+      if(pt.length) o.ptrs=pt;
+      return N(id,p[1],0,i,o);
+    });
   }
 
-  /* ---- 1. traverse ---- */
+  /* ---- 1. traverse [4,8,2] ---- */
   var TRAV_CODE=[
     "void traverse(List *l) {",
     "  Node *cur = l->head;      // start at the head",
@@ -260,17 +237,18 @@
     "  }",
     "}"
   ];
-  run({ listId:"travList", narrId:"travNarr", codeId:"travCode", code:TRAV_CODE, ms:1350, frames:[
-    F([4,8,2], 0,"left head", -1, "Put cur on the head, 4.", 1),
-    F([4,8,2], 0,"left head", -1, "cur isn't NULL, so visit it: read 4.", [2,3]),
-    F([4,8,2], 1,"left head", -1, "Step forward: cur = cur->next. Now on 8.", 4),
-    F([4,8,2], 1,"left head", -1, "cur isn't NULL — visit 8.", [2,3]),
-    F([4,8,2], 2,"left head", -1, "Step forward. Now on 2.", 4),
-    F([4,8,2], 2,"left head", -1, "cur isn't NULL — visit 2.", [2,3]),
-    F([4,8,2], -1,"", -1, "Step forward and cur becomes NULL — past the end, so the loop stops. All n visited: O(n).", 2)
-  ]});
+  play("travStage","travSvg","travNarr","travCode",TRAV_CODE,[
+    { code:1, narr:"Put a temporary pointer cur on the head, 4.", nodes:chain('a',{a:['cur']}) },
+    { code:[2,3], narr:"cur isn't NULL, so visit it — read its value, 4.", nodes:chain('a',{a:['cur']}) },
+    { code:4, narr:"Advance: cur = cur->next. cur is now 8.", nodes:chain('b',{b:['cur']}) },
+    { code:[2,3], narr:"cur isn't NULL — visit 8.", nodes:chain('b',{b:['cur']}) },
+    { code:4, narr:"Advance again. cur is now 2.", nodes:chain('c',{c:['cur']}) },
+    { code:[2,3], narr:"cur isn't NULL — visit 2.", nodes:chain('c',{c:['cur']}) },
+    { code:2, narr:"Advance once more and cur becomes NULL — past the end, so the loop stops. Every node was visited once: O(n).",
+      nodes:base.map(function(p,i){ return N(p[0],p[1],0,i,{ptrs:(i===0?['HEAD']:undefined),next:(i<2?base[i+1][0]:'null')}); }) }
+  ]);
 
-  /* ---- 2. search ---- */
+  /* ---- 2. search [4,8,2] for 8 ---- */
   var SEARCH_CODE=[
     "Node* search(List *l, int val) {",
     "  Node *cur = l->head;",
@@ -281,14 +259,15 @@
     "  return NULL;                        // not in the list",
     "}"
   ];
-  run({ listId:"searchList", narrId:"searchNarr", codeId:"searchCode", code:SEARCH_CODE, ms:1450, frames:[
-    F([4,8,2], 0,"left head", -1, "Search for 8. Start cur at the head.", [1,2]),
-    F([4,8,2], 0,"left head", -1, "Is 4 equal to 8? No — step forward.", [3,4]),
-    F([4,8,2], 1,"found", -1, "Is 8 equal to 8? Yes — return this node and stop early.", 3),
-    F([4,8,2], 1,"found", -1, "Found at index 1. Search is O(n): worst case you scan the whole list.", 3)
-  ]});
+  play("searchStage","searchSvg","searchNarr","searchCode",SEARCH_CODE,[
+    { code:[1,2], narr:"Search for 8. Start cur at the head, 4.", nodes:chain('a',{a:['cur']}) },
+    { code:3, narr:"Is cur's value (4) equal to 8? No — walk on.", nodes:chain('a',{a:['cur']}) },
+    { code:4, narr:"cur = cur->next. cur is now 8.", nodes:chain('b',{b:['cur']}) },
+    { code:3, narr:"Is cur's value (8) equal to 8? Yes — return this node and stop early.", nodes:chain('b',{b:['cur']},'b') },
+    { code:3, narr:"Found 8 at index 1. Search is O(n): worst case you scan the whole list before matching (or hit NULL).", nodes:chain('b',{b:['cur']},'b') }
+  ]);
 
-  /* ---- 3. update at index ---- */
+  /* ---- 3. update index 2 of [4,8,2] to 5 ---- */
   var UPD_CODE=[
     "void updateAt(List *l, int idx, int val) {",
     "  Node *cur = l->head;",
@@ -297,13 +276,18 @@
     "  cur->val = val;                // overwrite in place",
     "}"
   ];
-  run({ listId:"updList", narrId:"updNarr", codeId:"updCode", code:UPD_CODE, ms:1450, frames:[
-    F([4,8,2], 0,"right", -1, "Update index 2 to 5. Here we stop ON the target — walk exactly 2 steps. Start at index 0 (4).", [1,2]),
-    F([4,8,2], 1,"right", -1, "Step to index 1 (8).", [2,3]),
-    F([4,8,2], 2,"right", -1, "Step to index 2 (2). This is the node to change.", [2,3]),
-    F([4,8,5], 2,"left head landed", -1, "Overwrite the value: 2 becomes 5. The node and its pointers stay put.", 4),
-    F([4,8,5], -1,"", -1, "Done. Walking to the index is O(n); the overwrite itself is O(1).", 5)
-  ]});
+  play("updStage","updSvg","updNarr","updCode",UPD_CODE,[
+    { code:1, narr:"Update index 2 to 5. Here we stop ON the target, not before it. Start cur at index 0 (4).",
+      nodes:[ N('a',4,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',8,0,1,{next:'c'}), N('c',2,0,2,{next:'null'}) ] },
+    { code:[2,3], narr:"Step to index 1 (8).",
+      nodes:[ N('a',4,0,0,{ptrs:['HEAD'],next:'b'}), N('b',8,0,1,{ptrs:['cur'],cls:'active',next:'c'}), N('c',2,0,2,{next:'null'}) ] },
+    { code:[2,3], narr:"Step to index 2 (2). That's the node to change.",
+      nodes:[ N('a',4,0,0,{ptrs:['HEAD'],next:'b'}), N('b',8,0,1,{next:'c'}), N('c',2,0,2,{ptrs:['cur'],cls:'active',next:'null'}) ] },
+    { code:4, narr:"Overwrite its value: 2 becomes 5. The node and all its pointers stay exactly where they are.",
+      nodes:[ N('a',4,0,0,{ptrs:['HEAD'],next:'b'}), N('b',8,0,1,{next:'c'}), N('c',5,0,2,{ptrs:['cur'],cls:'found',next:'null'}) ] },
+    { code:5, narr:"Done. Walking to the index is O(n); the overwrite itself is a single assignment, O(1).",
+      nodes:[ N('a',4,0,0,{ptrs:['HEAD'],next:'b'}), N('b',8,0,1,{next:'c'}), N('c',5,0,2,{next:'null'}) ] }
+  ]);
 
   /* ---- 4. length (static snippet, no animation) ---- */
   var LEN_CODE=[
@@ -317,7 +301,7 @@
     "  return count;",
     "}"
   ];
-  panelCode("lenCode", LEN_CODE, null);
+  LLAnim.renderCode(document.getElementById("lenCode"), LEN_CODE, null);
 })();
 </script>
 </body>

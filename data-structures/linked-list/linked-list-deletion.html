@@ -99,7 +99,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — deleting the head of [1, 3, 7]</p>
-        <div class="scroller"><div id="headList"></div></div>
+        <div class="ll-stage"><div id="headStage" class="ll-host"></div><svg class="ll-svg" id="headSvg"></svg></div>
         <p class="narr" id="headNarr">&nbsp;</p>
         <div class="code-panel" id="headCode"></div>
       </div>
@@ -129,7 +129,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — deleting the tail of [3, 7, 9]</p>
-        <div class="scroller"><div id="tailList"></div></div>
+        <div class="ll-stage"><div id="tailStage" class="ll-host"></div><svg class="ll-svg" id="tailSvg"></svg></div>
         <p class="narr" id="tailNarr">&nbsp;</p>
         <div class="code-panel" id="tailCode"></div>
       </div>
@@ -153,7 +153,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — deleting index 2 of [3, 7, 5, 9]</p>
-        <div class="scroller"><div id="idxList"></div></div>
+        <div class="ll-stage"><div id="idxStage" class="ll-host"></div><svg class="ll-svg" id="idxSvg"></svg></div>
         <p class="narr" id="idxNarr">&nbsp;</p>
         <div class="code-panel" id="idxCode"></div>
       </div>
@@ -183,7 +183,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — deleting the value 7 from [3, 7, 9]</p>
-        <div class="scroller"><div id="valList"></div></div>
+        <div class="ll-stage"><div id="valStage" class="ll-host"></div><svg class="ll-svg" id="valSvg"></svg></div>
         <p class="narr" id="valNarr">&nbsp;</p>
         <div class="code-panel" id="valCode"></div>
       </div>
@@ -232,107 +232,98 @@
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ll-anim.js"></script>
 <script>
 (function(){
   "use strict";
-
-  function lineSet(cl){
-    if(cl==null) return [];
-    if(typeof cl==="number") return [cl];
-    var a=[]; for(var i=cl[0];i<=cl[1];i++) a.push(i); return a;
-  }
-  function panelCode(hostId, lines, cl){
-    var host=document.getElementById(hostId);
-    if(!host._els){
-      host.innerHTML=""; host._els=[];
-      lines.forEach(function(src,i){
-        var d=document.createElement("div"); d.className="code-line";
-        d.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
-        d.lastChild.textContent=src;
-        host.appendChild(d); host._els.push(d);
-      });
-    }
-    var set=lineSet(cl);
-    host._els.forEach(function(el,j){ el.className="code-line"+(set.indexOf(j)>=0?" active":""); });
-  }
-  function seq(vals, ai, ar, ll){
-    return {
-      dir:"h", nullEnd:true, emptyText:"Empty list — HEAD is NULL",
-      nodes: vals.map(function(v,i){ return {val:v, role:(i===ai?ar:""), ptr:(i===0?"HEAD":"")}; }),
-      linkActive: vals.map(function(_,i){ return i===ai; }),
-      linkLanded: vals.map(function(_,i){ return i===ll; })
-    };
-  }
-  function F(vals, ai, ar, ll, narr, code){ return {struct:seq(vals,ai,ar,ll), narr:narr, codeLine:code}; }
-  function run(o){
-    var i=0;
-    function step(){
-      var f=o.frames[i];
-      DSRender.sequence(document.getElementById(o.listId), f.struct);
-      document.getElementById(o.narrId).textContent=f.narr;
-      panelCode(o.codeId, o.code, f.codeLine);
-      i=(i+1)%o.frames.length;
-    }
-    step(); setInterval(step, o.ms||1600);
+  function N(id,val,row,col,o){ o=o||{}; return {id:id,val:val,row:row,col:col,cls:o.cls,ptrs:o.ptrs,next:o.next,nextCls:o.nextCls}; }
+  function play(stage,svg,narr,codeHost,code,frames){
+    LLAnim.play({ host:document.getElementById(stage), svg:document.getElementById(svg),
+      narrEl:document.getElementById(narr), codeHost:document.getElementById(codeHost),
+      code:code, frames:frames, ms:1900 });
   }
 
-  /* ---- 1. delete head ---- */
+  /* ---- 1. delete head : delete 1 from [1,3,7] ---- */
   var HEAD_CODE=[
     "void deleteHead(List *l) {",
-    "  if (!l->head) return;      // empty",
-    "  Node *old = l->head;       // remember it",
-    "  l->head = old->next;       // HEAD skips forward",
-    "  free(old);                 // hand memory back",
+    "  if (!l->head) return;    // empty?",
+    "  Node *old = l->head;     // remember it",
+    "  l->head = old->next;     // HEAD skips forward",
+    "  free(old);               // hand memory back",
     "}"
   ];
-  run({ listId:"headList", narrId:"headNarr", codeId:"headCode", code:HEAD_CODE, frames:[
-    F([1,3,7], 0,"left head", -1, "Delete the head, 1. First remember it in a temporary pointer so we can free it.", [2]),
-    F([3,7], -1,"", -1, "Move HEAD to the second node, 3. The old head is now bypassed.", 3),
-    F([3,7], -1,"", -1, "Free the old node's memory. Done — deleting the head is O(1).", 4)
-  ]});
+  play("headStage","headSvg","headNarr","headCode",HEAD_CODE,[
+    { code:0, narr:"Delete the head (1) from 1 → 3 → 7.",
+      nodes:[ N('a',1,0,0,{ptrs:['HEAD'],next:'b'}), N('b',3,0,1,{next:'c'}), N('c',7,0,2,{next:'null'}) ] },
+    { code:1, narr:"First: is the list empty? No — there's a head — so we go on.",
+      nodes:[ N('a',1,0,0,{ptrs:['HEAD'],cls:'active',next:'b'}), N('b',3,0,1,{next:'c'}), N('c',7,0,2,{next:'null'}) ] },
+    { code:2, narr:"Save the current head in a temporary pointer, old, so we can free it after HEAD moves.",
+      nodes:[ N('a',1,0,0,{ptrs:['HEAD','old'],cls:'active',next:'b'}), N('b',3,0,1,{next:'c'}), N('c',7,0,2,{next:'null'}) ] },
+    { code:3, narr:"Move HEAD to the second node, 3. The old head is now bypassed — nothing in the list points to it, but old still holds it.",
+      nodes:[ N('a',1,0,0,{ptrs:['old'],cls:'dim',next:'b'}), N('b',3,0,1,{ptrs:['HEAD'],next:'c'}), N('c',7,0,2,{next:'null'}) ] },
+    { code:4, narr:"free(old): the node's memory is handed back. The list closes up to 3 → 7.",
+      nodes:[ N('b',3,0,0,{ptrs:['HEAD'],next:'c'}), N('c',7,0,1,{next:'null'}) ] },
+    { code:5, narr:"Done. No walking — just move HEAD and free — so deleting the head is O(1).",
+      nodes:[ N('b',3,0,0,{ptrs:['HEAD'],next:'c'}), N('c',7,0,1,{next:'null'}) ] }
+  ]);
 
-  /* ---- 2. delete tail ---- */
+  /* ---- 2. delete tail : delete 9 from [3,7,9] ---- */
   var TAIL_CODE=[
     "void deleteTail(List *l) {",
-    "  if (!l->head) return;",
-    "  if (!l->head->next) { free(l->head); l->head = NULL; return; }",
     "  Node *cur = l->head;",
-    "  while (cur->next->next) cur = cur->next;  // 2nd-to-last",
-    "  free(cur->next);     // free the last node",
-    "  cur->next = NULL;    // new tail ends here",
+    "  while (cur->next->next)",
+    "    cur = cur->next;     // stop at 2nd-to-last",
+    "  free(cur->next);       // free the last node",
+    "  cur->next = NULL;      // new tail ends here",
     "}"
   ];
-  run({ listId:"tailList", narrId:"tailNarr", codeId:"tailCode", code:TAIL_CODE, frames:[
-    F([3,7,9], 0,"right", -1, "Delete the tail, 9. We must land on the node before it, so we walk.", 4),
-    F([3,7,9], 0,"right", -1, "At 3, is the node two ahead (9) NULL? No — step forward.", 4),
-    F([3,7,9], 1,"right", -1, "At 7, is the node two ahead NULL? Yes — 7 is the second-to-last node.", 4),
-    F([3,7], 1,"left", -1, "Free 9 and set 7's next to NULL. 7 is the new tail.", [5,6]),
-    F([3,7], -1,"", -1, "Done. Finding the predecessor meant walking the list, so this is O(n).", 7)
-  ]});
+  play("tailStage","tailSvg","tailNarr","tailCode",TAIL_CODE,[
+    { code:0, narr:"Delete the tail (9) from 3 → 7 → 9. We need the node BEFORE it — the second-to-last.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:1, narr:"Start a walker, cur, at the head (3).",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',7,0,1,{next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:2, narr:"Is the node TWO ahead of cur non-NULL? From 3: next is 7, next->next is 9 — yes, 9 exists. So keep walking.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',7,0,1,{next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:3, narr:"cur = cur->next. Now cur is 7. Two ahead of 7 is NULL — stop. 7 is the second-to-last node.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:4, narr:"cur->next is the last node, 9 — free it.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],next:'c'}), N('c',9,0,2,{cls:'active',next:'null'}) ] },
+    { code:5, narr:"Set 7's next to NULL. 7 is the new tail; 9's memory is gone.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'null',nextCls:'formed'}) ] },
+    { code:6, narr:"Done. Finding the second-to-last node meant walking the list, so deleting the tail is O(n).",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'null'}) ] }
+  ]);
 
-  /* ---- 3. delete at index ---- */
+  /* ---- 3. delete at index : delete index 2 (value 5) of [3,7,5,9] ---- */
   var IDX_CODE=[
     "void deleteAt(List *l, int idx) {",
     "  if (idx == 0) { deleteHead(l); return; }",
     "  Node *cur = l->head;",
     "  for (int i = 0; i < idx - 1; i++)",
-    "    cur = cur->next;          // node before target",
+    "    cur = cur->next;          // predecessor",
     "  Node *target = cur->next;   // the victim",
-    "  cur->next = target->next;   // route around it FIRST",
-    "  free(target);               // then free it",
+    "  cur->next = target->next;   // route around FIRST",
+    "  free(target);               // then free",
     "}"
   ];
-  run({ listId:"idxList", narrId:"idxNarr", codeId:"idxCode", code:IDX_CODE, frames:[
-    F([3,7,5,9], -1,"", -1, "Delete index 2 (value 5). Not the head, so walk to its predecessor, index 1.", 1),
-    F([3,7,5,9], 0,"right", -1, "Start at index 0 (3).", [3,4]),
-    F([3,7,5,9], 1,"right", -1, "Step to index 1 (7) — the predecessor. Stop here.", [3,4]),
-    F([3,7,5,9], 2,"left head", -1, "The victim is 7's next: index 2, value 5.", 5),
-    F([3,7,9], 1,"left", 2, "Point 7's next straight at 9, routing around 5. Nothing points to 5 now.", 6),
-    F([3,7,9], -1,"", -1, "Free 5. Done — O(n) to walk, O(1) to unlink and free.", 7)
-  ]});
+  play("idxStage","idxSvg","idxNarr","idxCode",IDX_CODE,[
+    { code:[0,1], narr:"Delete index 2 (value 5) from 3 → 7 → 5 → 9. Not index 0, so walk to its predecessor, index 1.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'c'}), N('c',5,0,2,{next:'d'}), N('d',9,0,3,{next:'null'}) ] },
+    { code:2, narr:"Start cur at index 0 (3).",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',7,0,1,{next:'c'}), N('c',5,0,2,{next:'d'}), N('d',9,0,3,{next:'null'}) ] },
+    { code:[3,4], narr:"Step to index 1 (7) — the predecessor of the node we're deleting. Stop.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'c'}), N('c',5,0,2,{next:'d'}), N('d',9,0,3,{next:'null'}) ] },
+    { code:5, narr:"target = cur->next: index 2, value 5. That's the victim.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],next:'c'}), N('c',5,0,2,{ptrs:['target'],cls:'target',next:'d'}), N('d',9,0,3,{next:'null'}) ] },
+    { code:6, narr:"Point 7's next at target's next, 9 — routing AROUND 5. (We read 5's next while 5 is still valid.) The arrow now skips over 5.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'d',nextCls:'active'}), N('c',5,0,2,{ptrs:['target'],cls:'target',next:'d'}), N('d',9,0,3,{next:'null'}) ] },
+    { code:7, narr:"Now free 5. Nothing pointed to it anymore, so this is safe — no dangling pointer.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'d'}), N('d',9,0,2,{next:'null'}) ] },
+    { code:8, narr:"The list is 3 → 7 → 9. O(n) to walk to the predecessor, O(1) to unlink and free.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'d'}), N('d',9,0,2,{next:'null'}) ] }
+  ]);
 
-  /* ---- 4. delete by value ---- */
+  /* ---- 4. delete by value : delete 7 from [3,7,9] ---- */
   var VAL_CODE=[
     "void deleteValue(List *l, int val) {",
     "  Node *cur = l->head, *prev = NULL;",
@@ -341,17 +332,26 @@
     "  }",
     "  if (!cur) return;               // not found",
     "  if (!prev) l->head = cur->next; // was the head",
-    "  else prev->next = cur->next;    // route around it",
+    "  else prev->next = cur->next;    // route around",
     "  free(cur);",
     "}"
   ];
-  run({ listId:"valList", narrId:"valNarr", codeId:"valCode", code:VAL_CODE, frames:[
-    F([3,7,9], 0,"left head", -1, "Delete the first node equal to 7. Walk cur from the head, dragging prev behind.", [1,2]),
-    F([3,7,9], 0,"left head", -1, "Is 3 equal to 7? No — remember 3 as prev, step cur forward.", 3),
-    F([3,7,9], 1,"left head", -1, "Is 7 equal to 7? Yes — this is the victim, and prev is 3.", 2),
-    F([3,9], 0,"left", 1, "prev (3) points straight at 7's next, 9 — routing around 7.", 7),
-    F([3,9], -1,"", -1, "Free 7. Done. Searching is O(n); the unlink is O(1).", 8)
-  ]});
+  play("valStage","valSvg","valNarr","valCode",VAL_CODE,[
+    { code:[0,1], narr:"Remove the first node equal to 7 from 3 → 7 → 9. cur walks from the head; prev trails one behind (NULL for now).",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','cur'],next:'b'}), N('b',7,0,1,{next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:2, narr:"Is cur's value (3) equal to 7? No.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',7,0,1,{next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:3, narr:"So set prev to cur (3), then cur = cur->next — cur is now 7.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','prev'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:2, narr:"Is cur's value (7) equal to 7? Yes — cur is the node to delete, and prev (3) is right behind it.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','prev'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:7, narr:"prev isn't NULL, so point prev's next at cur's next, 9 — routing around 7.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','prev'],cls:'active',next:'c',nextCls:'active'}), N('b',7,0,1,{ptrs:['cur'],cls:'target',next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:8, narr:"Free 7. The list closes up to 3 → 9.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'c'}), N('c',9,0,1,{next:'null'}) ] },
+    { code:9, narr:"Done. Searching for the value is O(n); the unlink itself is O(1).",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'c'}), N('c',9,0,1,{next:'null'}) ] }
+  ]);
 })();
 </script>
 </body>
