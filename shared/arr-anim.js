@@ -146,7 +146,7 @@
 
     // pointer tags (persistent per label, glide)
     frame.slots.forEach(function(sl,i){
-      (sl.ptrs||[]).forEach(function(lbl){
+      (sl.ptrs||[]).forEach(function(lbl,k){
         seenPtr[lbl]=true;
         var tag=ptrs[lbl];
         if(!tag){ tag=document.createElement("div"); tag.className="arr-ptr";
@@ -154,8 +154,9 @@
           host.appendChild(tag); ptrs[lbl]=tag; }
         tag.style.setProperty("--pc", PTR_COLOR[lbl]||"var(--stamp)");
         var p=pos(i);
-        if(dir==="v"){ tag.style.left=(p.x+BW+8)+"px"; tag.style.top=(p.y+10)+"px"; }
-        else{ tag.style.left=(p.x+BW/2-16)+"px"; tag.style.top=(p.y-26)+"px"; }
+        // k offsets a second/third tag on the same slot so they don't overlap
+        if(dir==="v"){ tag.style.left=(p.x+BW+8)+"px"; tag.style.top=(p.y+8+k*22)+"px"; }
+        else{ tag.style.left=(p.x+BW/2-16)+"px"; tag.style.top=(p.y-26-k*22)+"px"; }
       });
     });
     Object.keys(ptrs).forEach(function(lbl){
