@@ -18,174 +18,172 @@
       <p class="eyebrow">First In &middot; First Out</p>
       <h1>Queue&nbsp;Visualizer</h1>
     </div>
-    <p class="note">Enqueue adds at the rear, dequeue removes from the front &mdash; first come, first served.</p>
+    <p class="note">An array with two indices: <code>front</code> (where you leave) and <code>rear</code> (where you join). Enqueue writes at <code>++rear</code>; dequeue reads at <code>front++</code>.</p>
   </div>
 </header>
 
 <div class="wrap">
 
   <section class="panel">
-    <div class="panel-head"><h2>Operate on the queue</h2><span class="sub">front is on the left</span></div>
+    <div class="panel-head"><h2>Choose an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
     <div class="panel-body">
       <div class="row">
-        <label class="fld narrow">
-          <span>Value</span>
-          <input type="number" id="val" value="5">
-        </label>
-        <button id="btnEnqueue" class="primary">Enqueue</button>
-        <button id="btnDequeue">Dequeue</button>
-        <button id="btnPeek">Peek</button>
+        <label class="fld narrow"><span>Value</span><input type="number" id="valF" value="5"></label>
+        <button id="opEnq" class="primary">Enqueue</button>
+        <button id="opDeq">Dequeue</button>
+        <button id="opPeek">Peek</button>
+        <button id="opReset">Reset</button>
       </div>
-      <p class="hint" id="hint">Enqueue a few values, then dequeue — they come back out in the same order they went in.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint">Enqueue adds at the rear; dequeue removes from the front — first come, first served.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The queue</h2><span class="sub">left to right</span></div>
+    <div class="panel-head"><h2>The queue</h2><span class="sub">index 0 on the left; front leaves, rear joins</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="queueHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> item being enqueued / dequeued / peeked</span>
+      <div class="arr-stage"><div id="qStage"></div></div>
+      <div class="arr-ctrls" id="playbar">
+        <button class="arr-cbtn" id="aBack">◀ Back</button>
+        <button class="arr-cbtn" id="aPlay">Play</button>
+        <button class="arr-cbtn" id="aStep">Step ▶</button>
+        <span class="arr-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="narr" id="narr" style="margin-top:12px">Loading…</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch right"></i> the item being enqueued / dequeued / peeked</span>
+        <span class="key"><i class="swatch dim" style="border-color:var(--ink);opacity:.4"></i> consumed slot — dead space a linear queue can't reuse</span>
+        <span class="key">FRONT leaves next · REAR is the newest</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; enqueue() / dequeue() / peek()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the operation you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Both ends matter for a queue, but each operation only ever touches one of them, so enqueue and dequeue
-    are still O(1). Print spoolers, task schedulers, and breadth-first search all process work in exactly
-    this first-come-first-served order.
+    Enqueue and dequeue each touch only one end, so both are O(1) — no shifting. But notice the flaw: once
+    <code>rear</code> reaches the last slot, this queue is "full" even if dequeues have freed slots at the
+    front. Those slots are dead space. The <a href="../circular-queue/circular-queue.html">Circular Queue</a>
+    fixes exactly this by wrapping the indices around.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-  var MAX=12;
+  var CAP=6;
+  var Q={arr:[], front:-1, rear:-1};
+  function seed(){ Q={arr:[10,20,30], front:0, rear:2}; } seed();
 
-  var INIT_CODE=[
-    "void initQueue(Queue *q) {",
-    "  q->front = q->rear = NULL;",
-    "}"
-  ];
-  var ENQUEUE_CODE=[
+  var ENQ_CODE=[
     "void enqueue(Queue *q, int val) {",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->next = NULL;",
-    "  if (!q->rear) { q->front = q->rear = n; return; }",
-    "  q->rear->next = n;",
-    "  q->rear = n;",
-    "}"
-  ];
-  var DEQUEUE_CODE=[
+    "  if (q->rear == MAX - 1) return;    // no room at back",
+    "  q->items[++q->rear] = val;         // write at rear",
+    "  if (q->front == -1) q->front = 0;  // first item?",
+    "}"];
+  var DEQ_CODE=[
     "int dequeue(Queue *q) {",
-    "  Node *old = q->front;",
-    "  int val = old->val;",
-    "  q->front = old->next;",
-    "  if (!q->front) q->rear = NULL;",
-    "  free(old);",
+    "  if (q->front == -1) return -1;     // empty",
+    "  int val = q->items[q->front++];    // take front, move up",
+    "  if (q->front > q->rear)            // now empty?",
+    "    q->front = q->rear = -1;",
     "  return val;",
-    "}"
-  ];
+    "}"];
   var PEEK_CODE=[
     "int peek(Queue *q) {",
-    "  return q->front->val;",
-    "}"
-  ];
+    "  if (q->front == -1) return -1;",
+    "  return q->items[q->front];         // look, don't remove",
+    "}"];
 
-  function cellsFor(items, hi, hiRole){
-    return items.map(function(v,i){
-      var badges=[];
-      if(i===0) badges.push("FRONT");
-      if(i===items.length-1) badges.push("REAR");
-      return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
-    });
+  function slotsFor(arr, front, rear, active, activeCls){
+    var out=[];
+    for(var i=0;i<CAP;i++){
+      var live = front!==-1 && i>=front && i<=rear;
+      var consumed = front!==-1 && i<front;
+      var s={ val:(live||consumed)?arr[i]:null };
+      if(active===i) s.cls=activeCls||"active";
+      else if(consumed) s.cls="dim";
+      var p=[];
+      if(front!==-1 && i===front) p.push("FRONT");
+      if(front!==-1 && i===rear) p.push("REAR");
+      if(p.length) s.ptrs=p;
+      out.push(s);
+    }
+    return out;
   }
-  function frame(items, hi, hiRole, phase, narr, ops, code, codeLine){
-    return {struct:{cells:cellsFor(items,hi,hiRole)}, phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
-  }
-
-  function opEnqueue(state, val){
-    if(state.items.length>=MAX) return {error:"Queue is full — only "+MAX+" items fit in this view."};
-    var items=state.items.slice(), oc=state.opsCount||0, frames=[];
-    frames.push(frame(items, undefined, "", "enqueue-start",
-      "Enqueue "+val+": a queue only allows inserting at the rear.", oc, ENQUEUE_CODE, [3,5]));
-    items.push(val); oc++;
-    frames.push(frame(items, items.length-1, "left head landed", "enqueued",
-      val+" joins the back of the line, at position "+(items.length-1)+".", oc, ENQUEUE_CODE, 5));
-    return {frames:frames, state:{items:items, opsCount:oc}};
-  }
-  function opDequeue(state){
-    if(!state.items.length) return {error:"The queue is empty — nothing to dequeue."};
-    var items=state.items.slice(), oc=(state.opsCount||0)+1, frames=[];
-    var front=items[0];
-    frames.push(frame(items, 0, "left head", "dequeue-start",
-      "Dequeue: remove the front item, "+front+". A queue can only ever remove from the front.", oc, DEQUEUE_CODE, [1,3]));
-    items.shift();
-    frames.push(frame(items, undefined, "", "dequeued",
-      front+" removed. "+(items.length ? ("New front is "+items[0]+".") : "The queue is now empty."), oc, DEQUEUE_CODE, 4));
-    return {frames:frames, state:{items:items, opsCount:oc}};
-  }
-  function opPeek(state){
-    if(!state.items.length) return {error:"The queue is empty — nothing to peek at."};
-    var items=state.items.slice(), oc=(state.opsCount||0)+1;
-    return {frames:[frame(items, 0, "left head", "peek",
-      "Peek: look at the front item without removing it — it's "+items[0]+".", oc, PEEK_CODE, 1)], state:{items:items, opsCount:oc}};
+  function F(arr, front, rear, active, activeCls, codeLines, line, narr){
+    return { slots:slotsFor(arr,front,rear,active,activeCls), dir:"h",
+      note:"front = "+front+"    rear = "+rear, codeLines:codeLines, code:line, narr:narr };
   }
 
-  function init(){
-    var items=[], oc=0, frames=[];
-    frames.push(frame(items, undefined, "", "start", "Create the queue: front and rear both start NULL.", oc, INIT_CODE, 1));
-    [7,3,9].forEach(function(v){
-      frames.push(frame(items, undefined, "", "enqueue-start", "Enqueue "+v+" at the rear.", oc, ENQUEUE_CODE, [3,5]));
-      items=items.concat([v]); oc++;
-      frames.push(frame(items, items.length-1, "left head landed", "enqueued", v+" joins the back of the line.", oc, ENQUEUE_CODE, 5));
-    });
-    return { state:{items:items, opsCount:oc}, frames:frames };
+  function opEnq(val){
+    var before=Q.arr.slice(), bf=Q.front, br=Q.rear, frames=[];
+    if(br===CAP-1) return {error:"No room at the back — rear is at MAX-1 ("+(CAP-1)+"). Even if front slots are free, a linear array queue can't reuse them. That's what the Circular Queue fixes."};
+    frames.push(F(before, bf, br, -1, null, ENQ_CODE, [0,1], "Enqueue "+val+". Is rear at MAX-1? No — there's room at the back."));
+    var nr=br+1, arr2=before.slice(); arr2[nr]=val;
+    frames.push(F(arr2, bf, nr, nr, "active", ENQ_CODE, 2, "++rear moves the back index to "+nr+", and "+val+" is written at items[rear]."));
+    var nf=bf;
+    if(bf===-1){ nf=0; frames.push(F(arr2, nf, nr, nr, "active", ENQ_CODE, 3, "The queue had been empty, so front now points at index 0 as well.")); }
+    frames.push(F(arr2, nf, nr, -1, null, ENQ_CODE, 4, val+" has joined the back of the line."));
+    Q.arr=arr2; Q.front=nf; Q.rear=nr; return {frames:frames};
+  }
+  function opDeq(){
+    if(Q.front===-1) return {error:"The queue is empty (front == -1) — nothing to dequeue."};
+    var before=Q.arr.slice(), bf=Q.front, br=Q.rear, val=before[bf], frames=[];
+    frames.push(F(before, bf, br, bf, "active", DEQ_CODE, [1,2], "Dequeue. front is "+val+" at index "+bf+"."));
+    var nf=bf+1;
+    if(nf>br){
+      frames.push(F(before, bf, br, bf, "active", DEQ_CODE, 2, "Return "+val+" and move front up. That was the last item."));
+      frames.push(F(before, -1, -1, -1, null, DEQ_CODE, [3,4], "front passed rear, so the queue is empty — reset both to -1."));
+      Q.front=-1; Q.rear=-1; Q.arr=before; return {frames:frames};
+    }
+    frames.push(F(before, nf, br, -1, null, DEQ_CODE, 2, "Return "+val+"; front++ moves it to "+nf+". Index "+bf+" is now consumed dead space (dimmed)."));
+    frames.push(F(before, nf, br, -1, null, DEQ_CODE, 5, "New front is "+before[nf]+"."));
+    Q.front=nf; Q.arr=before; return {frames:frames};
+  }
+  function opPeek(){
+    if(Q.front===-1) return {error:"The queue is empty — nothing to peek at."};
+    return {frames:[ F(Q.arr.slice(), Q.front, Q.rear, Q.front, "found", PEEK_CODE, 2,
+      "Peek returns items[front] = "+Q.arr[Q.front]+" without removing it. front and rear don't move.") ]};
   }
 
-  VizDS.init({
-    init: init,
-    ops: {
-      enqueue: { btn:"btnEnqueue", enterOn:"val", run: function(state){
-        var v=Number(document.getElementById("val").value);
-        if(!isFinite(v)) return {error:"Enter a number to enqueue."};
-        return opEnqueue(state, v);
-      }},
-      dequeue: { btn:"btnDequeue", run: function(state){ return opDequeue(state); } },
-      peek: { btn:"btnPeek", run: function(state){ return opPeek(state); } }
-    },
-    renderExtra: function(frame){ DSRender.slots(document.getElementById("queueHost"), frame.struct.cells); },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  /* ---- page-local player ---- */
+  var stage=document.getElementById("qStage"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    ArrAnim.render(stage, f); narrEl.textContent=f.narr||"";
+    ArrAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1500);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function numV(){ var v=Number(document.getElementById("valF").value); return isFinite(v)?v:null; }
+  function run(r){ if(r.error){ stopP(); hint(r.error); return; } hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play."); loadFrames(r.frames); }
+
+  document.getElementById("opEnq").onclick=function(){ var v=numV(); if(v==null) return hint("Enter a value to enqueue."); run(opEnq(v)); };
+  document.getElementById("opDeq").onclick=function(){ run(opDeq()); };
+  document.getElementById("opPeek").onclick=function(){ run(opPeek()); };
+  document.getElementById("opReset").onclick=function(){ stopP(); seed();
+    P.frames=[F(Q.arr.slice(),Q.front,Q.rear,-1,null,null,null,"Fresh queue: 10, 20, 30. Front is 10, rear is 30.")]; P.i=0; drawP(); hint("Queue reset."); };
+
+  P.frames=[F(Q.arr.slice(),Q.front,Q.rear,-1,null,null,null,"Current queue: 10, 20, 30 — front is 10, rear is 30. Enqueue, dequeue, or peek.")];
+  P.i=0; drawP();
 })();
 </script>
 </body>
