@@ -8,6 +8,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;
+    display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);
+    padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+</style>
 </head>
 <body>
 
@@ -18,58 +29,81 @@
       <p class="eyebrow">Double-Ended Queue</p>
       <h1>Deque</h1>
     </div>
-    <p class="note">A queue with both ends open for business — insert and delete at the front or the rear.</p>
+    <p class="note">A queue open at both ends: you can add and remove at the front or the rear, whichever you need.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <!-- LEVEL 1 -->
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>A deque ("deck", short for double-ended queue) generalizes both the stack and the queue: it
-      supports inserting and deleting at <b>both</b> ends, each in O(1). Use only the rear for insertion and
-      the front for removal and it behaves exactly like a queue; use only one end for both and it behaves
-      exactly like a stack.</p>
-      <p><b>Implementation:</b> the code panel below backs it with a doubly linked list — every node has
-      both a <code>next</code> and a <code>prev</code>, so unlike a plain <a href="../linked-list/linked-list.html">singly
-      linked list</a>, you can reach backward from any node too. That's what makes inserting or deleting at
-      the <em>rear</em> O(1): a singly-linked list would have to walk all the way to the end first to find
-      the node just before it. (The visualization above still shows the deque as a simple ordered row for
-      clarity — the two <code>prev</code>/<code>next</code> pointers on every real node are what the
-      <a href="../doubly-linked-list/doubly-linked-list.html">Doubly Linked List</a> page shows in full.)
-      Never a plain array — inserting at the front of one means shifting every other element down.</p>
+      <p><b>Deque</b> (say "deck") is short for <b>double-ended queue</b>. Picture a row of train cars you can
+      couple or uncouple from <em>either</em> end — the left or the right. A plain
+      <a href="../queue/queue.html">queue</a> makes you join at the back and leave from the front; a deque drops
+      that restriction, so any of four moves is allowed.</p>
 
-      <p><b>When it breaks:</b> deleting the last remaining node and forgetting to null out <em>both</em>
-      <code>front</code> and <code>rear</code> (not just one) leaves the other pointing at freed memory —
-      the next insert then attaches onto a dangling pointer instead of correctly starting fresh.</p>
+      <div class="callout">
+        <b>Four moves.</b> <b>Push front</b> and <b>push rear</b> add a value at the left or right end;
+        <b>pop front</b> and <b>pop rear</b> remove from the left or right end. (Many libraries also offer
+        peek-front and peek-rear to look without removing.)
+      </div>
 
+      <p>Because it can do everything a stack and a queue can, a deque is a kind of Swiss-army container:
+      restrict it to one end and it behaves as a <a href="../stack/stack.html">stack</a> (LIFO); push at one
+      end and pop at the other and it's a queue (FIFO).</p>
+    </div>
+  </section>
+
+  <!-- LEVEL 2 -->
+  <section class="panel">
+    <div class="panel-head"><h2>How it actually works</h2><span class="sub">a wrapping array, moving both ways</span></div>
+    <div class="panel-body notes">
+      <p>The cleanest build reuses the <a href="../circular-queue/circular-queue.html">circular queue</a>'s
+      trick — a fixed array with indices that wrap using <code>% MAX</code> — but now the <code>front</code>
+      index can move <em>backwards</em> too, not just <code>rear</code> forwards. Keep <code>front</code> and a
+      <code>size</code> count; the rear is always <code>(front + size - 1) % MAX</code>.</p>
+
+      <ul class="steps">
+        <li><b>Push rear:</b> write at <code>(front + size) % MAX</code>, then <code>size++</code> — same as the
+        circular queue.</li>
+        <li><b>Push front:</b> step <code>front</code> <em>back</em> one with a wrap,
+        <code>front = (front - 1 + MAX) % MAX</code>, write there, then <code>size++</code>. (The
+        <code>+ MAX</code> keeps the number non-negative before the <code>%</code>.)</li>
+        <li><b>Pop front / pop rear:</b> read the end slot, then shrink from that side.</li>
+      </ul>
+
+      <p>Every move is a couple of index steps — no shifting, no walking — so all four are <b>O(1)</b>. Try each
+      end in the visualizer:</p>
+
+      <div class="scroller"><div id="demoStage"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:12px">&nbsp;</p>
+      <div class="code-panel" id="demoCode" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- LEVEL 3 -->
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs and where deques show up</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
-        <tr><td>Insert Front</td><td>Add a value at the front</td><td><b>O(1)</b></td></tr>
-        <tr><td>Insert Rear</td><td>Add a value at the rear</td><td><b>O(1)</b></td></tr>
-        <tr><td>Delete Front</td><td>Remove the front value</td><td><b>O(1)</b></td></tr>
-        <tr><td>Delete Rear</td><td>Remove the rear value</td><td><b>O(1)</b></td></tr>
+        <tr><td>Push front / rear</td><td>Add a value at either end</td><td><b>O(1)</b></td></tr>
+        <tr><td>Pop front / rear</td><td>Remove a value from either end</td><td><b>O(1)</b></td></tr>
+        <tr><td>Peek front / rear</td><td>Look at either end without removing</td><td><b>O(1)</b></td></tr>
+        <tr><td>Access the middle</td><td>Reach an element between the ends</td><td>O(n)</td></tr>
       </table>
 
-      <p>Sliding-window algorithms (like the classic "maximum in every window of size k") are the textbook
-      use case: values get added at the rear and dropped from either end as the window slides. Browser
-      history and undo/redo stacks that also support "redo forward" reach for the same shape.</p>
-    </div>
-  </section>
+      <p><b>Ends only.</b> Like its cousins, a deque is fast precisely because it only promises the two ends.
+      There's no efficient "insert in the middle" — reach for a different structure if you need that.</p>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; both ends in play</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertFront() / insertRear() / deleteFront() / deleteRear()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Where you'll meet deques.</b> The classic use is the <b>sliding-window maximum</b> problem, where a
+      deque of indices keeps a window's largest value in O(1); also undo/redo with a bounded history (drop the
+      oldest from one end while pushing new work on the other), work-stealing schedulers (a thread pushes and
+      pops its own end while idle threads steal from the far end), and a browser's combined back/forward
+      history. Backed by a <a href="../linked-list/linked-list.html">doubly linked list</a> instead of an array,
+      a deque needs no fixed capacity at all.</p>
     </div>
   </section>
 
@@ -80,109 +114,65 @@
   </section>
 
   <footer>
-    Next: try it yourself — insert at both ends, then delete from both, in any order you like.
+    Next: open the visualizer and push at both ends, then pop from both — notice it can act like a stack or a
+    queue depending on which ends you use.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  var CAP=6;
+  var PUSHR=[
+    "void pushRear(Deque *d, int val) {",
+    "  int i = (d->front + d->size) % MAX;",
+    "  d->items[i] = val;  d->size++;",
+    "}"];
+  var PUSHF=[
+    "void pushFront(Deque *d, int val) {",
+    "  d->front = (d->front - 1 + MAX) % MAX;",
+    "  d->items[d->front] = val;  d->size++;",
+    "}"];
+  var POPF=[
+    "int popFront(Deque *d) {",
+    "  int val = d->items[d->front];",
+    "  d->front = (d->front + 1) % MAX;  d->size--;",
+    "}"];
 
-  var INIT_CODE=[
-    "void initDeque(Deque *d) {",
-    "  d->front = d->rear = NULL;",
-    "}"
-  ];
-  var INSERT_FRONT_CODE=[
-    "void insertFront(Deque *d, int val) {",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->prev = NULL; n->next = d->front;",
-    "  if (d->front) d->front->prev = n;",
-    "  else d->rear = n;",
-    "  d->front = n;",
-    "}"
-  ];
-  var INSERT_REAR_CODE=[
-    "void insertRear(Deque *d, int val) {",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->next = NULL; n->prev = d->rear;",
-    "  if (d->rear) d->rear->next = n;",
-    "  else d->front = n;",
-    "  d->rear = n;",
-    "}"
-  ];
-  var DELETE_FRONT_CODE=[
-    "void deleteFront(Deque *d) {",
-    "  Node *old = d->front;",
-    "  d->front = old->next;",
-    "  if (d->front) d->front->prev = NULL;",
-    "  else d->rear = NULL;",
-    "  free(old);",
-    "}"
-  ];
-  var DELETE_REAR_CODE=[
-    "void deleteRear(Deque *d) {",
-    "  Node *old = d->rear;",
-    "  d->rear = old->prev;",
-    "  if (d->rear) d->rear->next = NULL;",
-    "  else d->front = NULL;",
-    "  free(old);",
-    "}"
-  ];
-
-  function cellsFor(items, hi, hiRole){
-    return items.map(function(v,i){
-      var badges=[];
-      if(i===0) badges.push("FRONT");
-      if(i===items.length-1) badges.push("REAR");
-      return { val:v, role: i===hi?hiRole:"", ptr: badges.join("/") };
-    });
+  function slotsFor(arr, front, size, active, activeCls){
+    var occ={}; for(var k=0;k<size;k++) occ[(front+k)%CAP]=true;
+    var rear=(front+size-1+CAP)%CAP, out=[];
+    for(var i=0;i<CAP;i++){
+      var s={ val:(occ[i]||active===i)?arr[i]:null };
+      if(active===i) s.cls=activeCls||"active";
+      var p=[]; if(size>0&&i===front)p.push("FRONT"); if(size>0&&i===rear)p.push("REAR");
+      if(p.length) s.ptrs=p;
+      out.push(s);
+    }
+    return out;
   }
-  function frame(items, hi, hiRole, narr, code, codeLine){
-    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr, code:code, codeLine:codeLine};
+  function F(arr, front, size, active, activeCls, code, line, narr){
+    var rear=size>0?((front+size-1)%CAP):-1;
+    return { slots:slotsFor(arr,front,size,active,activeCls), dir:"h",
+      note:"front = "+front+"   rear = "+rear+"   size = "+size, codeLines:code, code:line, narr:narr };
   }
-
   function scriptFrames(){
-    var items=[], frames=[];
-    function insFront(v){
-      frames.push(frame(items, undefined, "", "Insert "+v+" at the front.", INSERT_FRONT_CODE, [1,4]));
-      items.unshift(v);
-      frames.push(frame(items, 0, "left head landed", v+" is now at the front.", INSERT_FRONT_CODE, 5));
-    }
-    function insRear(v){
-      frames.push(frame(items, undefined, "", "Insert "+v+" at the rear.", INSERT_REAR_CODE, [1,4]));
-      items.push(v);
-      frames.push(frame(items, items.length-1, "left head landed", v+" is now at the rear.", INSERT_REAR_CODE, 5));
-    }
-    function delFront(){
-      var v=items[0];
-      frames.push(frame(items, 0, "left head", "Delete the front item, "+v+".", DELETE_FRONT_CODE, [1,4]));
-      items.shift();
-      frames.push(frame(items, undefined, "", v+" removed from the front.", DELETE_FRONT_CODE, 5));
-    }
-    function delRear(){
-      var v=items[items.length-1];
-      frames.push(frame(items, items.length-1, "left head", "Delete the rear item, "+v+".", DELETE_REAR_CODE, [1,4]));
-      items.pop();
-      frames.push(frame(items, undefined, "", v+" removed from the rear.", DELETE_REAR_CODE, 5));
-    }
-    frames.push(frame(items, undefined, "", "Create the deque: front and rear both start NULL.", INIT_CODE, 1));
-    insRear(4); insFront(7); insRear(2); insFront(9);
-    delFront(); delRear(); delFront(); delRear();
+    var arr=[10,20,30,undefined,undefined,undefined], front=0, size=3, frames=[];
+    function pushR(v){ var i=(front+size)%CAP; arr=arr.slice(); arr[i]=v; size++;
+      frames.push(F(arr, front, size, i, "active", PUSHR, 1, "Push "+v+" at the rear, index "+i+".")); }
+    function pushF(v){ front=(front-1+CAP)%CAP; arr=arr.slice(); arr[front]=v; size++;
+      frames.push(F(arr, front, size, front, "active", PUSHF, [1,2], "Push "+v+" at the front — front steps back to "+front+".")); }
+    function popF(){ var v=arr[front]; front=(front+1)%CAP; size--;
+      frames.push(F(arr, front, size, -1, null, POPF, 2, "Pop front "+v+"; front advances.")); }
+    pushR(40);
+    pushF(5);
+    popF();
     return frames;
   }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  ArrAnim.play({ host:document.getElementById("demoStage"), narrEl:document.getElementById("demoNarr"),
+    codeHost:document.getElementById("demoCode"), frames:scriptFrames(), ms:1800 });
 })();
 </script>
 </body>
