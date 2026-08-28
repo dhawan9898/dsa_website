@@ -103,6 +103,7 @@
   }
   function renderCode(host, lines, cl){
     if(!host) return;
+    if(!lines){ host.innerHTML=""; host._els=null; host._src=null; return; }
     if(!host._els || host._src!==lines){
       host.innerHTML=""; host._els=[]; host._src=lines;
       lines.forEach(function(src,i){
@@ -118,6 +119,7 @@
 
   /* ---- one scene render (reusing persistent elements) ---- */
   function render(host, svg, frame){
+    injectCSS();
     if(!host._nodes) host._nodes={};
     if(!host._ptrs) host._ptrs={};
     var nodes=host._nodes, ptrs=host._ptrs;
@@ -285,6 +287,6 @@
     return { stop:stop, start:start, go:go };
   }
 
-  window.LLAnim={ play:play, render:render, renderCode:renderCode };
+  window.LLAnim={ play:play, render:render, renderCode:renderCode, injectCSS:injectCSS };
 
 })(window);
