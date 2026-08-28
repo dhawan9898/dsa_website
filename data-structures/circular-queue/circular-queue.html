@@ -8,6 +8,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;
+    display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);
+    padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+</style>
 </head>
 <body>
 
@@ -15,58 +26,93 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Fixed Capacity &middot; Wraps Around</p>
+      <p class="eyebrow">The Queue That Wraps Around</p>
       <h1>Circular&nbsp;Queue</h1>
     </div>
-    <p class="note">A fixed-size buffer that treats its last index and its first index as neighbours.</p>
+    <p class="note">A queue that reuses its own freed slots by letting the indices loop back to the start — no dead space, ever.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <!-- LEVEL 1 -->
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The problem it solves</h2></div>
     <div class="panel-body notes">
-      <p>A plain array-backed queue has a problem: after enough enqueues and dequeues, the front pointer
-      creeps rightward and the slots behind it just sit there wasted, unusable, even though the queue isn't
-      full. A <b>circular queue</b> fixes this by wrapping <code>front</code> and <code>rear</code> back to
-      index 0 with a modulo (<code>(i + 1) % capacity</code>) once they reach the last slot — the array
-      behaves like a ring instead of a dead-ending line.</p>
-      <p>The trade-off is a fixed capacity, decided up front, and a little index arithmetic on every
-      operation to detect "full" versus "empty" (both can otherwise look identical: front equals rear).
-      The code panel below resolves that ambiguity with an explicit <code>count</code> field rather than
-      trying to infer it from the indices alone.</p>
+      <p>Start on the <a href="../queue/queue.html">Queue</a> page if you haven't — this structure exists to
+      fix one specific flaw there. Recall it: a plain array queue moves <code>front</code> to the right on
+      every dequeue and never looks back, so the freed slots at the left become <b>dead space</b>. Eventually
+      <code>rear</code> hits the last slot and the queue calls itself "full" even though half of it is empty.</p>
 
-      <p><b>When it breaks:</b> forget the <code>% capacity</code> wraparound on either index and the buffer
-      just walks off the end of the array — writing past it silently, into whatever memory happens to sit
-      next. Get the full/empty check wrong (comparing only <code>front</code> and <code>rear</code>, without
-      <code>count</code>) and a full buffer looks identical to an empty one, so an enqueue against a full
-      buffer overwrites data that hasn't been read yet.</p>
+      <p>The fix is almost embarrassingly simple: when an index reaches the end of the array, let it
+      <b>wrap around</b> to index 0 instead of stopping. The array stops being a straight line and behaves like
+      a <b>ring</b> — hence "circular." Now those freed front slots are right there in front of
+      <code>rear</code> again, ready to reuse.</p>
+    </div>
+  </section>
 
+  <!-- LEVEL 2 -->
+  <section class="panel">
+    <div class="panel-head"><h2>How the wrap works</h2><span class="sub">one operator does everything: <code>% MAX</code></span></div>
+    <div class="panel-body notes">
+      <p>The whole trick is the <b>modulo</b> operator, <code>%</code> — it gives the remainder after division.
+      For an array of size <code>MAX</code>, <code>index % MAX</code> is a counter that counts
+      <code>0, 1, 2, … , MAX-1, 0, 1, …</code> — it can never fall off the end, because right after
+      <code>MAX-1</code> it snaps back to <code>0</code>. That single expression turns a line into a ring.</p>
+
+      <ul class="steps">
+        <li>To <b>enqueue</b>, the next free slot is <code>(front + size) % MAX</code>. Write there, then bump
+        <code>size</code>.</li>
+        <li>To <b>dequeue</b>, read <code>items[front]</code>, then advance
+        <code>front = (front + 1) % MAX</code> and drop <code>size</code>.</li>
+      </ul>
+
+      <p>Watch <code>rear</code> run off the end and reappear at index 0, reusing a slot an earlier dequeue
+      freed:</p>
+
+      <div class="scroller"><div id="demoStage"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:12px">&nbsp;</p>
+      <div class="code-panel" id="demoCode" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- LEVEL 3 -->
+  <section class="panel">
+    <div class="panel-head"><h2>Telling full from empty</h2><span class="sub">why we keep a size counter</span></div>
+    <div class="panel-body notes">
+      <p>Wrapping creates one subtle puzzle. In a circular buffer, <code>front</code> and <code>rear</code> can
+      point at the <em>same</em> place in two totally different situations: when the queue is completely
+      <b>empty</b>, and when it is completely <b>full</b> and has wrapped all the way around. The indices alone
+      can't tell you which.</p>
+
+      <div class="callout">
+        <b>Two standard ways out.</b> The simplest, used here, is to keep a separate <code>size</code> counter:
+        <code>size == 0</code> means empty, <code>size == MAX</code> means full, no ambiguity. The other common
+        trick is to deliberately leave one slot always empty, so "full" and "empty" never produce the same
+        index pattern. Either works; the size counter is easier to read.
+      </div>
+    </div>
+  </section>
+
+  <!-- LEVEL 4 -->
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs and where circular buffers show up</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
-        <tr><td>Enqueue</td><td>Place a value one slot past rear, wrapping if needed</td><td><b>O(1)</b></td></tr>
-        <tr><td>Dequeue</td><td>Remove the value at front, wrapping if needed</td><td><b>O(1)</b></td></tr>
-        <tr><td>Peek / Front</td><td>Look at the front value without removing it</td><td><b>O(1)</b></td></tr>
+        <tr><td>Enqueue</td><td>Write at <code>(front+size)%MAX</code>, size++</td><td><b>O(1)</b></td></tr>
+        <tr><td>Dequeue</td><td>Read <code>front</code>, advance with wrap, size--</td><td><b>O(1)</b></td></tr>
+        <tr><td>Peek / Front</td><td>Look at <code>items[front]</code></td><td><b>O(1)</b></td></tr>
       </table>
 
-      <p>This is the shape behind ring buffers used in streaming audio/video pipelines, keyboard input
-      buffers, and fixed-size producer/consumer queues where capacity is deliberately capped.</p>
-    </div>
-  </section>
+      <p>Every operation is still O(1) — the wrap costs nothing extra, it's just one <code>%</code>. What you
+      gain over the linear queue is <b>full use of a fixed block of memory</b>: no dead space, no growing, no
+      shifting.</p>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; fills, wraps, drains</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; enqueue() / dequeue()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Where you'll meet circular buffers.</b> They're everywhere fixed-size, high-throughput buffering is
+      needed: audio and video streaming buffers, keyboard and network input buffers, the ring buffers inside
+      operating-system drivers, and any producer/consumer setup where one side fills the buffer while the other
+      drains it. When you hear "ring buffer," this is it.</p>
     </div>
   </section>
 
@@ -77,93 +123,66 @@
   </section>
 
   <footer>
-    Next: try it yourself — enqueue past the last index and watch REAR reappear at 0.
+    Next: open the visualizer, dequeue a couple of items, then keep enqueuing — watch REAR wrap back to index 0
+    and fill the slots the dequeues freed.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
   var CAP=6;
-
-  var INIT_CODE=[
-    "void initQueue(CQueue *q) {",
-    "  q->front = 0;",
-    "  q->rear = CAP - 1;   // first enqueue lands at 0",
-    "  q->count = 0;",
-    "}"
-  ];
-  var ENQUEUE_CODE=[
-    "void enqueue(CQueue *q, int val) {",
-    "  if (q->count == CAP) return;   // full",
-    "  q->rear = (q->rear + 1) % CAP;",
-    "  q->items[q->rear] = val;",
-    "  q->count++;",
-    "}"
-  ];
-  var DEQUEUE_CODE=[
-    "int dequeue(CQueue *q) {",
+  var ENQ_CODE=[
+    "void enqueue(CQ *q, int val) {",
+    "  int i = (q->front + q->size) % MAX;",
+    "  q->items[i] = val;",
+    "  q->size++;",
+    "}"];
+  var DEQ_CODE=[
+    "int dequeue(CQ *q) {",
     "  int val = q->items[q->front];",
-    "  q->front = (q->front + 1) % CAP;",
-    "  q->count--;",
-    "  return val;",
-    "}"
-  ];
+    "  q->front = (q->front + 1) % MAX;",
+    "  q->size--;",
+    "}"];
 
-  function cellsFor(buf, front, rear, count, hi, hiRole){
-    var out=[];
+  function slotsFor(arr, front, size, active, activeCls){
+    var occ={}; for(var k=0;k<size;k++) occ[(front+k)%CAP]=true;
+    var rear=(front+size-1+CAP)%CAP, out=[];
     for(var i=0;i<CAP;i++){
-      var badges=[];
-      if(count>0 && i===front) badges.push("FRONT");
-      if(count>0 && i===rear) badges.push("REAR");
-      out.push({
-        val: buf[i],
-        role: (i===hi ? hiRole : (buf[i]===null ? "dim" : "")),
-        ptr: badges.join("/")
-      });
+      var s={ val: (occ[i]||active===i)?arr[i]:null };
+      if(active===i) s.cls=activeCls||"active";
+      var p=[]; if(size>0&&i===front)p.push("FRONT"); if(size>0&&i===rear)p.push("REAR");
+      if(p.length) s.ptrs=p;
+      out.push(s);
     }
     return out;
   }
-  function frame(state, hi, hiRole, narr, code, codeLine){
-    return {struct:{cells:cellsFor(state.buf,state.front,state.rear,state.count,hi,hiRole)}, narr:narr, code:code, codeLine:codeLine};
+  function F(arr, front, size, active, activeCls, code, line, narr){
+    var rear=size>0?((front+size-1)%CAP):-1;
+    return { slots:slotsFor(arr,front,size,active,activeCls), dir:"h",
+      note:"front = "+front+"   rear = "+rear+"   size = "+size, codeLines:code, code:line, narr:narr };
   }
-
   function scriptFrames(){
-    var buf=new Array(CAP).fill(null), front=-1, rear=-1, count=0, frames=[];
-    function state(){ return {buf:buf,front:front,rear:rear,count:count}; }
-    function enqueue(v){
-      frames.push(frame(state(), undefined, "", "Enqueue "+v+".", ENQUEUE_CODE, [2,4]));
-      if(count===0){ front=0; rear=0; } else { rear=(rear+1)%CAP; }
-      buf[rear]=v; count++;
-      frames.push(frame(state(), rear, "left head landed", v+" placed at index "+rear+(rear===0&&count>1?" — wrapped around!":"."), ENQUEUE_CODE, 4));
+    var arr=[10,20,30,undefined,undefined,undefined], front=0, size=3, frames=[];
+    function enq(v){
+      var i=(front+size)%CAP, wrapped=(i<front);
+      arr=arr.slice(); arr[i]=v; size++;
+      frames.push(F(arr, front, size, i, "active", ENQ_CODE, 1,
+        "Enqueue "+v+" at (front+size)%MAX = "+i+"."+(wrapped?" REAR wrapped back to "+i+" — reusing a freed slot!":"")));
     }
-    function dequeue(){
-      var v=buf[front];
-      frames.push(frame(state(), front, "left head", "Dequeue "+v+" from index "+front+".", DEQUEUE_CODE, [1,3]));
-      buf[front]=null;
-      if(count===1){ front=-1; rear=-1; } else { front=(front+1)%CAP; }
-      count--;
-      frames.push(frame(state(), undefined, "", v+" removed.", DEQUEUE_CODE, 3));
+    function deq(){
+      var v=arr[front]; front=(front+1)%CAP; size--;
+      frames.push(F(arr, front, size, -1, null, DEQ_CODE, 2, "Dequeue "+v+"; front advances (with wrap) — its slot is now free."));
     }
-    frames.push(frame(state(), undefined, "", "Create the ring buffer, capacity "+CAP+".", INIT_CODE, [1,3]));
-    enqueue(4); enqueue(7); enqueue(2); enqueue(9);
-    dequeue(); dequeue();
-    enqueue(5); enqueue(1);
-    dequeue(); dequeue(); dequeue(); dequeue();
+    enq(40);            // fills index 3
+    deq(); deq();       // free 0 and 1
+    enq(50); enq(60);   // 4, then wrap to 0
     return frames;
   }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  ArrAnim.play({ host:document.getElementById("demoStage"), narrEl:document.getElementById("demoNarr"),
+    codeHost:document.getElementById("demoCode"), frames:scriptFrames(), ms:1800 });
 })();
 </script>
 </body>

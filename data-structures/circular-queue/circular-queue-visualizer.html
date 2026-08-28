@@ -15,193 +15,172 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="circular-queue.html">&larr; Circular Queue notes</a>
-      <p class="eyebrow">Fixed Capacity &middot; Wraps Around</p>
+      <p class="eyebrow">The Queue That Wraps Around</p>
       <h1>Circular&nbsp;Queue&nbsp;Visualizer</h1>
     </div>
-    <p class="note">A fixed-size buffer where front and rear wrap back to index 0 once they reach the end.</p>
+    <p class="note">Same array, same front/rear — but the indices wrap with <code>% MAX</code>, so a freed front slot gets reused instead of wasted.</p>
   </div>
 </header>
 
 <div class="wrap">
 
   <section class="panel">
-    <div class="panel-head"><h2>Operate on the queue</h2><span class="sub">capacity 8</span></div>
+    <div class="panel-head"><h2>Choose an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
     <div class="panel-body">
       <div class="row">
-        <label class="fld narrow">
-          <span>Value</span>
-          <input type="number" id="val" value="5">
-        </label>
-        <button id="btnEnqueue" class="primary">Enqueue</button>
-        <button id="btnDequeue">Dequeue</button>
-        <button id="btnPeek">Peek</button>
+        <label class="fld narrow"><span>Value</span><input type="number" id="valF" value="5"></label>
+        <button id="opEnq" class="primary">Enqueue</button>
+        <button id="opDeq">Dequeue</button>
+        <button id="opPeek">Peek</button>
+        <button id="opReset">Reset</button>
       </div>
-      <p class="hint" id="hint">Fill it past index 7 and watch REAR wrap back around to index 0.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint">Dequeue a couple, then enqueue past the end — watch REAR wrap back to index 0 and reuse the freed slots.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The buffer</h2><span class="sub">index 7 wraps back to index 0</span></div>
+    <div class="panel-head"><h2>The circular queue</h2><span class="sub">after the last slot, indices wrap back to 0</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="queueHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> item being enqueued / dequeued / peeked</span>
-        <span class="key"><i class="swatch dim"></i> empty slot</span>
+      <div class="arr-stage"><div id="cqStage"></div></div>
+      <div class="arr-ctrls" id="playbar">
+        <button class="arr-cbtn" id="aBack">◀ Back</button>
+        <button class="arr-cbtn" id="aPlay">Play</button>
+        <button class="arr-cbtn" id="aStep">Step ▶</button>
+        <span class="arr-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="narr" id="narr" style="margin-top:12px">Loading…</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch right"></i> the item being written / read</span>
+        <span class="key"><i class="swatch" style="border-color:var(--rule);border-style:dashed"></i> a free slot (reusable)</span>
+        <span class="key">FRONT leaves next · REAR is the newest · size counts live items</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; enqueue() / dequeue() / peek()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the operation you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    A plain queue built on an array either wastes the slots a dequeue leaves behind, or has to shift every
-    remaining element down. A circular queue fixes that by letting front and rear walk off the end of the
-    array and reappear at index 0 — the capacity is reused forever instead of leaking away.
+    The trick is the whole difference from a linear queue: instead of letting <code>rear</code> run off the end,
+    <code>(index + 1) % MAX</code> sends it back to 0. A separate <code>size</code> counter tells full from empty,
+    since <code>front == rear</code> could otherwise mean either. Now every slot is reusable — no dead space.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-  var CAP=8;
+  var CAP=6;
+  var Q={arr:[], front:0, size:0};
+  function seed(){ Q={arr:[10,20,30,undefined,undefined,undefined], front:0, size:3}; } seed();
 
-  var INIT_CODE=[
-    "void initQueue(CQueue *q) {",
-    "  q->front = 0;",
-    "  q->rear = CAP - 1;   // first enqueue lands at 0",
-    "  q->count = 0;",
-    "}"
-  ];
-  var ENQUEUE_CODE=[
-    "void enqueue(CQueue *q, int val) {",
-    "  if (q->count == CAP) return;   // full",
-    "  q->rear = (q->rear + 1) % CAP;",
-    "  q->items[q->rear] = val;",
-    "  q->count++;",
-    "}"
-  ];
-  var DEQUEUE_CODE=[
-    "int dequeue(CQueue *q) {",
+  var ENQ_CODE=[
+    "void enqueue(CQ *q, int val) {",
+    "  if (q->size == MAX) return;          // full",
+    "  int i = (q->front + q->size) % MAX;  // wrap!",
+    "  q->items[i] = val;",
+    "  q->size++;",
+    "}"];
+  var DEQ_CODE=[
+    "int dequeue(CQ *q) {",
+    "  if (q->size == 0) return -1;         // empty",
     "  int val = q->items[q->front];",
-    "  q->front = (q->front + 1) % CAP;",
-    "  q->count--;",
+    "  q->front = (q->front + 1) % MAX;     // wrap!",
+    "  q->size--;",
     "  return val;",
-    "}"
-  ];
+    "}"];
   var PEEK_CODE=[
-    "int peek(CQueue *q) {",
+    "int peek(CQ *q) {",
+    "  if (q->size == 0) return -1;",
     "  return q->items[q->front];",
-    "}"
-  ];
+    "}"];
 
-  function cellsFor(buf, front, rear, count, hi, hiRole){
-    var out=[];
+  function slotsFor(arr, front, size, active, activeCls){
+    var occ={}; for(var k=0;k<size;k++) occ[(front+k)%CAP]=true;
+    var rear=(front+size-1+CAP)%CAP, out=[];
     for(var i=0;i<CAP;i++){
-      var badges=[];
-      if(count>0 && i===front) badges.push("FRONT");
-      if(count>0 && i===rear) badges.push("REAR");
-      out.push({
-        val: (i<buf.length ? buf[i] : null),
-        role: (i===hi ? hiRole : (buf[i]===null||buf[i]===undefined ? "dim" : "")),
-        ptr: badges.join("/")
-      });
+      var s={ val: (occ[i]||active===i)?arr[i]:null };
+      if(active===i) s.cls=activeCls||"active";
+      var p=[];
+      if(size>0 && i===front) p.push("FRONT");
+      if(size>0 && i===rear) p.push("REAR");
+      if(p.length) s.ptrs=p;
+      out.push(s);
     }
     return out;
   }
-  function frame(state, hi, hiRole, phase, narr, ops, code, codeLine){
-    return {struct:{cells:cellsFor(state.buf, state.front, state.rear, state.count, hi, hiRole)},
-      phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
+  function F(arr, front, size, active, activeCls, code, line, narr){
+    var rear=size>0?((front+size-1)%CAP):-1;
+    return { slots:slotsFor(arr,front,size,active,activeCls), dir:"h",
+      note:"front = "+front+"   rear = "+rear+"   size = "+size, codeLines:code, code:line, narr:narr };
   }
 
-  function opEnqueue(state, val){
-    if(state.count>=CAP) return {error:"The buffer is full — all "+CAP+" slots are in use."};
-    var buf=state.buf.slice(), front=state.front, rear=state.rear, count=state.count;
-    var oc=state.opsCount||0, frames=[];
-    frames.push(frame({buf:buf,front:front,rear:rear,count:count}, undefined, "", "enqueue-start",
-      "Enqueue "+val+": place it one slot past the current rear, wrapping around if needed.", oc, ENQUEUE_CODE, [2,4]));
-    if(count===0){ front=0; rear=0; }
-    else { rear=(rear+1)%CAP; }
-    buf[rear]=val; count++; oc++;
-    var wrapped = (rear===0 && count>1);
-    frames.push(frame({buf:buf,front:front,rear:rear,count:count}, rear, "left head landed", "enqueued",
-      val+" placed at index "+rear+(wrapped?" — rear wrapped back around to 0.":".")+" ("+count+"/"+CAP+" full)", oc, ENQUEUE_CODE, 4));
-    return {frames:frames, state:{buf:buf,front:front,rear:rear,count:count,opsCount:oc}};
+  function opEnq(val){
+    var arr=Q.arr.slice(), f=Q.front, sz=Q.size, frames=[];
+    if(sz===CAP) return {error:"The queue is full — size == MAX ("+CAP+"). Every slot holds a live item."};
+    frames.push(F(arr, f, sz, -1, null, ENQ_CODE, [0,1], "Enqueue "+val+". Is size == MAX? No — there's room."));
+    var i=(f+sz)%CAP, wrapped=(i<f);
+    frames.push(F(arr, f, sz, i, "active", ENQ_CODE, 2,
+      "Write index = (front + size) % MAX = "+i+"."+(wrapped?" It wrapped past the end back to "+i+" — reusing a freed slot!":"")));
+    arr[i]=val;
+    frames.push(F(arr, f, sz, i, "active", ENQ_CODE, 3, "Write "+val+" at index "+i+"."));
+    frames.push(F(arr, f, sz+1, -1, null, ENQ_CODE, 4, "size++ → "+(sz+1)+". "+val+" is the new rear."));
+    Q.arr=arr; Q.size=sz+1; return {frames:frames};
   }
-  function opDequeue(state){
-    if(state.count===0) return {error:"The buffer is empty — nothing to dequeue."};
-    var buf=state.buf.slice(), front=state.front, rear=state.rear, count=state.count;
-    var oc=(state.opsCount||0)+1, frames=[];
-    var val=buf[front];
-    frames.push(frame({buf:buf,front:front,rear:rear,count:count}, front, "left head", "dequeue-start",
-      "Dequeue: remove "+val+" from the front, at index "+front+".", oc, DEQUEUE_CODE, [1,3]));
-    buf[front]=null;
-    if(count===1){ front=-1; rear=-1; } else { front=(front+1)%CAP; }
-    count--;
-    frames.push(frame({buf:buf,front:front,rear:rear,count:count}, undefined, "", "dequeued",
-      val+" removed. "+(count ? ("New front is index "+front+" ("+buf[front]+").") : "The buffer is now empty.")+" ("+count+"/"+CAP+" full)", oc, DEQUEUE_CODE, 3));
-    return {frames:frames, state:{buf:buf,front:front,rear:rear,count:count,opsCount:oc}};
+  function opDeq(){
+    var arr=Q.arr.slice(), f=Q.front, sz=Q.size, frames=[];
+    if(sz===0) return {error:"The queue is empty — size == 0. Nothing to dequeue."};
+    var val=arr[f];
+    frames.push(F(arr, f, sz, f, "active", DEQ_CODE, [1,2], "Dequeue. front is "+val+" at index "+f+"."));
+    var nf=(f+1)%CAP, wrapped=(nf<f);
+    frames.push(F(arr, nf, sz, -1, null, DEQ_CODE, 3,
+      "Return "+val+". front = (front + 1) % MAX = "+nf+"."+(wrapped?" It wrapped back to 0.":"")+" The old slot is free to reuse."));
+    frames.push(F(arr, nf, sz-1, -1, null, DEQ_CODE, [4,5], "size-- → "+(sz-1)+"."));
+    Q.arr=arr; Q.front=nf; Q.size=sz-1; return {frames:frames};
   }
-  function opPeek(state){
-    if(state.count===0) return {error:"The buffer is empty — nothing to peek at."};
-    var oc=(state.opsCount||0)+1;
-    return {frames:[frame(state, state.front, "left head", "peek",
-      "Peek: the front slot, index "+state.front+", holds "+state.buf[state.front]+".", oc, PEEK_CODE, 1)],
-      state:Object.assign({},state,{opsCount:oc})};
+  function opPeek(){
+    if(Q.size===0) return {error:"The queue is empty — nothing to peek at."};
+    return {frames:[ F(Q.arr.slice(), Q.front, Q.size, Q.front, "found", PEEK_CODE, 2,
+      "Peek returns items[front] = "+Q.arr[Q.front]+" without removing it.") ]};
   }
 
-  function init(){
-    var state={buf:new Array(CAP).fill(null), front:0, rear:CAP-1, count:0, opsCount:0};
-    var frames=[frame(state, undefined, "", "start",
-      "Create the ring buffer: capacity "+CAP+", front at 0, rear primed so the first enqueue lands at 0.", 0, INIT_CODE, [1,3])];
-    [7,3,9].forEach(function(v){
-      var r=opEnqueue(state, v);
-      frames=frames.concat(r.frames);
-      state=r.state;
-    });
-    return { state:state, frames:frames };
-  }
+  /* ---- page-local player ---- */
+  var stage=document.getElementById("cqStage"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    ArrAnim.render(stage, f); narrEl.textContent=f.narr||"";
+    ArrAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1500);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
 
-  VizDS.init({
-    init: init,
-    ops: {
-      enqueue: { btn:"btnEnqueue", enterOn:"val", run: function(state){
-        var v=Number(document.getElementById("val").value);
-        if(!isFinite(v)) return {error:"Enter a number to enqueue."};
-        return opEnqueue(state, v);
-      }},
-      dequeue: { btn:"btnDequeue", run: function(state){ return opDequeue(state); } },
-      peek: { btn:"btnPeek", run: function(state){ return opPeek(state); } }
-    },
-    renderExtra: function(frame){ DSRender.slots(document.getElementById("queueHost"), frame.struct.cells); },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function numV(){ var v=Number(document.getElementById("valF").value); return isFinite(v)?v:null; }
+  function run(r){ if(r.error){ stopP(); hint(r.error); return; } hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play."); loadFrames(r.frames); }
+
+  document.getElementById("opEnq").onclick=function(){ var v=numV(); if(v==null) return hint("Enter a value to enqueue."); run(opEnq(v)); };
+  document.getElementById("opDeq").onclick=function(){ run(opDeq()); };
+  document.getElementById("opPeek").onclick=function(){ run(opPeek()); };
+  document.getElementById("opReset").onclick=function(){ stopP(); seed();
+    P.frames=[F(Q.arr.slice(),Q.front,Q.size,-1,null,null,null,"Fresh queue: 10, 20, 30.")]; P.i=0; drawP(); hint("Queue reset."); };
+
+  P.frames=[F(Q.arr.slice(),Q.front,Q.size,-1,null,null,null,"Current queue: 10, 20, 30. Dequeue a few, then enqueue past the end to see the wrap.")];
+  P.i=0; drawP();
 })();
 </script>
 </body>
