@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linked List · Insertion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  /* small page-local helpers, mirroring index.html's card grid */
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);
+    background:#fff;transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .demo-wrap .scroller{margin-bottom:10px}
+  .demo-tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--stamp);margin:0 0 12px}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;
+    display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);
+    padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="linked-list.html">&larr; Linked List overview</a>
+      <p class="eyebrow">One Operation, Three Places</p>
+      <h1>Insertion</h1>
+    </div>
+    <p class="note">Adding a node is never about making room — it's about rewiring one or two arrows. This page builds that intuition from zero.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Linked list operations">
+    <a href="linked-list.html">Overview</a>
+    <a class="here" href="linked-list-insertion.html">Insertion</a>
+    <a href="linked-list-deletion.html">Deletion</a>
+    <a href="linked-list-traversal.html">Traversal &amp; Update</a>
+    <a href="linked-list-visualizer.html">Visualizer</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The one idea behind every insertion</h2></div>
+    <div class="panel-body notes">
+      <p>Picture the list as a paper chain, or a line of train cars coupled front to back. Each node
+      is one car; the coupling on the back of each car is its <b>next pointer</b> — it clips onto the car
+      behind it. The engine at the very front is the <b>HEAD</b> pointer: it doesn't hold a value, it just
+      tells you which car is first. The last car's coupling clips onto nothing, and we write that "nothing"
+      as <code>NULL</code>.</p>
+
+      <p>An <a href="../../foundations/arrays-memory/arrays-memory.html">array</a> is the opposite: its
+      elements sit shoulder to shoulder in one solid block, so to slide a new one into the middle you must
+      physically shove everything after it over by one — slow, and more work the bigger the array gets.
+      A linked list never shifts anything. To insert a car, you unclip <em>one</em> coupling and re-clip it
+      through the new car. That's the whole trick, and it's the same trick at the head, at the tail, and in
+      the middle — only <em>which</em> coupling you touch changes.</p>
+
+      <div class="callout">
+        <b>The golden rule of insertion.</b> Always link the new node <em>to the rest of the list</em> before
+        you make anything point <em>to</em> the new node. Do it in the other order and, for a heartbeat,
+        nothing points at the rest of the list — and a linked list that loses its thread can never find those
+        nodes again. Every bug below comes from breaking this one rule. (New to pointers?
+        The <a href="../../foundations/pointers/pointers.html">Pointers</a> page explains what "points to"
+        actually means in memory.)
+      </div>
+
+      <p>There are three places you can insert, and they differ only in how much walking you do to <em>reach</em>
+      the spot. Once you're there, the rewiring is identical. Let's take them one at a time.</p>
+    </div>
+  </section>
+
+  <!-- ============ INSERT AT HEAD ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>1 · Insert at the start (the head)</h2><span class="sub">O(1) — the fast one</span></div>
+    <div class="panel-body notes">
+      <p>This is the easiest insert and the fastest, because the head is the one node you can reach
+      <em>instantly</em> — the HEAD pointer already holds its address. You never walk anywhere.</p>
+
+      <p><b>The thought process.</b> You want your new node to become the first car in the line. So the new
+      node's next should point at whoever <em>used</em> to be first, and then HEAD should be moved to point at
+      the new node. Notice the order — it's the golden rule in action:</p>
+
+      <ol class="steps">
+        <li>Make a new node and put your value in it. Right now it points nowhere.</li>
+        <li>Point the new node's <code>next</code> at the current head (the old first car). Now the new node
+        is clipped onto the front of the existing chain — but HEAD hasn't moved yet, so nothing points at the
+        new node.</li>
+        <li>Move HEAD to the new node. It's now officially first. Nothing else in the list moved a muscle.</li>
+      </ol>
+
+      <p>Because there's no walking and no shifting — just two pointer writes — this takes the same tiny amount
+      of time whether the list holds 2 nodes or 2 million. That's what <b>O(1)</b>, or "constant time," means.
+      (The <a href="../../foundations/big-o/big-o.html">Big-O</a> page unpacks that notation.)</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — inserting 1 at the head of [3, 7]</p>
+        <div class="scroller"><div id="headList"></div></div>
+        <p class="narr" id="headNarr">&nbsp;</p>
+        <div class="code-panel" id="headCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INSERT AT TAIL ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>2 · Insert at the end (the tail)</h2><span class="sub">O(n) — you have to find the end first</span></div>
+    <div class="panel-body notes">
+      <p>Adding to the end sounds just as easy, and the <em>rewiring</em> is — but there's a catch that trips
+      up every beginner: <b>a plain linked list has no idea where its end is.</b> All it knows is the head.
+      The last node is just the one whose <code>next</code> happens to be <code>NULL</code>, and the only way
+      to find it is to start at the head and follow the couplings, car by car, until you reach the one that
+      clips onto nothing.</p>
+
+      <p><b>The thought process.</b> Walk a temporary "finger" pointer from the head. At each node ask a single
+      question: <em>is your next NULL?</em> If yes, this is the last node — attach the new node here. If no,
+      step the finger forward and ask again.</p>
+
+      <ol class="steps">
+        <li>Handle the empty list first: if there's no head at all, the new node simply <em>becomes</em> the
+        head. (Always ask "what if the list is empty?" — it's the edge case that crashes real code.)</li>
+        <li>Otherwise start a finger at the head and walk: while the current node's <code>next</code> isn't
+        NULL, move forward. When the loop stops, the finger is resting on the last node.</li>
+        <li>Point that last node's <code>next</code> at the new node. The new node's own next is NULL — it's
+        the tail now.</li>
+      </ol>
+
+      <p>Walking to the end touches every node once, so the cost grows with the length of the list: that's
+      <b>O(n)</b>, "linear time." This is the price of a singly linked list. The common fix is to keep a second
+      pointer, <code>tail</code>, that always aims at the last node — then tail insertion becomes O(1) too,
+      at the cost of updating that extra pointer on every change.</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — inserting 9 at the tail of [3, 7]</p>
+        <div class="scroller"><div id="tailList"></div></div>
+        <p class="narr" id="tailNarr">&nbsp;</p>
+        <div class="code-panel" id="tailCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INSERT AT INDEX ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>3 · Insert at a specific index</h2><span class="sub">O(n) — walk partway, then splice</span></div>
+    <div class="panel-body notes">
+      <p>"Index" just means position counted from the front, starting at 0: index 0 is the head, index 1 is
+      the second node, and so on. Inserting at index <code>k</code> means the new node should end up sitting
+      in that slot, pushing everything from <code>k</code> onward one place later.</p>
+
+      <p><b>The key realization.</b> To splice a node into position <code>k</code>, you don't stop <em>at</em>
+      index <code>k</code> — you stop at the node <em>just before</em> it, index <code>k−1</code>. That
+      predecessor is the one whose coupling you'll unclip and re-route through the new node. (Inserting at
+      index 0 has no predecessor, so it's just the head insertion from section 1 — always spot that shortcut.)</p>
+
+      <ol class="steps">
+        <li>If the index is 0, hand off to "insert at head" and you're done.</li>
+        <li>Otherwise walk a finger to index <code>k−1</code>, the node just before the target slot.</li>
+        <li>Point the new node's <code>next</code> at whatever the predecessor currently points to (that's the
+        node being pushed back). <em>Golden rule: this link goes first.</em></li>
+        <li>Now re-point the predecessor's <code>next</code> at the new node. The new node is spliced in; the
+        two ends of the old coupling now run through it.</li>
+      </ol>
+
+      <p>You walk about <code>k</code> steps to reach the spot (O(n) in the worst case), but the splice itself
+      is two pointer writes — O(1). No element after the insertion point ever moves; only the arrows change.</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — inserting 5 at index 2 of [3, 7, 9]</p>
+        <div class="scroller"><div id="idxList"></div></div>
+        <p class="narr" id="idxNarr">&nbsp;</p>
+        <div class="code-panel" id="idxCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PITFALLS + RECAP ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>Getting it wrong (and how to not)</h2></div>
+    <div class="panel-body notes">
+      <p><b>Rewiring in the wrong order.</b> The number-one bug is doing the golden rule backwards — pointing
+      the predecessor at the new node <em>before</em> the new node points at the rest. The instant you do that,
+      the predecessor's old next is lost, and with it every node after the insertion point. The chain is
+      severed and those nodes are unreachable forever.</p>
+
+      <p><b>Forgetting the empty list.</b> Tail and index inserts both assume there's a head to walk from.
+      If the list is empty, there's no node to walk, and code that blindly reads <code>head->next</code> will
+      crash. Handle "empty" as its own first case.</p>
+
+      <p><b>Off-by-one on the index.</b> Stopping at index <code>k</code> instead of <code>k−1</code> inserts
+      the node one slot too late. When in doubt, say out loud: "I need the node <em>before</em> the gap."</p>
+
+      <table class="notes-table">
+        <tr><th>Insertion</th><th>Walk to reach the spot</th><th>Rewiring</th><th>Total</th></tr>
+        <tr><td>At head (start)</td><td>none</td><td>2 writes</td><td><b>O(1)</b></td></tr>
+        <tr><td>At tail (end)</td><td>whole list</td><td>1 write</td><td>O(n)</td></tr>
+        <tr><td>At index k</td><td>k−1 steps</td><td>2 writes</td><td>O(n)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="linked-list-visualizer.html">Try every insertion yourself in the visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next up: <a href="linked-list-deletion.html">Deletion</a> — the mirror image, where the trick is to make
+    the list route <em>around</em> a node before you throw it away.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ---- tiny page-local driver: animate a sequence + a synced code panel ---- */
+  function lineSet(cl){
+    if(cl==null) return [];
+    if(typeof cl==="number") return [cl];
+    var a=[]; for(var i=cl[0];i<=cl[1];i++) a.push(i); return a;
+  }
+  function panelCode(hostId, lines, cl){
+    var host=document.getElementById(hostId);
+    if(!host._els){
+      host.innerHTML=""; host._els=[];
+      lines.forEach(function(src,i){
+        var d=document.createElement("div"); d.className="code-line";
+        d.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
+        d.lastChild.textContent=src;
+        host.appendChild(d); host._els.push(d);
+      });
+    }
+    var set=lineSet(cl);
+    host._els.forEach(function(el,j){ el.className="code-line"+(set.indexOf(j)>=0?" active":""); });
+  }
+  function seq(vals, ai, ar, ll){
+    return {
+      dir:"h", nullEnd:true, emptyText:"Empty list — HEAD is NULL",
+      nodes: vals.map(function(v,i){ return {val:v, role:(i===ai?ar:""), ptr:(i===0?"HEAD":"")}; }),
+      linkActive: vals.map(function(_,i){ return i===ai; }),
+      linkLanded: vals.map(function(_,i){ return i===ll; })
+    };
+  }
+  function F(vals, ai, ar, ll, narr, code){ return {struct:seq(vals,ai,ar,ll), narr:narr, codeLine:code}; }
+  function run(o){
+    var i=0;
+    function step(){
+      var f=o.frames[i];
+      DSRender.sequence(document.getElementById(o.listId), f.struct);
+      document.getElementById(o.narrId).textContent=f.narr;
+      panelCode(o.codeId, o.code, f.codeLine);
+      i=(i+1)%o.frames.length;
+    }
+    step(); setInterval(step, o.ms||1500);
+  }
+
+  /* ---- 1. insert at head ---- */
+  var HEAD_CODE=[
+    "void insertHead(List *l, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val;",
+    "  n->next = l->head;   // link to the rest FIRST",
+    "  l->head = n;         // then move HEAD",
+    "}"
+  ];
+  run({ listId:"headList", narrId:"headNarr", codeId:"headCode", code:HEAD_CODE, ms:1600, frames:[
+    F([3,7], -1,"", -1, "Start: HEAD points to 3. We want 1 to become the new first node.", 0),
+    F([3,7], -1,"", -1, "Make a new node holding 1 (it's sitting off to the side, pointing nowhere).", [1,2]),
+    F([1,3,7], 0,"left head landed", 0, "Point the new node's next at the current head, 3. It's clipped onto the front now.", 3),
+    F([1,3,7], 0,"left head", -1, "Move HEAD to the new node. 1 is officially first — nothing else moved.", 4),
+    F([1,3,7], -1,"", -1, "Done. Two pointer writes, no walking: insertion at the head is O(1).", 5)
+  ]});
+
+  /* ---- 2. insert at tail ---- */
+  var TAIL_CODE=[
+    "void insertTail(List *l, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->next = NULL;",
+    "  if (!l->head) { l->head = n; return; }",
+    "  Node *cur = l->head;",
+    "  while (cur->next) cur = cur->next;  // walk to the end",
+    "  cur->next = n;",
+    "}"
+  ];
+  run({ listId:"tailList", narrId:"tailNarr", codeId:"tailCode", code:TAIL_CODE, ms:1600, frames:[
+    F([3,7], -1,"", -1, "Insert 9 at the end. The list only knows its head — we must find the last node.", [1,2]),
+    F([3,7], 0,"right", -1, "Start a finger at the head, 3. Is its next NULL? No — so keep walking.", 5),
+    F([3,7], 1,"right", -1, "Step to 7. Is its next NULL? Yes — 7 is the last node.", 5),
+    F([3,7,9], 2,"left head landed", 2, "Point 7's next at the new node, 9. It becomes the tail.", 6),
+    F([3,7,9], -1,"", -1, "Done. We walked the whole list to get here, so tail insertion is O(n).", 7)
+  ]});
+
+  /* ---- 3. insert at index ---- */
+  var IDX_CODE=[
+    "void insertAt(List *l, int idx, int val) {",
+    "  if (idx == 0) { insertHead(l, val); return; }",
+    "  Node *cur = l->head;",
+    "  for (int i = 0; i < idx - 1; i++)",
+    "    cur = cur->next;      // stop at the node BEFORE idx",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val;",
+    "  n->next = cur->next;    // link to the rest FIRST",
+    "  cur->next = n;          // then re-point predecessor",
+    "}"
+  ];
+  run({ listId:"idxList", narrId:"idxNarr", codeId:"idxCode", code:IDX_CODE, ms:1600, frames:[
+    F([3,7,9], -1,"", -1, "Insert 5 at index 2. Not index 0, so we walk to the node just before it, index 1.", 1),
+    F([3,7,9], 0,"right", -1, "Start at index 0 (3). We need to stop one before the target.", [3,4]),
+    F([3,7,9], 1,"right", -1, "Step to index 1 (7). Stop — the new node goes right after this one.", [3,4]),
+    F([3,7,5,9], 2,"left head landed", 2, "Point 5's next at 9 (what 7 pointed to), then point 7's next at 5. Spliced in.", [7,8]),
+    F([3,7,5,9], -1,"", -1, "5 now sits at index 2. Walk was O(n); the splice itself was two writes, O(1).", 9)
+  ]});
+})();
+</script>
+</body>
+</html>

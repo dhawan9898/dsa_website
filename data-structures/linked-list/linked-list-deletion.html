@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linked List · Deletion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);
+    background:#fff;transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .demo-wrap .scroller{margin-bottom:10px}
+  .demo-tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--stamp);margin:0 0 12px}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;
+    display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);
+    padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="linked-list.html">&larr; Linked List overview</a>
+      <p class="eyebrow">Route Around, Then Remove</p>
+      <h1>Deletion</h1>
+    </div>
+    <p class="note">Deleting a node is a two-move dance: first make the list flow <em>around</em> the node, then hand its memory back. Miss either move and you get a bug.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Linked list operations">
+    <a href="linked-list.html">Overview</a>
+    <a href="linked-list-insertion.html">Insertion</a>
+    <a class="here" href="linked-list-deletion.html">Deletion</a>
+    <a href="linked-list-traversal.html">Traversal &amp; Update</a>
+    <a href="linked-list-visualizer.html">Visualizer</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The one idea behind every deletion</h2></div>
+    <div class="panel-body notes">
+      <p>Deletion is insertion run backwards. If inserting was "clip a new car into the chain," deleting is
+      "unclip a car and lift it out." And just like insertion, you never shift or renumber anything — you only
+      touch the couplings around the one node you're removing.</p>
+
+      <p>There's exactly one node you truly need to reach to delete something, and it's easy to get wrong: it's
+      the node <em>before</em> the one you're deleting — the <b>predecessor</b>. That predecessor is currently
+      pointing at your victim; your job is to make it point at whatever the victim points at instead. Once you
+      do, nothing in the list refers to the victim anymore — the list flows straight past it.</p>
+
+      <div class="callout">
+        <b>The two-move rule.</b> First <em>unlink</em>: reroute the predecessor's pointer around the node.
+        Then <em>free</em>: return that node's memory to the system. Order matters and so does not skipping
+        the second move — in C, the memory a deleted node used isn't reclaimed automatically. Forget to
+        <code>free</code> it and it sits there occupied but unreachable forever: a <b>memory leak</b>.
+        (See the <a href="../../foundations/pointers/pointers.html">Pointers</a> and
+        <a href="../../foundations/arrays-memory/arrays-memory.html">Arrays &amp; Memory</a> pages for what
+        "the memory" really is.)
+      </div>
+
+      <p>As with insertion, the four flavors below differ only in how far you walk to find the predecessor.
+      The removal itself is always the same two moves.</p>
+    </div>
+  </section>
+
+  <!-- ============ DELETE HEAD ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>1 · Delete the head</h2><span class="sub">O(1) — the fast one</span></div>
+    <div class="panel-body notes">
+      <p>The head has no predecessor — the HEAD pointer itself plays that role — so this is the quickest
+      deletion. You just move HEAD forward one node and free the old first node.</p>
+
+      <ol class="steps">
+        <li>If the list is empty, there's nothing to delete — stop right away.</li>
+        <li>Save the current head in a temporary pointer. If you skip this, the moment you move HEAD you'll
+        have no way to reach the old node to free it — instant memory leak.</li>
+        <li>Move HEAD to the second node. The old head is now bypassed.</li>
+        <li>Free the old head. The list is one shorter, and no node moved.</li>
+      </ol>
+
+      <p>No walking, a fixed handful of pointer moves — <b>O(1)</b>, constant time.</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — deleting the head of [1, 3, 7]</p>
+        <div class="scroller"><div id="headList"></div></div>
+        <p class="narr" id="headNarr">&nbsp;</p>
+        <div class="code-panel" id="headCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DELETE TAIL ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>2 · Delete the tail</h2><span class="sub">O(n) — the predecessor is hiding at the end</span></div>
+    <div class="panel-body notes">
+      <p>To delete the last node, you need the <em>second-to-last</em> node — that's the predecessor whose
+      pointer has to change from "points at the last node" to "points at NULL." And a singly linked list can't
+      hand you that node directly; you have to walk to it.</p>
+
+      <p><b>The subtle part.</b> You don't walk until <code>cur->next</code> is NULL (that would land you
+      <em>on</em> the last node — too far). You walk until <code>cur->next->next</code> is NULL, which stops
+      you one earlier, on the second-to-last node.</p>
+
+      <ol class="steps">
+        <li>Empty list? Nothing to do. Single node? That node <em>is</em> the head and the tail — free it and
+        set HEAD to NULL.</li>
+        <li>Otherwise walk a finger until the node two ahead is NULL. You'll land on the second-to-last node.</li>
+        <li>Free the last node, then set the second-to-last node's <code>next</code> to NULL. It's the new tail.</li>
+      </ol>
+
+      <p>Finding the predecessor means walking almost the whole list, so this is <b>O(n)</b>.</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — deleting the tail of [3, 7, 9]</p>
+        <div class="scroller"><div id="tailList"></div></div>
+        <p class="narr" id="tailNarr">&nbsp;</p>
+        <div class="code-panel" id="tailCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DELETE AT INDEX ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>3 · Delete at a specific index</h2><span class="sub">O(n) — walk to the predecessor, route around</span></div>
+    <div class="panel-body notes">
+      <p>Same idea, general case. To delete index <code>k</code>, stop the walk at index <code>k−1</code> —
+      the predecessor — then let it reach over the victim to grab the victim's next.</p>
+
+      <ol class="steps">
+        <li>If the index is 0, that's the "delete head" case from section 1.</li>
+        <li>Otherwise walk a finger to index <code>k−1</code>.</li>
+        <li>Call the victim <code>target</code> — it's the predecessor's current next. Point the predecessor's
+        <code>next</code> at <code>target->next</code>, so the list routes around <code>target</code>.</li>
+        <li>Free <code>target</code>. Gone.</li>
+      </ol>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — deleting index 2 of [3, 7, 5, 9]</p>
+        <div class="scroller"><div id="idxList"></div></div>
+        <p class="narr" id="idxNarr">&nbsp;</p>
+        <div class="code-panel" id="idxCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DELETE BY VALUE ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>4 · Delete by value</h2><span class="sub">O(n) — search and delete in one walk</span></div>
+    <div class="panel-body notes">
+      <p>Often you don't know the index — you just want to remove "the node that holds 7." Now you have to
+      <em>search</em> for it, and the classic technique is to walk two pointers at once: <code>cur</code> (the
+      node you're examining) and <code>prev</code> (the one right behind it). That way, the instant
+      <code>cur</code> lands on a match, <code>prev</code> is already sitting on the predecessor you need.</p>
+
+      <ol class="steps">
+        <li>Walk <code>cur</code> from the head, dragging <code>prev</code> one step behind, until
+        <code>cur</code>'s value matches — or you fall off the end at NULL.</li>
+        <li>Fell off the end? The value isn't in the list — nothing to delete.</li>
+        <li>Matched at the head (<code>prev</code> is still NULL)? Move HEAD past it. Otherwise point
+        <code>prev->next</code> around <code>cur</code>.</li>
+        <li>Free <code>cur</code>.</li>
+      </ol>
+
+      <p>The <code>prev</code>-behind-<code>cur</code> pattern is worth memorizing — it shows up in almost
+      every "find and remove" on a singly linked list.</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — deleting the value 7 from [3, 7, 9]</p>
+        <div class="scroller"><div id="valList"></div></div>
+        <p class="narr" id="valNarr">&nbsp;</p>
+        <div class="code-panel" id="valCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PITFALLS + RECAP ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>Getting it wrong (and how to not)</h2></div>
+    <div class="panel-body notes">
+      <p><b>Freeing before rerouting.</b> If you <code>free</code> the victim first and <em>then</em> try to
+      read its <code>next</code> to reroute, you're reading memory you just gave away — a <b>dangling-pointer</b>
+      bug. Unlink first (grab <code>target->next</code> while the node is still valid), then free.</p>
+
+      <p><b>Forgetting to free at all.</b> Rerouting alone makes the node <em>unreachable</em>, but its memory
+      is still checked out. That's a leak — invisible until your program slowly eats all its memory.</p>
+
+      <p><b>Using the pointer after freeing.</b> After <code>free(x)</code>, the pointer <code>x</code> still
+      holds an address, but that address is no longer yours. Reading or writing through it is undefined
+      behavior — the bug that corrupts something unrelated three functions later.</p>
+
+      <p><b>The empty-list and single-node cases.</b> Every deletion should answer "what if the list is empty?"
+      and tail/value deletion should also answer "what if there's exactly one node?" These edges are where
+      real code crashes.</p>
+
+      <table class="notes-table">
+        <tr><th>Deletion</th><th>Walk to reach predecessor</th><th>Removal</th><th>Total</th></tr>
+        <tr><td>Head</td><td>none</td><td>move HEAD + free</td><td><b>O(1)</b></td></tr>
+        <tr><td>Tail</td><td>to second-to-last</td><td>1 write + free</td><td>O(n)</td></tr>
+        <tr><td>At index k</td><td>k−1 steps</td><td>1 write + free</td><td>O(n)</td></tr>
+        <tr><td>By value</td><td>until match</td><td>1 write + free</td><td>O(n)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="linked-list-visualizer.html">Try every deletion yourself in the visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Last piece: <a href="linked-list-traversal.html">Traversal &amp; Update</a> — the humble walk that every
+    operation on this page was secretly built on.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function lineSet(cl){
+    if(cl==null) return [];
+    if(typeof cl==="number") return [cl];
+    var a=[]; for(var i=cl[0];i<=cl[1];i++) a.push(i); return a;
+  }
+  function panelCode(hostId, lines, cl){
+    var host=document.getElementById(hostId);
+    if(!host._els){
+      host.innerHTML=""; host._els=[];
+      lines.forEach(function(src,i){
+        var d=document.createElement("div"); d.className="code-line";
+        d.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
+        d.lastChild.textContent=src;
+        host.appendChild(d); host._els.push(d);
+      });
+    }
+    var set=lineSet(cl);
+    host._els.forEach(function(el,j){ el.className="code-line"+(set.indexOf(j)>=0?" active":""); });
+  }
+  function seq(vals, ai, ar, ll){
+    return {
+      dir:"h", nullEnd:true, emptyText:"Empty list — HEAD is NULL",
+      nodes: vals.map(function(v,i){ return {val:v, role:(i===ai?ar:""), ptr:(i===0?"HEAD":"")}; }),
+      linkActive: vals.map(function(_,i){ return i===ai; }),
+      linkLanded: vals.map(function(_,i){ return i===ll; })
+    };
+  }
+  function F(vals, ai, ar, ll, narr, code){ return {struct:seq(vals,ai,ar,ll), narr:narr, codeLine:code}; }
+  function run(o){
+    var i=0;
+    function step(){
+      var f=o.frames[i];
+      DSRender.sequence(document.getElementById(o.listId), f.struct);
+      document.getElementById(o.narrId).textContent=f.narr;
+      panelCode(o.codeId, o.code, f.codeLine);
+      i=(i+1)%o.frames.length;
+    }
+    step(); setInterval(step, o.ms||1600);
+  }
+
+  /* ---- 1. delete head ---- */
+  var HEAD_CODE=[
+    "void deleteHead(List *l) {",
+    "  if (!l->head) return;      // empty",
+    "  Node *old = l->head;       // remember it",
+    "  l->head = old->next;       // HEAD skips forward",
+    "  free(old);                 // hand memory back",
+    "}"
+  ];
+  run({ listId:"headList", narrId:"headNarr", codeId:"headCode", code:HEAD_CODE, frames:[
+    F([1,3,7], 0,"left head", -1, "Delete the head, 1. First remember it in a temporary pointer so we can free it.", [2]),
+    F([3,7], -1,"", -1, "Move HEAD to the second node, 3. The old head is now bypassed.", 3),
+    F([3,7], -1,"", -1, "Free the old node's memory. Done — deleting the head is O(1).", 4)
+  ]});
+
+  /* ---- 2. delete tail ---- */
+  var TAIL_CODE=[
+    "void deleteTail(List *l) {",
+    "  if (!l->head) return;",
+    "  if (!l->head->next) { free(l->head); l->head = NULL; return; }",
+    "  Node *cur = l->head;",
+    "  while (cur->next->next) cur = cur->next;  // 2nd-to-last",
+    "  free(cur->next);     // free the last node",
+    "  cur->next = NULL;    // new tail ends here",
+    "}"
+  ];
+  run({ listId:"tailList", narrId:"tailNarr", codeId:"tailCode", code:TAIL_CODE, frames:[
+    F([3,7,9], 0,"right", -1, "Delete the tail, 9. We must land on the node before it, so we walk.", 4),
+    F([3,7,9], 0,"right", -1, "At 3, is the node two ahead (9) NULL? No — step forward.", 4),
+    F([3,7,9], 1,"right", -1, "At 7, is the node two ahead NULL? Yes — 7 is the second-to-last node.", 4),
+    F([3,7], 1,"left", -1, "Free 9 and set 7's next to NULL. 7 is the new tail.", [5,6]),
+    F([3,7], -1,"", -1, "Done. Finding the predecessor meant walking the list, so this is O(n).", 7)
+  ]});
+
+  /* ---- 3. delete at index ---- */
+  var IDX_CODE=[
+    "void deleteAt(List *l, int idx) {",
+    "  if (idx == 0) { deleteHead(l); return; }",
+    "  Node *cur = l->head;",
+    "  for (int i = 0; i < idx - 1; i++)",
+    "    cur = cur->next;          // node before target",
+    "  Node *target = cur->next;   // the victim",
+    "  cur->next = target->next;   // route around it FIRST",
+    "  free(target);               // then free it",
+    "}"
+  ];
+  run({ listId:"idxList", narrId:"idxNarr", codeId:"idxCode", code:IDX_CODE, frames:[
+    F([3,7,5,9], -1,"", -1, "Delete index 2 (value 5). Not the head, so walk to its predecessor, index 1.", 1),
+    F([3,7,5,9], 0,"right", -1, "Start at index 0 (3).", [3,4]),
+    F([3,7,5,9], 1,"right", -1, "Step to index 1 (7) — the predecessor. Stop here.", [3,4]),
+    F([3,7,5,9], 2,"left head", -1, "The victim is 7's next: index 2, value 5.", 5),
+    F([3,7,9], 1,"left", 2, "Point 7's next straight at 9, routing around 5. Nothing points to 5 now.", 6),
+    F([3,7,9], -1,"", -1, "Free 5. Done — O(n) to walk, O(1) to unlink and free.", 7)
+  ]});
+
+  /* ---- 4. delete by value ---- */
+  var VAL_CODE=[
+    "void deleteValue(List *l, int val) {",
+    "  Node *cur = l->head, *prev = NULL;",
+    "  while (cur && cur->val != val) {",
+    "    prev = cur; cur = cur->next;",
+    "  }",
+    "  if (!cur) return;               // not found",
+    "  if (!prev) l->head = cur->next; // was the head",
+    "  else prev->next = cur->next;    // route around it",
+    "  free(cur);",
+    "}"
+  ];
+  run({ listId:"valList", narrId:"valNarr", codeId:"valCode", code:VAL_CODE, frames:[
+    F([3,7,9], 0,"left head", -1, "Delete the first node equal to 7. Walk cur from the head, dragging prev behind.", [1,2]),
+    F([3,7,9], 0,"left head", -1, "Is 3 equal to 7? No — remember 3 as prev, step cur forward.", 3),
+    F([3,7,9], 1,"left head", -1, "Is 7 equal to 7? Yes — this is the victim, and prev is 3.", 2),
+    F([3,9], 0,"left", 1, "prev (3) points straight at 7's next, 9 — routing around 7.", 7),
+    F([3,9], -1,"", -1, "Free 7. Done. Searching is O(n); the unlink is O(1).", 8)
+  ]});
+})();
+</script>
+</body>
+</html>
