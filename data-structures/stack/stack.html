@@ -8,6 +8,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;
+    display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);
+    padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+</style>
 </head>
 <body>
 
@@ -18,66 +29,116 @@
       <p class="eyebrow">Last In &middot; First Out</p>
       <h1>Stack</h1>
     </div>
-    <p class="note">A collection where you can only ever add to, or remove from, one end &mdash; the top.</p>
+    <p class="note">A pile where you can only ever touch the top: add on top, take from the top. That single rule is the whole data structure.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <!-- LEVEL 1 -->
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>A stack holds items in the order they arrived and only exposes one end for both adding and
-      removing: the <b>top</b>. That single rule — <b>Last In, First Out (LIFO)</b> — is the entire
-      definition. There's no reaching into the middle, and no peeking at the bottom.</p>
-      <p>Because every operation only ever touches the top element, a stack never needs to shift or search
-      anything: push and pop are both O(1), whether the stack holds 3 items or 3 million. Compare that to
-      inserting at the <em>front</em> of an array, which is O(n) because everything after it has to shift
-      over — a stack sidesteps that entirely by only ever touching one fixed end.</p>
+      <p>Think of a stack of plates. You add a clean plate on <b>top</b>, and when you need one you take it from
+      the <b>top</b>. You never pull a plate from the middle of the pile, and you never slide one in at the
+      bottom — the top is the only end you touch. A <b>stack</b> the data structure is exactly this: a
+      collection where every add and every remove happens at one end.</p>
 
-      <p><b>Implementation:</b> the visualizer below uses the simplest possible version — a fixed-size
-      array plus a single <code>top</code> index that points at the last occupied slot (<code>-1</code>
-      when empty). Push writes to <code>items[++top]</code>; pop reads <code>items[top--]</code>. No
-      pointers, no allocation, just one integer doing all the work. The trade-off is a hard capacity limit,
-      fixed when the array is created. A <a href="../linked-list/linked-list.html">linked-list</a>-backed stack removes
-      that limit — push and pop become "add/remove the head node" instead — at the cost of a pointer's
-      worth of memory per item and a heap allocation on every push.</p>
+      <p>That one rule has a name: <b>Last In, First Out</b>, or <b>LIFO</b>. The last plate you put on is the
+      first one you take off. Whatever went in most recently comes out first; the oldest thing sits at the
+      bottom, waiting until everything above it is gone.</p>
 
-      <p><b>When it breaks:</b> push past capacity is a <b>stack overflow</b> — the array-backed version
-      here simply refuses once full, but the term comes from the *real* call stack: every function call
-      your program makes pushes a frame onto it, and recursion with no base case overflows it for real,
-      crashing the program. Pop (or peek) on an empty stack is the mirror case, <b>underflow</b> — reading
-      a slot that was never written. Both are one-line guard checks (see the code panel below), and both
-      are exactly the kind of bug that only shows up once, at the edge, in production.</p>
+      <div class="callout">
+        <b>Three words for three moves.</b> <b>Push</b> = put a new value on top. <b>Pop</b> = take the top
+        value off (and return it). <b>Peek</b> (or "top") = look at the top value without removing it. That's
+        the entire vocabulary of a stack.
+      </div>
+    </div>
+  </section>
 
+  <!-- LEVEL 2 -->
+  <section class="panel">
+    <div class="panel-head"><h2>How it actually works</h2><span class="sub">an array + one index</span></div>
+    <div class="panel-body notes">
+      <p>The simplest way to build a stack is the one in the visualizer: take a plain
+      <a href="../../foundations/arrays-memory/arrays-memory.html">array</a> of a fixed size, and keep a single
+      integer called <code>top</code> that remembers the index of the highest occupied slot. That one number is
+      the whole bookkeeping.</p>
+
+      <ul class="steps">
+        <li>When the stack is <b>empty</b>, <code>top</code> is <code>-1</code> — a made-up "points at nothing"
+        value, since index 0 is already a real slot.</li>
+        <li>To <b>push</b>, move <code>top</code> up by one and write the value there:
+        <code>items[++top] = val</code>. (<code>++top</code> means "add 1 to top first, then use it.")</li>
+        <li>To <b>pop</b>, read the value at <code>top</code> and then move <code>top</code> down by one:
+        <code>items[top--]</code>. The value is still sitting in the array, but <code>top</code> no longer
+        counts it, so it's logically gone.</li>
+      </ul>
+
+      <p>Notice what <em>doesn't</em> happen: nothing ever shifts. Push and pop change one index and touch one
+      slot, whether the stack holds 3 items or 3 million. That's why both are <b>O(1)</b> — constant time,
+      independent of size. (New to that notation? See <a href="../../foundations/big-o/big-o.html">Big-O</a>.)</p>
+
+      <p>Watch <code>top</code> move as values are pushed and popped:</p>
+
+      <div class="scroller"><div id="demoStage"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:12px">&nbsp;</p>
+      <div class="code-panel" id="demoCode" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- LEVEL 3 -->
+  <section class="panel">
+    <div class="panel-head"><h2>Reading the C</h2><span class="sub">push / pop, line by line</span></div>
+    <div class="panel-body notes">
+      <p>Here is <code>push</code> in C. Don't worry if C is new — every line is spelled out below it.</p>
+      <pre style="font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.7;background:#F4F7EE;border:1px solid var(--rule);border-radius:6px;padding:12px 14px;overflow-x:auto">void push(Stack *s, int val) {
+  if (s->top == MAX - 1) return;   // full
+  s->items[++s->top] = val;
+}</pre>
+      <ul class="steps">
+        <li><code>Stack *s</code> is a pointer to the stack (its array and its <code>top</code>). The
+        <code>-&gt;</code> arrow means "reach inside the thing this points at" — so <code>s-&gt;top</code> is
+        that stack's top index. (The <a href="../../foundations/pointers/pointers.html">Pointers</a> page
+        explains the arrow.)</li>
+        <li><code>if (s-&gt;top == MAX - 1) return;</code> — if <code>top</code> is already at the last slot,
+        there's no room, so we stop. Pushing anyway would be a <b>stack overflow</b>.</li>
+        <li><code>s-&gt;items[++s-&gt;top] = val;</code> — bump <code>top</code> up one, then store
+        <code>val</code> in that slot. One line does both the move and the write.</li>
+      </ul>
+      <p><code>pop</code> is the mirror image: guard against an empty stack (<code>top == -1</code>), then
+      <code>return s-&gt;items[s-&gt;top--]</code> — read the top value, then drop <code>top</code> by one.</p>
+    </div>
+  </section>
+
+  <!-- LEVEL 4 -->
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">limits, trade-offs, and where stacks show up</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
         <tr><td>Push</td><td>Add a value on top</td><td><b>O(1)</b></td></tr>
         <tr><td>Pop</td><td>Remove and return the top value</td><td><b>O(1)</b></td></tr>
         <tr><td>Peek / Top</td><td>Look at the top value without removing it</td><td><b>O(1)</b></td></tr>
-        <tr><td>Search</td><td>Find a value anywhere in the stack</td><td>O(n)</td></tr>
+        <tr><td>Search</td><td>Find a value somewhere inside</td><td>O(n)</td></tr>
       </table>
 
-      <p>Used constantly under the hood: every function call your program makes is pushed onto a <b>call
-      stack</b>, and returning from it is a pop — that's the mechanism behind recursion itself. Undo/redo
-      history, "back" buttons, matching brackets/parentheses, and depth-first search all lean on the same
-      LIFO idea: handle the most recent thing first, and let finished work fall away in the reverse order
-      it arrived.</p>
-    </div>
-  </section>
+      <p><b>The two edge cases.</b> Pushing onto a full array-backed stack is an <b>overflow</b>; popping (or
+      peeking) an empty one is an <b>underflow</b>. Both are one-line guard checks — and both are classic bugs
+      that only bite at the boundary, in production. The word "overflow" comes from the <em>real</em> call
+      stack: every function your program calls pushes a frame onto it, and
+      <a href="../../foundations/recursion/recursion.html">recursion</a> with no stopping condition pushes
+      forever until it overflows and crashes.</p>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; push, pop, push, pop</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row vert" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
+      <p><b>Array vs. linked backing.</b> The array version here is simple and fast but has a fixed capacity.
+      A <a href="../linked-list/linked-list.html">linked-list</a>-backed stack removes that limit — push/pop
+      become "add/remove the head node" — at the cost of a pointer per item and an allocation on every push.
+      Same LIFO behaviour either way; only the storage differs.</p>
 
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; push() / pop()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Where you'll meet stacks.</b> The function call stack (and therefore recursion itself), undo/redo
+      history, the browser's Back button, matching brackets and parentheses in a compiler, and depth-first
+      search all run on the same LIFO idea: deal with the most recent thing first, and let finished work fall
+      away in the reverse of the order it arrived.</p>
     </div>
   </section>
 
@@ -88,77 +149,68 @@
   </section>
 
   <footer>
-    Next: try it yourself in the visualizer — push a few values, pop them back off, and watch which one
-    comes back first.
+    Next: open the visualizer, push a few values and pop them back off, and watch which one comes back first —
+    it's always the one you added last.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var INIT_CODE=[
-    "void initStack(Stack *s) {",
-    "  s->top = -1;   // -1 means empty",
-    "}"
-  ];
+  var CAP=5;
   var PUSH_CODE=[
     "void push(Stack *s, int val) {",
-    "  if (s->top == MAX - 1) return;   // full",
+    "  if (s->top == MAX - 1) return;",
     "  s->items[++s->top] = val;",
-    "}"
-  ];
+    "}"];
   var POP_CODE=[
     "int pop(Stack *s) {",
-    "  if (s->top == -1) return -1;   // empty",
+    "  if (s->top == -1) return -1;",
     "  return s->items[s->top--];",
-    "}"
-  ];
+    "}"];
 
-  function cellsFor(items, hi, hiRole){
-    return items.map(function(v,i){
-      return {
-        val:v,
-        role: i===hi ? hiRole : (i===items.length-1 ? "right" : ""),
-        ptr: i===items.length-1 ? "TOP" : ""
-      };
-    });
+  function slotsFor(list, active){
+    var arr=[];
+    for(var i=0;i<CAP;i++){
+      var occ=i<list.length, s={ val: occ?list[i]:null };
+      if(active===i) s.cls="active";
+      if(occ && i===list.length-1) s.ptrs=["TOP"];
+      arr.push(s);
+    }
+    return arr;
   }
-  function frame(items, hi, hiRole, narr, code, codeLine){
-    return {struct:{cells:cellsFor(items,hi,hiRole)}, narr:narr, code:code, codeLine:codeLine};
+  function F(list, active, codeLines, line, narr){
+    return { slots:slotsFor(list,active), dir:"v", note:"top = "+(list.length-1),
+             codeLines:codeLines, code:line, narr:narr };
   }
 
   function scriptFrames(){
-    var items=[], frames=[];
+    var list=[], frames=[];
     function push(v){
-      frames.push(frame(items, undefined, "", "Push "+v+" onto the top.", PUSH_CODE, 1));
-      items.push(v);
-      frames.push(frame(items, items.length-1, "left head landed", v+" is on top.", PUSH_CODE, 2));
+      frames.push(F(list, -1, PUSH_CODE, [0,1], "Push "+v+": there's room, so go ahead."));
+      list=list.concat([v]);
+      frames.push(F(list, list.length-1, PUSH_CODE, 2, "++top moves the index up; "+v+" is written on top."));
     }
     function pop(){
-      var top=items[items.length-1];
-      frames.push(frame(items, items.length-1, "left head", "Pop the top item, "+top+".", POP_CODE, 1));
-      items.pop();
-      frames.push(frame(items, undefined, "", top+" removed."+(items.length?" New top is "+items[items.length-1]+".":" Stack is empty."), POP_CODE, 2));
+      var v=list[list.length-1];
+      frames.push(F(list, list.length-1, POP_CODE, 1, "Pop: the top is "+v+"."));
+      list=list.slice(0,-1);
+      frames.push(F(list, -1, POP_CODE, 2, "Return "+v+", then top-- steps the index down."));
     }
-    frames.push(frame(items, undefined, "", "Create the stack: an empty array plus one index, top, starting at -1.", INIT_CODE, 1));
-    push(4); push(7); push(2);
-    pop();
-    push(9);
-    pop(); pop(); pop();
+    push(7); push(3); push(9);
+    pop(); pop();
+    push(4);
     return frames;
   }
 
-  VizDS.loopDemo({
+  ArrAnim.play({
+    host: document.getElementById("demoStage"),
+    narrEl: document.getElementById("demoNarr"),
+    codeHost: document.getElementById("demoCode"),
     frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
+    ms: 1700
   });
 })();
 </script>

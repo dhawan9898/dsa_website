@@ -18,176 +18,163 @@
       <p class="eyebrow">Last In &middot; First Out</p>
       <h1>Stack&nbsp;Visualizer</h1>
     </div>
-    <p class="note">Push adds to the top, pop removes from the top &mdash; nothing else is ever touched.</p>
+    <p class="note">A stack is just an array plus one index called <code>top</code>. Push writes at <code>++top</code>; pop reads at <code>top--</code>. Watch that index move.</p>
   </div>
 </header>
 
 <div class="wrap">
 
   <section class="panel">
-    <div class="panel-head"><h2>Operate on the stack</h2><span class="sub">top is on the right</span></div>
+    <div class="panel-head"><h2>Choose an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
     <div class="panel-body">
       <div class="row">
-        <label class="fld narrow">
-          <span>Value</span>
-          <input type="number" id="val" value="5">
-        </label>
-        <button id="btnPush" class="primary">Push</button>
-        <button id="btnPop">Pop</button>
-        <button id="btnPeek">Peek</button>
+        <label class="fld narrow"><span>Value</span><input type="number" id="valF" value="5"></label>
+        <button id="opPush" class="primary">Push</button>
+        <button id="opPop">Pop</button>
+        <button id="opPeek">Peek</button>
+        <button id="opReset">Reset</button>
       </div>
-      <p class="hint" id="hint">Push a value, then pop it back off — the last thing in is always the first thing out.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint">Push adds above the current top; pop removes the top. The last thing in is the first thing out.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The stack</h2><span class="sub">vertical, bottom to top</span></div>
+    <div class="panel-head"><h2>The stack</h2><span class="sub">index 0 at the bottom, top grows upward</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row vert" id="stackHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch right"></i> current top</span>
-        <span class="key"><i class="swatch left"></i> item being pushed / popped / peeked</span>
+      <div class="arr-stage"><div id="stackStage"></div></div>
+      <div class="arr-ctrls" id="playbar">
+        <button class="arr-cbtn" id="aBack">◀ Back</button>
+        <button class="arr-cbtn" id="aPlay">Play</button>
+        <button class="arr-cbtn" id="aStep">Step ▶</button>
+        <span class="arr-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="narr" id="narr" style="margin-top:12px">Loading…</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch right"></i> the item being pushed / popped / peeked</span>
+        <span class="key"><i class="swatch" style="border-color:var(--rule);border-style:dashed"></i> an empty slot (no value yet)</span>
+        <span class="key">TOP marks the index holding the top value</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; push() / pop() / peek()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the operation you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Every operation only ever touches the top element, which is what makes push and pop O(1) &mdash; no
-    shifting, no searching. Function call stacks, undo history, and "back" buttons in a browser are all
-    real-world stacks.
+    Every operation only ever touches the <code>top</code> index — never the middle — which is what makes push
+    and pop O(1) no matter how tall the stack is. Push past the last slot is a stack <b>overflow</b>; pop when
+    <code>top == -1</code> is an <b>underflow</b>. Function call stacks, undo history, and browser "back"
+    buttons are all real-world stacks.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-  var MAX=12;
+  var CAP=6;
+  var items=[]; function seed(){ items=[7,3,9]; } seed();
 
   var PUSH_CODE=[
     "void push(Stack *s, int val) {",
-    "  if (s->top == MAX - 1) return;   // full",
-    "  s->items[++s->top] = val;",
-    "}"
-  ];
+    "  if (s->top == MAX - 1) return;   // full → overflow",
+    "  s->items[++s->top] = val;        // move top up, write",
+    "}"];
   var POP_CODE=[
     "int pop(Stack *s) {",
-    "  if (s->top == -1) return -1;   // empty",
-    "  return s->items[s->top--];",
-    "}"
-  ];
-  var INIT_CODE=[
-    "void initStack(Stack *s) {",
-    "  s->top = -1;   // -1 means empty",
-    "}"
-  ];
+    "  if (s->top == -1) return -1;     // empty → underflow",
+    "  return s->items[s->top--];       // read, then top down",
+    "}"];
   var PEEK_CODE=[
     "int peek(Stack *s) {",
-    "  return s->items[s->top];",
-    "}"
-  ];
+    "  if (s->top == -1) return -1;     // empty",
+    "  return s->items[s->top];         // look, don't remove",
+    "}"];
 
-  function cellsFor(items, hi, hiRole){
-    return items.map(function(v,i){
-      return {
-        val:v,
-        role: i===hi ? hiRole : (i===items.length-1 ? "right" : ""),
-        ptr: i===items.length-1 ? "TOP" : ""
-      };
-    });
+  function slotsFor(list, o){
+    o=o||{}; var arr=[];
+    for(var i=0;i<CAP;i++){
+      var occ=i<list.length, s={ val: occ?list[i]:null };
+      if(o.active===i) s.cls=o.activeCls||"active";
+      var p=[];
+      if(occ && i===list.length-1) p.push("TOP");
+      if(p.length) s.ptrs=p;
+      arr.push(s);
+    }
+    return arr;
   }
-  function frame(items, hi, hiRole, phase, narr, ops, code, codeLine){
-    return {struct:{cells:cellsFor(items,hi,hiRole)}, phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
+  function topNote(list){ return "top = "+(list.length-1); }
+  function F(list, o, codeLines, line, narr){
+    return { slots:slotsFor(list,o), dir:"v", note:topNote(list), codeLines:codeLines, code:line, narr:narr };
   }
 
-  function opPush(state, val){
-    if(state.items.length>=MAX) return {error:"Stack is full — only "+MAX+" items fit in this view."};
-    var items=state.items.slice(), oc=state.opsCount||0, frames=[];
-    frames.push(frame(items, undefined, "", "push-start",
-      "Push "+val+": a stack only allows inserting at the top, so "+val+" goes above whatever is already there.", oc, PUSH_CODE, 1));
-    items.push(val); oc++;
-    frames.push(frame(items, items.length-1, "left head landed", "pushed",
-      val+" is now on top, at position "+(items.length-1)+".", oc, PUSH_CODE, 2));
-    return {frames:frames, state:{items:items, opsCount:oc}};
+  function opPush(val){
+    var before=items.slice();
+    if(before.length>=CAP) return {error:"Stack is full — top is already at MAX-1 ("+(CAP-1)+"). Pushing now is a stack overflow."};
+    var after=before.concat([val]), frames=[];
+    frames.push(F(before, {}, PUSH_CODE, [0,1],
+      "Push "+val+". First: is the stack full? top is "+(before.length-1)+", MAX-1 is "+(CAP-1)+" — there's room."));
+    frames.push(F(after, {active:after.length-1, activeCls:"active"}, PUSH_CODE, 2,
+      "++top moves the index up to "+(after.length-1)+", then "+val+" is written into items[top]."));
+    frames.push(F(after, {}, PUSH_CODE, 3, val+" is on top now. No shifting, no searching — push is O(1)."));
+    items=after; return {frames:frames};
   }
-  function opPop(state){
-    if(!state.items.length) return {error:"The stack is empty — nothing to pop."};
-    var items=state.items.slice(), oc=(state.opsCount||0)+1, frames=[];
+  function opPop(){
+    if(!items.length) return {error:"The stack is empty (top == -1) — nothing to pop. This would be a stack underflow."};
+    var before=items.slice(), top=before[before.length-1], after=before.slice(0,-1), frames=[];
+    frames.push(F(before, {active:before.length-1, activeCls:"active"}, POP_CODE, 1,
+      "Pop. Is the stack empty (top == -1)? No — the top is "+top+" at index "+(before.length-1)+"."));
+    frames.push(F(after, {}, POP_CODE, 2,
+      "Return "+top+", then top-- moves the index down to "+(after.length-1)+". That slot is free again."));
+    frames.push(F(after, {}, POP_CODE, 3, after.length?("New top is "+after[after.length-1]+"."):"The stack is empty again (top == -1)."));
+    items=after; return {frames:frames};
+  }
+  function opPeek(){
+    if(!items.length) return {error:"The stack is empty — nothing to peek at."};
     var top=items[items.length-1];
-    frames.push(frame(items, items.length-1, "left head", "pop-start",
-      "Pop: remove the top item, "+top+", at position "+(items.length-1)+". A stack can only ever remove from the top.", oc, POP_CODE, 1));
-    items.pop();
-    frames.push(frame(items, undefined, "", "popped",
-      top+" removed. "+(items.length ? ("New top is "+items[items.length-1]+".") : "The stack is now empty."), oc, POP_CODE, 2));
-    return {frames:frames, state:{items:items, opsCount:oc}};
-  }
-  function opPeek(state){
-    if(!state.items.length) return {error:"The stack is empty — nothing to peek at."};
-    var items=state.items.slice(), oc=(state.opsCount||0)+1;
-    var top=items[items.length-1];
-    return {frames:[frame(items, items.length-1, "left head", "peek",
-      "Peek: look at the top item without removing it — it's "+top+".", oc, PEEK_CODE, 1)], state:{items:items, opsCount:oc}};
+    return {frames:[ F(items, {active:items.length-1, activeCls:"found"}, PEEK_CODE, 2,
+      "Peek returns items[top] = "+top+" without changing top. Nothing is removed — the value stays put.") ]};
   }
 
-  function init(){
-    var items=[], oc=0, frames=[];
-    frames.push(frame(items, undefined, "", "start",
-      "Create the stack: an empty array plus one index, top, starting at -1.", oc, INIT_CODE, 1));
-    [7,3,9].forEach(function(v){
-      frames.push(frame(items, undefined, "", "push-start",
-        "Push "+v+": a stack only allows inserting at the top, so "+v+" goes above whatever is already there.", oc, PUSH_CODE, 1));
-      items=items.concat([v]); oc++;
-      frames.push(frame(items, items.length-1, "left head landed", "pushed",
-        v+" is now on top, at position "+(items.length-1)+".", oc, PUSH_CODE, 2));
-    });
-    return { state:{items:items, opsCount:oc}, frames:frames };
+  /* ---- page-local player (non-looping, step controls) ---- */
+  var stage=document.getElementById("stackStage"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){
+    var f=P.frames[P.i]; if(!f) return;
+    ArrAnim.render(stage, f);
+    narrEl.textContent=f.narr||"";
+    ArrAnim.renderCode(codeHost, f.codeLines, f.code);
+    countEl.textContent=(P.i+1)+" / "+P.frames.length;
   }
-  function renderExtra(frame){
-    DSRender.slots(document.getElementById("stackHost"), frame.struct.cells);
-  }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1500);
+    playBtn.textContent="Pause"; }
+  function loadFrames(frames){ P.frames=frames; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
 
-  VizDS.init({
-    init: init,
-    ops: {
-      push: { btn:"btnPush", enterOn:"val", run: function(state){
-        var v=Number(document.getElementById("val").value);
-        if(!isFinite(v)) return {error:"Enter a number to push."};
-        return opPush(state, v);
-      }},
-      pop: { btn:"btnPop", run: function(state){ return opPop(state); } },
-      peek: { btn:"btnPeek", run: function(state){ return opPeek(state); } }
-    },
-    renderExtra: renderExtra,
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function numV(){ var v=Number(document.getElementById("valF").value); return isFinite(v)?v:null; }
+  function run(r){ if(r.error){ stopP(); hint(r.error); return; } hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play."); loadFrames(r.frames); }
+
+  document.getElementById("opPush").onclick=function(){ var v=numV(); if(v==null) return hint("Enter a value to push."); run(opPush(v)); };
+  document.getElementById("opPop").onclick=function(){ run(opPop()); };
+  document.getElementById("opPeek").onclick=function(){ run(opPeek()); };
+  document.getElementById("opReset").onclick=function(){ stopP(); seed(); P.frames=[F(items,{},null,null,"Fresh stack: 7, 3, 9 with 9 on top. Push, pop, or peek.")]; P.i=0; drawP(); hint("Stack reset."); };
+
+  P.frames=[F(items,{},null,null,"Current stack: 7, 3, 9 — 9 is on top. Push a value, or pop the top.")];
+  P.i=0; drawP();
 })();
 </script>
 </body>
