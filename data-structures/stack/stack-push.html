@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stack · Push</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="stack.html">&larr; Stack overview</a>
+      <p class="eyebrow">Add A Value On Top</p>
+      <h1>Push</h1>
+    </div>
+    <p class="note">The fastest operation a stack has: no walking, no shifting — bump one index and write one slot.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Stack pages">
+    <a href="stack.html">Overview</a>
+    <a class="here" href="stack-push.html">Push</a>
+    <a href="stack-pop.html">Pop &amp; Peek</a>
+    <a href="stack-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>What push has to do</h2></div>
+    <div class="panel-body notes">
+      <p>Pushing means putting a new value on top of the stack. Because a stack only ever grows at one end, the
+      new value always lands just above the current top — there's nowhere else it could go. The stack is an
+      <a href="../../foundations/arrays-memory/arrays-memory.html">array</a> plus an index called
+      <code>top</code> that marks the highest filled slot, so "on top" means "one slot past <code>top</code>."</p>
+
+      <div class="callout">
+        <b>The whole operation is two moves.</b> Move <code>top</code> up by one, then write the value into that
+        slot. There's no searching and nothing to shift, so push takes the same tiny amount of time whether the
+        stack holds 1 item or a million — that's what <b>O(1)</b> means.
+      </div>
+
+      <ol class="steps">
+        <li><b>Check for room.</b> If <code>top</code> is already at the last slot (<code>MAX - 1</code>), the
+        array is full — pushing would run off the end. Stop here; that overflow is covered below.</li>
+        <li><b>Move top up.</b> <code>++top</code> increases the index by one so it points at the next empty
+        slot.</li>
+        <li><b>Write the value.</b> Store the new value at <code>items[top]</code>. Done — it's the new top.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it, line by line</h2><span class="sub">pushing 9 onto [7, 3]</span></div>
+    <div class="panel-body">
+      <div class="demo-wrap">
+        <div class="scroller"><div id="demoStage"></div></div>
+        <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="demoCode" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Reading the C</h2></div>
+    <div class="panel-body notes">
+      <ul class="steps">
+        <li><code>if (s-&gt;top == MAX - 1) return;</code> — the full check. <code>s-&gt;top</code> reads the
+        <code>top</code> field of the stack this pointer refers to (the <code>-&gt;</code> arrow is explained on
+        the <a href="../../foundations/pointers/pointers.html">Pointers</a> page). If there's no room, bail out.</li>
+        <li><code>s-&gt;items[++s-&gt;top] = val;</code> — <code>++s-&gt;top</code> bumps the index up
+        <em>first</em>, and the result is used to pick the slot, so the value lands in the newly opened slot.
+        One line does the move and the write together.</li>
+      </ul>
+      <div class="callout">
+        <b>When it breaks: stack overflow.</b> An array-backed stack has a fixed capacity. Push past the last
+        slot and, without the guard, you'd write outside the array — corrupting memory. That guard is why the
+        push above refuses once the stack is full. The term comes from the real call stack overflowing when
+        recursion never stops.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="stack-visualizer.html">Try pushing in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: <a href="stack-pop.html">Pop &amp; Peek</a> — taking the top value back off, and looking without
+    removing.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  var CAP=5;
+  var PUSH_CODE=[
+    "void push(Stack *s, int val) {",
+    "  if (s->top == MAX - 1) return;   // full → overflow",
+    "  s->items[++s->top] = val;        // move top up, write",
+    "}"];
+  function slotsFor(list, active){
+    var arr=[];
+    for(var i=0;i<CAP;i++){
+      var occ=i<list.length, s={ val: occ?list[i]:null };
+      if(active===i) s.cls="active";
+      if(occ && i===list.length-1) s.ptrs=["TOP"];
+      arr.push(s);
+    }
+    return arr;
+  }
+  function F(list, active, line, narr){ return { slots:slotsFor(list,active), dir:"v", note:"top = "+(list.length-1), codeLines:PUSH_CODE, code:line, narr:narr }; }
+  ArrAnim.play({ host:document.getElementById("demoStage"), narrEl:document.getElementById("demoNarr"),
+    codeHost:document.getElementById("demoCode"), ms:1900, frames:[
+      F([7,3], -1, [0,1], "Push 9. Is top (1) already at MAX-1? No — there's room, so continue."),
+      F([7,3,9], 2, 2, "++top moves the index up to 2, then 9 is written into items[2]."),
+      F([7,3,9], -1, 3, "9 is the new top. Two moves, no shifting — push is O(1).")
+    ]});
+})();
+</script>
+</body>
+</html>
