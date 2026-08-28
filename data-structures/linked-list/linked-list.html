@@ -8,6 +8,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:4px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;
+    border-radius:8px;text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;
+    font-size:21px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
@@ -27,26 +38,30 @@
   <section class="panel">
     <div class="panel-head"><h2>Notes</h2></div>
     <div class="panel-body notes">
-      <p>An array stores its elements in one contiguous block of memory, so inserting in the middle means
-      shifting everything after it. A linked list gives up that contiguity: every node is its own small
-      object, wherever it happens to live in memory, holding a <b>value</b> and a <b>pointer to the next
-      node</b>. Insertion and deletion become a matter of rewiring a couple of pointers — no shifting at
-      all — but you lose O(1) random access: to reach node k you must walk k pointers from the head, one
-      at a time.</p>
+      <p><b>Start with a picture.</b> Imagine a scavenger hunt. You're handed one clue; it doesn't hold the
+      prize, it holds the location of the next clue. That clue points to another, and so on, until a clue says
+      "this is the last one." A linked list is exactly that: a chain of <b>nodes</b>, where each node holds a
+      <b>value</b> plus a <b>pointer</b> — the address of the next node. The very first clue is the
+      <b>head</b>. The last node points at <code>NULL</code>, the "there is nothing after me" marker.</p>
 
-      <p><b>Implementation:</b> every node is a tiny two-field struct — a value and a <code>next</code>
-      pointer to the following node (<code>NULL</code> for the last one). The list itself is just a single
-      <code>head</code> pointer into this chain; there's no fixed size and no capacity to run out of.
-      Creating a node means allocating it on the heap (see the code panel below) — unlike the array-backed
-      <a href="../stack/stack.html">Stack</a>, which reserves all its memory up front, a linked list grows one
-      allocation at a time, exactly when it needs to.</p>
+      <p><b>Why not just use an array?</b> An <a href="../../foundations/arrays-memory/arrays-memory.html">array</a>
+      keeps its items shoulder to shoulder in one solid block of memory. That makes jumping to item #500
+      instant — but inserting into the middle means physically shoving everything after it over to make room,
+      which gets slower the bigger the array is. A linked list makes the opposite trade: its nodes are
+      scattered anywhere in memory, connected only by those "next" pointers, so inserting or deleting is just
+      re-clipping a pointer or two — no shifting, ever. The price you pay is that reaching node #500 means
+      following 500 pointers from the head, one hop at a time; there's no jumping. (If "pointer" is a fuzzy
+      word, the <a href="../../foundations/pointers/pointers.html">Pointers</a> page explains it from scratch.)</p>
 
-      <p><b>When it breaks:</b> mis-ordering the pointer rewiring is the classic bug — set <code>head</code>
-      to the new node before saving its <code>next</code> link to the old head, and you silently orphan the
-      rest of the list (nothing points to it anymore, but it's still sitting in memory — a leak). Delete a
-      node without freeing it and you leak that memory too; keep using a pointer after freeing it and you
-      get a dangling-pointer bug, reading or writing memory that's no longer yours. None of these crash
-      predictably — they're the kind of bug that only shows up as corruption somewhere else, later.</p>
+      <p><b>What a node actually is.</b> In C, each node is a tiny two-field bundle: a value and a
+      <code>next</code> pointer to the following node (<code>NULL</code> for the last one). The list itself is
+      nothing but a single <code>head</code> pointer into this chain. There's no fixed size and no capacity to
+      run out of — unlike the array-backed <a href="../stack/stack.html">Stack</a>, which reserves all its
+      memory up front, a linked list grows one node at a time, exactly when it needs to.</p>
+
+      <p>Every operation you can do to a linked list is built from one humble move — <em>walking</em> the chain
+      from the head — and the four operations below are just "walk to the right spot, then rewire." Each has
+      its own page that builds the idea from zero, with a step-by-step animation and the C code line by line.</p>
 
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
@@ -60,6 +75,32 @@
       <p>Used wherever insertions and deletions dominate over random lookups: implementing stacks and
       queues, adjacency lists for graphs, and the underlying node chain inside a hash table's chaining
       buckets (see the Hash Table page).</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn each operation in depth</h2><span class="sub">detailed walkthroughs — the thought process, not just the code</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="linked-list-insertion.html">
+          <span class="num">01</span>
+          <h3>Insertion</h3>
+          <p>Add a node at the start, the end, or any index. Why the order of rewiring matters, and why the head is instant but the tail is not.</p>
+          <span class="go">Open insertion &rarr;</span>
+        </a>
+        <a class="dive-card" href="linked-list-deletion.html">
+          <span class="num">02</span>
+          <h3>Deletion</h3>
+          <p>Remove by position or by value. The "route around, then free" dance, the predecessor trick, and the memory bugs to avoid.</p>
+          <span class="go">Open deletion &rarr;</span>
+        </a>
+        <a class="dive-card" href="linked-list-traversal.html">
+          <span class="num">03</span>
+          <h3>Traversal &amp; Update</h3>
+          <p>The three-line walk that powers everything else — plus searching, changing a value in place, and counting the nodes.</p>
+          <span class="go">Open traversal &rarr;</span>
+        </a>
+      </div>
     </div>
   </section>
 

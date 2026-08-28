@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linked List · Traversal &amp; Update</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);
+    background:#fff;transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .demo-wrap .scroller{margin-bottom:10px}
+  .demo-tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--stamp);margin:0 0 12px}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;
+    display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);
+    padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="linked-list.html">&larr; Linked List overview</a>
+      <p class="eyebrow">The Walk Behind Everything</p>
+      <h1>Traversal &amp; Update</h1>
+    </div>
+    <p class="note">Three lines of code — start at the head, act, step forward — are the engine under every insert, delete, search, and update you've seen.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Linked list operations">
+    <a href="linked-list.html">Overview</a>
+    <a href="linked-list-insertion.html">Insertion</a>
+    <a href="linked-list-deletion.html">Deletion</a>
+    <a class="here" href="linked-list-traversal.html">Traversal &amp; Update</a>
+    <a href="linked-list-visualizer.html">Visualizer</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The walk is the whole language</h2></div>
+    <div class="panel-body notes">
+      <p>An array lets you jump straight to element 500 — it computes where that slot sits in memory and lands
+      there instantly. A linked list can't. Its nodes are scattered wherever the computer found room, and the
+      <em>only</em> thread connecting them is the chain of <code>next</code> pointers. So to reach anything past
+      the head, you have no choice but to walk: hop from node to node, one <code>next</code> at a time.</p>
+
+      <p>That walk has a shape you'll write hundreds of times. Learn it once and every other operation becomes
+      obvious, because insertion, deletion, and search are all just "this walk, but stop somewhere and do
+      something":</p>
+
+      <div class="callout">
+        <b>The traversal pattern.</b> Put a temporary pointer <code>cur</code> on the head. While
+        <code>cur</code> isn't <code>NULL</code>, do whatever you came to do, then advance with
+        <code>cur = cur-&gt;next</code>. The loop ends the moment <code>cur</code> becomes <code>NULL</code> —
+        that's the list telling you "there's nothing after this; you've reached the end."
+      </div>
+
+      <p>Two things make this safe. First, we walk a <em>copy</em> of the head (<code>cur</code>), never HEAD
+      itself — move HEAD by accident and you'd lose the whole list. Second, we test for <code>NULL</code>
+      <em>before</em> touching a node, so we never read off the end of the chain.</p>
+    </div>
+  </section>
+
+  <!-- ============ TRAVERSE ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>1 · Traverse (visit every node)</h2><span class="sub">O(n) — the pure walk</span></div>
+    <div class="panel-body notes">
+      <p>Traversal is the pattern with nothing extra bolted on: visit each node in order, front to back. Here
+      "visit" just means read and print the value, but it could be anything — sum them, find the biggest,
+      draw them on screen.</p>
+
+      <ol class="steps">
+        <li>Point <code>cur</code> at the head.</li>
+        <li>Is <code>cur</code> NULL? If yes, you're done — the list is fully walked. If no, carry on.</li>
+        <li>Do the work on <code>cur</code> (here: print its value).</li>
+        <li>Advance: <code>cur = cur-&gt;next</code>. Go back to step 2.</li>
+      </ol>
+
+      <p>You touch every node exactly once, so traversal is <b>O(n)</b> — and it's the reason so many linked-list
+      operations are O(n): reaching a spot <em>is</em> a traversal.</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — walking [4, 8, 2] from head to NULL</p>
+        <div class="scroller"><div id="travList"></div></div>
+        <p class="narr" id="travNarr">&nbsp;</p>
+        <div class="code-panel" id="travCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SEARCH ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>2 · Search (find a value)</h2><span class="sub">O(n) — walk, but stop early on a match</span></div>
+    <div class="panel-body notes">
+      <p>Search is traversal with a question at each stop: <em>is this the value I want?</em> If yes, you're
+      done immediately — no need to walk the rest. If you fall off the end (<code>cur</code> hits NULL) without
+      ever matching, the value simply isn't in the list.</p>
+
+      <ol class="steps">
+        <li>Walk <code>cur</code> from the head as usual.</li>
+        <li>At each node, compare its value to your target. Match? Return this node right away.</li>
+        <li>Reached NULL with no match? Return "not found."</li>
+      </ol>
+
+      <p>Best case, it's the head and you stop after one look. Worst case, it's the last node or absent, and you
+      scan all n. On average you check about half the list — still <b>O(n)</b>. A linked list has no shortcut
+      like binary search, because you can't jump to the middle to begin with.</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — searching [4, 8, 2] for 8</p>
+        <div class="scroller"><div id="searchList"></div></div>
+        <p class="narr" id="searchNarr">&nbsp;</p>
+        <div class="code-panel" id="searchCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ UPDATE AT INDEX ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>3 · Update (change a node's value)</h2><span class="sub">O(n) to reach it, O(1) to change it</span></div>
+    <div class="panel-body notes">
+      <p>Updating means changing the value <em>inside</em> a node while leaving the node — and every pointer
+      around it — exactly where it is. This is the one operation where you walk to the target and stop
+      <em>on</em> it, not before it, because it's the target's own field you're overwriting.</p>
+
+      <ol class="steps">
+        <li>To update index <code>k</code>, walk <code>cur</code> forward exactly <code>k</code> steps. That
+        lands you on the node at index <code>k</code> itself.</li>
+        <li>Overwrite its value: <code>cur-&gt;val = newValue</code>. No pointers change; no memory is
+        allocated or freed.</li>
+      </ol>
+
+      <p>Reaching index <code>k</code> is a walk, so <b>O(n)</b>; the overwrite is a single assignment,
+      <b>O(1)</b>. (To update <em>by value</em> instead of by index, first search — section 2 — then overwrite
+      the node it returns. Same walk, same cost.)</p>
+
+      <div class="demo-wrap">
+        <p class="demo-tag">Watch it — updating index 2 of [4, 8, 2] to 5</p>
+        <div class="scroller"><div id="updList"></div></div>
+        <p class="narr" id="updNarr">&nbsp;</p>
+        <div class="code-panel" id="updCode"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COUNTING ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>4 · Bonus: counting the nodes</h2><span class="sub">the same walk, tallying as it goes</span></div>
+    <div class="panel-body notes">
+      <p>Want the length of the list? A plain linked list doesn't store it — so you traverse and count. It's
+      the exact same pattern with a tally added, which is the whole point of this page: once the walk is second
+      nature, new operations are a one-line change to it.</p>
+      <div class="code-panel" id="lenCode" style="margin-top:6px"></div>
+      <p style="margin-top:14px">(Many real implementations keep a <code>size</code> field updated on every
+      insert and delete, so length becomes an O(1) lookup instead of an O(n) walk — a classic trade of a little
+      bookkeeping for a lot of speed.)</p>
+    </div>
+  </section>
+
+  <!-- ============ RECAP ============ -->
+  <section class="panel">
+    <div class="panel-head"><h2>Recap</h2></div>
+    <div class="panel-body notes">
+      <p>Every row below is the same three-line walk. What changes is only <em>where you stop</em> and
+      <em>what you do</em> when you get there — which is exactly why mastering traversal is mastering the
+      linked list.</p>
+      <table class="notes-table">
+        <tr><th>Operation</th><th>Where the walk stops</th><th>What you do there</th><th>Total</th></tr>
+        <tr><td>Traverse</td><td>never — visits all n</td><td>read each value</td><td>O(n)</td></tr>
+        <tr><td>Search</td><td>at the first match (or NULL)</td><td>return the node</td><td>O(n)</td></tr>
+        <tr><td>Update by index</td><td>on index k</td><td>overwrite the value</td><td>O(n)</td></tr>
+        <tr><td>Count</td><td>never — visits all n</td><td>add 1 each step</td><td>O(n)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="linked-list-visualizer.html">Walk, search, and update it yourself in the visualizer &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    You've now seen all three: <a href="linked-list-insertion.html">Insertion</a>,
+    <a href="linked-list-deletion.html">Deletion</a>, and the walk that powers both. Head back to the
+    <a href="linked-list.html">overview</a> to see how they fit together.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ds-render.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function lineSet(cl){
+    if(cl==null) return [];
+    if(typeof cl==="number") return [cl];
+    var a=[]; for(var i=cl[0];i<=cl[1];i++) a.push(i); return a;
+  }
+  function panelCode(hostId, lines, cl){
+    var host=document.getElementById(hostId);
+    if(!host._els){
+      host.innerHTML=""; host._els=[];
+      lines.forEach(function(src,i){
+        var d=document.createElement("div"); d.className="code-line";
+        d.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
+        d.lastChild.textContent=src;
+        host.appendChild(d); host._els.push(d);
+      });
+    }
+    var set=lineSet(cl);
+    host._els.forEach(function(el,j){ el.className="code-line"+(set.indexOf(j)>=0?" active":""); });
+  }
+  function seq(vals, ai, ar, ll){
+    return {
+      dir:"h", nullEnd:true, emptyText:"Empty list — HEAD is NULL",
+      nodes: vals.map(function(v,i){ return {val:v, role:(i===ai?ar:""), ptr:(i===0?"HEAD":"")}; }),
+      linkActive: vals.map(function(_,i){ return i===ai; }),
+      linkLanded: vals.map(function(_,i){ return i===ll; })
+    };
+  }
+  function F(vals, ai, ar, ll, narr, code){ return {struct:seq(vals,ai,ar,ll), narr:narr, codeLine:code}; }
+  function run(o){
+    var i=0;
+    function step(){
+      var f=o.frames[i];
+      DSRender.sequence(document.getElementById(o.listId), f.struct);
+      document.getElementById(o.narrId).textContent=f.narr;
+      panelCode(o.codeId, o.code, f.codeLine);
+      i=(i+1)%o.frames.length;
+    }
+    step(); setInterval(step, o.ms||1500);
+  }
+
+  /* ---- 1. traverse ---- */
+  var TRAV_CODE=[
+    "void traverse(List *l) {",
+    "  Node *cur = l->head;      // start at the head",
+    "  while (cur != NULL) {     // NULL == past the end",
+    "    printf(\"%d \", cur->val);  // visit this node",
+    "    cur = cur->next;        // step forward",
+    "  }",
+    "}"
+  ];
+  run({ listId:"travList", narrId:"travNarr", codeId:"travCode", code:TRAV_CODE, ms:1350, frames:[
+    F([4,8,2], 0,"left head", -1, "Put cur on the head, 4.", 1),
+    F([4,8,2], 0,"left head", -1, "cur isn't NULL, so visit it: read 4.", [2,3]),
+    F([4,8,2], 1,"left head", -1, "Step forward: cur = cur->next. Now on 8.", 4),
+    F([4,8,2], 1,"left head", -1, "cur isn't NULL — visit 8.", [2,3]),
+    F([4,8,2], 2,"left head", -1, "Step forward. Now on 2.", 4),
+    F([4,8,2], 2,"left head", -1, "cur isn't NULL — visit 2.", [2,3]),
+    F([4,8,2], -1,"", -1, "Step forward and cur becomes NULL — past the end, so the loop stops. All n visited: O(n).", 2)
+  ]});
+
+  /* ---- 2. search ---- */
+  var SEARCH_CODE=[
+    "Node* search(List *l, int val) {",
+    "  Node *cur = l->head;",
+    "  while (cur != NULL) {",
+    "    if (cur->val == val) return cur;  // found",
+    "    cur = cur->next;",
+    "  }",
+    "  return NULL;                        // not in the list",
+    "}"
+  ];
+  run({ listId:"searchList", narrId:"searchNarr", codeId:"searchCode", code:SEARCH_CODE, ms:1450, frames:[
+    F([4,8,2], 0,"left head", -1, "Search for 8. Start cur at the head.", [1,2]),
+    F([4,8,2], 0,"left head", -1, "Is 4 equal to 8? No — step forward.", [3,4]),
+    F([4,8,2], 1,"found", -1, "Is 8 equal to 8? Yes — return this node and stop early.", 3),
+    F([4,8,2], 1,"found", -1, "Found at index 1. Search is O(n): worst case you scan the whole list.", 3)
+  ]});
+
+  /* ---- 3. update at index ---- */
+  var UPD_CODE=[
+    "void updateAt(List *l, int idx, int val) {",
+    "  Node *cur = l->head;",
+    "  for (int i = 0; i < idx; i++)  // walk exactly idx steps",
+    "    cur = cur->next;",
+    "  cur->val = val;                // overwrite in place",
+    "}"
+  ];
+  run({ listId:"updList", narrId:"updNarr", codeId:"updCode", code:UPD_CODE, ms:1450, frames:[
+    F([4,8,2], 0,"right", -1, "Update index 2 to 5. Here we stop ON the target — walk exactly 2 steps. Start at index 0 (4).", [1,2]),
+    F([4,8,2], 1,"right", -1, "Step to index 1 (8).", [2,3]),
+    F([4,8,2], 2,"right", -1, "Step to index 2 (2). This is the node to change.", [2,3]),
+    F([4,8,5], 2,"left head landed", -1, "Overwrite the value: 2 becomes 5. The node and its pointers stay put.", 4),
+    F([4,8,5], -1,"", -1, "Done. Walking to the index is O(n); the overwrite itself is O(1).", 5)
+  ]});
+
+  /* ---- 4. length (static snippet, no animation) ---- */
+  var LEN_CODE=[
+    "int length(List *l) {",
+    "  int count = 0;",
+    "  Node *cur = l->head;",
+    "  while (cur != NULL) {",
+    "    count++;            // tally, then walk",
+    "    cur = cur->next;",
+    "  }",
+    "  return count;",
+    "}"
+  ];
+  panelCode("lenCode", LEN_CODE, null);
+})();
+</script>
+</body>
+</html>
