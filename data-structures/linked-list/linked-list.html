@@ -79,6 +79,19 @@
   </section>
 
   <section class="panel">
+    <div class="panel-head"><h2>How a linked list works</h2><span class="sub">a node holds a value and an arrow to the next node</span></div>
+    <div class="panel-body">
+      <div class="ll-stage"><div id="conceptStage" class="ll-host"></div><svg class="ll-svg" id="conceptSvg"></svg></div>
+      <p class="narr" id="conceptNarr" style="margin-top:14px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> HEAD — marks the first node</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> a pointer walking the chain</span>
+        <span class="key">each node = <code>[ value | next ]</code>, last one points to NULL</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
     <div class="panel-head"><h2>Learn each operation in depth</h2><span class="sub">detailed walkthroughs — the thought process, not just the code</span></div>
     <div class="panel-body">
       <div class="dive-grid">
@@ -105,21 +118,6 @@
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; insert, walk, delete</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertHead() / insertTail() / deleteHead()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
-    </div>
-  </section>
-
-  <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
       <a class="cta" href="linked-list-visualizer.html">Open the interactive visualizer &rarr;</a>
     </div>
@@ -132,92 +130,30 @@
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/ll-anim.js"></script>
 <script>
 (function(){
   "use strict";
+  function N(id,val,row,col,o){ o=o||{}; return {id:id,val:val,row:row,col:col,cls:o.cls,ptrs:o.ptrs,next:o.next,nextCls:o.nextCls}; }
 
-  var INIT_CODE=[
-    "void initList(List *l) {",
-    "  l->head = NULL;",
-    "}"
-  ];
-  var INSERT_HEAD_CODE=[
-    "void insertHead(List *l, int val) {",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val;",
-    "  n->next = l->head;",
-    "  l->head = n;",
-    "}"
-  ];
-  var INSERT_TAIL_CODE=[
-    "void insertTail(List *l, int val) {",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->next = NULL;",
-    "  if (!l->head) { l->head = n; return; }",
-    "  Node *cur = l->head;",
-    "  while (cur->next) cur = cur->next;",
-    "  cur->next = n;",
-    "}"
-  ];
-  var DELETE_HEAD_CODE=[
-    "void deleteHead(List *l) {",
-    "  Node *old = l->head;",
-    "  l->head = old->next;",
-    "  free(old);",
-    "}"
-  ];
-
-  function toStruct(head, activeId, activeRole, linkLandedId){
-    var nodes=[], linkActive=[], linkLanded=[], cur=head, i=0;
-    while(cur){
-      nodes.push({val:cur.val, role:(cur.id===activeId?activeRole:""), ptr:(i===0?"HEAD":"")});
-      linkActive.push(cur.id===activeId);
-      linkLanded.push(cur.id===linkLandedId);
-      cur=cur.next; i++;
-    }
-    return {dir:"h", nullEnd:true, emptyText:"Empty list", nodes:nodes, linkActive:linkActive, linkLanded:linkLanded};
-  }
-
-  function scriptFrames(){
-    var nextId=0, head=null, frames=[];
-    function node(v){ return {id:nextId++, val:v, next:null}; }
-    function push(activeId,activeRole,narr,code,codeLine,linkLandedId){
-      frames.push({struct:toStruct(head,activeId,activeRole,linkLandedId), narr:narr, code:code, codeLine:codeLine});
-    }
-    function insHead(v){
-      push(undefined,"","Insert "+v+" at the head: allocate a new node.",INSERT_HEAD_CODE,[1,3]);
-      var n=node(v); n.next=head; head=n;
-      push(n.id,"left head landed", v+" is the new head.",INSERT_HEAD_CODE,4,n.id);
-    }
-    function insTail(v){
-      push(head?head.id:undefined,"right","Insert "+v+" at the tail — walk to the end first.",INSERT_TAIL_CODE,4);
-      if(!head){ head=node(v); push(head.id,"left head landed", v+" is the only node now.",INSERT_TAIL_CODE,3,head.id); return; }
-      var cur=head;
-      while(cur.next){ cur=cur.next; push(cur.id,"right","Step to "+cur.val+".",INSERT_TAIL_CODE,5); }
-      var n=node(v); cur.next=n;
-      push(n.id,"left head landed", v+" attached after "+cur.val+".",INSERT_TAIL_CODE,6,cur.id);
-    }
-    function delHead(){
-      var v=head.val;
-      push(head.id,"left head","Delete the head, "+v+".",DELETE_HEAD_CODE,[1,2]);
-      head=head.next;
-      push(undefined,"", v+" removed."+(head?" New head is "+head.val+".":" List is empty."),DELETE_HEAD_CODE,3);
-    }
-    push(undefined,"","Create the list: just a HEAD pointer, starting at NULL.",INIT_CODE,1);
-    insHead(6); insTail(3); insTail(9); insHead(1);
-    delHead(); delHead(); delHead(); delHead();
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      DSRender.sequence(document.getElementById("demoHost"), frame.struct);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
+  // conceptual loop: build a 3-node chain, then walk it, then reset
+  LLAnim.play({
+    host:document.getElementById("conceptStage"), svg:document.getElementById("conceptSvg"),
+    narrEl:document.getElementById("conceptNarr"), ms:2100,
+    frames:[
+      { narr:"A linked list is a chain of nodes. Here's one node: a value (5) on the left, and a next pointer on the right. HEAD marks the first node; its next is NULL, so it's also the last.",
+        nodes:[ N('a',5,0,0,{ptrs:['HEAD'],next:'null'}) ] },
+      { narr:"Add a second node (8). The first node's next now points to it — that single arrow is the only thing linking them. In memory the two boxes can live anywhere.",
+        nodes:[ N('a',5,0,0,{ptrs:['HEAD'],next:'b',nextCls:'formed'}), N('b',8,0,1,{next:'null'}) ] },
+      { narr:"And a third (1). Read the whole list by following the arrows: HEAD → 5 → 8 → 1 → NULL. That chain of pointers IS the linked list.",
+        nodes:[ N('a',5,0,0,{ptrs:['HEAD'],next:'b'}), N('b',8,0,1,{next:'c',nextCls:'formed'}), N('c',1,0,2,{next:'null'}) ] },
+      { narr:"There's no jumping to the middle. To reach a node you start at HEAD and hop along the arrows, one at a time. Start at 5…",
+        nodes:[ N('a',5,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',8,0,1,{next:'c'}), N('c',1,0,2,{next:'null'}) ] },
+      { narr:"…hop to 8…",
+        nodes:[ N('a',5,0,0,{ptrs:['HEAD'],next:'b'}), N('b',8,0,1,{ptrs:['cur'],cls:'active',next:'c'}), N('c',1,0,2,{next:'null'}) ] },
+      { narr:"…hop to 1, the last node. That one rule — every node points to the next, the last points to NULL — is the entire idea. The pages below build every operation on top of it.",
+        nodes:[ N('a',5,0,0,{ptrs:['HEAD'],next:'b'}), N('b',8,0,1,{next:'c'}), N('c',1,0,2,{ptrs:['cur'],cls:'active',next:'null'}) ] }
+    ]
   });
 })();
 </script>

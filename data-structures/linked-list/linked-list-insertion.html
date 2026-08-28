@@ -109,7 +109,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — inserting 1 at the head of [3, 7]</p>
-        <div class="scroller"><div id="headList"></div></div>
+        <div class="ll-stage"><div id="headStage" class="ll-host"></div><svg class="ll-svg" id="headSvg"></svg></div>
         <p class="narr" id="headNarr">&nbsp;</p>
         <div class="code-panel" id="headCode"></div>
       </div>
@@ -146,7 +146,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — inserting 9 at the tail of [3, 7]</p>
-        <div class="scroller"><div id="tailList"></div></div>
+        <div class="ll-stage"><div id="tailStage" class="ll-host"></div><svg class="ll-svg" id="tailSvg"></svg></div>
         <p class="narr" id="tailNarr">&nbsp;</p>
         <div class="code-panel" id="tailCode"></div>
       </div>
@@ -180,7 +180,7 @@
 
       <div class="demo-wrap">
         <p class="demo-tag">Watch it — inserting 5 at index 2 of [3, 7, 9]</p>
-        <div class="scroller"><div id="idxList"></div></div>
+        <div class="ll-stage"><div id="idxStage" class="ll-host"></div><svg class="ll-svg" id="idxSvg"></svg></div>
         <p class="narr" id="idxNarr">&nbsp;</p>
         <div class="code-panel" id="idxCode"></div>
       </div>
@@ -225,53 +225,18 @@
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
+<script src="../../shared/ll-anim.js"></script>
 <script>
 (function(){
   "use strict";
-
-  /* ---- tiny page-local driver: animate a sequence + a synced code panel ---- */
-  function lineSet(cl){
-    if(cl==null) return [];
-    if(typeof cl==="number") return [cl];
-    var a=[]; for(var i=cl[0];i<=cl[1];i++) a.push(i); return a;
-  }
-  function panelCode(hostId, lines, cl){
-    var host=document.getElementById(hostId);
-    if(!host._els){
-      host.innerHTML=""; host._els=[];
-      lines.forEach(function(src,i){
-        var d=document.createElement("div"); d.className="code-line";
-        d.innerHTML='<span class="code-ln">'+(i+1)+'</span><span class="code-src"></span>';
-        d.lastChild.textContent=src;
-        host.appendChild(d); host._els.push(d);
-      });
-    }
-    var set=lineSet(cl);
-    host._els.forEach(function(el,j){ el.className="code-line"+(set.indexOf(j)>=0?" active":""); });
-  }
-  function seq(vals, ai, ar, ll){
-    return {
-      dir:"h", nullEnd:true, emptyText:"Empty list — HEAD is NULL",
-      nodes: vals.map(function(v,i){ return {val:v, role:(i===ai?ar:""), ptr:(i===0?"HEAD":"")}; }),
-      linkActive: vals.map(function(_,i){ return i===ai; }),
-      linkLanded: vals.map(function(_,i){ return i===ll; })
-    };
-  }
-  function F(vals, ai, ar, ll, narr, code){ return {struct:seq(vals,ai,ar,ll), narr:narr, codeLine:code}; }
-  function run(o){
-    var i=0;
-    function step(){
-      var f=o.frames[i];
-      DSRender.sequence(document.getElementById(o.listId), f.struct);
-      document.getElementById(o.narrId).textContent=f.narr;
-      panelCode(o.codeId, o.code, f.codeLine);
-      i=(i+1)%o.frames.length;
-    }
-    step(); setInterval(step, o.ms||1500);
+  function N(id,val,row,col,o){ o=o||{}; return {id:id,val:val,row:row,col:col,cls:o.cls,ptrs:o.ptrs,next:o.next,nextCls:o.nextCls}; }
+  function play(stage,svg,narr,codeHost,code,frames){
+    LLAnim.play({ host:document.getElementById(stage), svg:document.getElementById(svg),
+      narrEl:document.getElementById(narr), codeHost:document.getElementById(codeHost),
+      code:code, frames:frames, ms:1900 });
   }
 
-  /* ---- 1. insert at head ---- */
+  /* ---- 1. insert at head : insert 1 into [3,7] ---- */
   var HEAD_CODE=[
     "void insertHead(List *l, int val) {",
     "  Node *n = malloc(sizeof(Node));",
@@ -280,53 +245,82 @@
     "  l->head = n;         // then move HEAD",
     "}"
   ];
-  run({ listId:"headList", narrId:"headNarr", codeId:"headCode", code:HEAD_CODE, ms:1600, frames:[
-    F([3,7], -1,"", -1, "Start: HEAD points to 3. We want 1 to become the new first node.", 0),
-    F([3,7], -1,"", -1, "Make a new node holding 1 (it's sitting off to the side, pointing nowhere).", [1,2]),
-    F([1,3,7], 0,"left head landed", 0, "Point the new node's next at the current head, 3. It's clipped onto the front now.", 3),
-    F([1,3,7], 0,"left head", -1, "Move HEAD to the new node. 1 is officially first — nothing else moved.", 4),
-    F([1,3,7], -1,"", -1, "Done. Two pointer writes, no walking: insertion at the head is O(1).", 5)
-  ]});
+  play("headStage","headSvg","headNarr","headCode",HEAD_CODE,[
+    { code:0, narr:"The list now: HEAD points to 3 → 7 → NULL. We want to insert 1 at the very front.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'null'}) ] },
+    { code:1, narr:"malloc gives us a brand-new node — an empty box with room for a value and a next pointer, both blank.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'null'}), N('x',null,1,0,{cls:'active'}) ] },
+    { code:2, narr:"Store the value 1 in the new node's value slot.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'null'}), N('x',1,1,0,{cls:'active'}) ] },
+    { code:3, narr:"Point the new node's next at the current head, 3 — so it leads into the rest of the list. (This link goes first.)",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'null'}), N('x',1,1,0,{cls:'active',next:'a',nextCls:'formed'}) ] },
+    { code:4, narr:"Move HEAD to the new node. It becomes the first node — the others simply shift over in the picture; in memory nothing else moved.",
+      nodes:[ N('x',1,0,0,{ptrs:['HEAD'],cls:'active',next:'a',nextCls:'formed'}), N('a',3,0,1,{next:'b'}), N('b',7,0,2,{next:'null'}) ] },
+    { code:5, narr:"Done. Two pointer writes and no walking — inserting at the head is O(1).",
+      nodes:[ N('x',1,0,0,{ptrs:['HEAD'],next:'a'}), N('a',3,0,1,{next:'b'}), N('b',7,0,2,{next:'null'}) ] }
+  ]);
 
-  /* ---- 2. insert at tail ---- */
+  /* ---- 2. insert at tail : insert 9 into [3,7] ---- */
   var TAIL_CODE=[
     "void insertTail(List *l, int val) {",
     "  Node *n = malloc(sizeof(Node));",
     "  n->val = val; n->next = NULL;",
     "  if (!l->head) { l->head = n; return; }",
     "  Node *cur = l->head;",
-    "  while (cur->next) cur = cur->next;  // walk to the end",
+    "  while (cur->next) cur = cur->next;",
     "  cur->next = n;",
     "}"
   ];
-  run({ listId:"tailList", narrId:"tailNarr", codeId:"tailCode", code:TAIL_CODE, ms:1600, frames:[
-    F([3,7], -1,"", -1, "Insert 9 at the end. The list only knows its head — we must find the last node.", [1,2]),
-    F([3,7], 0,"right", -1, "Start a finger at the head, 3. Is its next NULL? No — so keep walking.", 5),
-    F([3,7], 1,"right", -1, "Step to 7. Is its next NULL? Yes — 7 is the last node.", 5),
-    F([3,7,9], 2,"left head landed", 2, "Point 7's next at the new node, 9. It becomes the tail.", 6),
-    F([3,7,9], -1,"", -1, "Done. We walked the whole list to get here, so tail insertion is O(n).", 7)
-  ]});
+  play("tailStage","tailSvg","tailNarr","tailCode",TAIL_CODE,[
+    { code:0, narr:"Insert 9 at the end of 3 → 7 → NULL. The list only knows its head, so first we must FIND the last node.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'null'}) ] },
+    { code:1, narr:"malloc a new empty node.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'null'}), N('x',null,1,2,{cls:'active'}) ] },
+    { code:2, narr:"Store 9 and set its next to NULL — whatever happens, it will be the last node.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'null'}), N('x',9,1,2,{cls:'active',next:'null',nextCls:'formed'}) ] },
+    { code:[3,4], narr:"The list isn't empty, so we start a walker pointer, cur, at the head (3).",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',7,0,1,{next:'null'}), N('x',9,1,2,{next:'null'}) ] },
+    { code:5, narr:"Is cur->next NULL? cur is 3 and its next is 7 — not NULL, so keep walking.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',7,0,1,{next:'null'}), N('x',9,1,2,{next:'null'}) ] },
+    { code:5, narr:"cur = cur->next. Now cur is 7, and its next IS NULL — so 7 is the last node. Stop.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'null'}), N('x',9,1,2,{next:'null'}) ] },
+    { code:6, narr:"Point 7's next at the new node. 7 → 9, and 9 → NULL.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'x',nextCls:'formed'}), N('x',9,1,2,{next:'null',nextCls:'formed'}) ] },
+    { code:7, narr:"9 is the new tail. We had to walk the whole list to reach the end, so tail insertion is O(n).",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'x'}), N('x',9,0,2,{next:'null'}) ] }
+  ]);
 
-  /* ---- 3. insert at index ---- */
+  /* ---- 3. insert at index : insert 5 at index 2 of [3,7,9] ---- */
   var IDX_CODE=[
     "void insertAt(List *l, int idx, int val) {",
     "  if (idx == 0) { insertHead(l, val); return; }",
     "  Node *cur = l->head;",
     "  for (int i = 0; i < idx - 1; i++)",
-    "    cur = cur->next;      // stop at the node BEFORE idx",
+    "    cur = cur->next;",
     "  Node *n = malloc(sizeof(Node));",
     "  n->val = val;",
-    "  n->next = cur->next;    // link to the rest FIRST",
-    "  cur->next = n;          // then re-point predecessor",
+    "  n->next = cur->next;   // link to the rest FIRST",
+    "  cur->next = n;         // then re-point predecessor",
     "}"
   ];
-  run({ listId:"idxList", narrId:"idxNarr", codeId:"idxCode", code:IDX_CODE, ms:1600, frames:[
-    F([3,7,9], -1,"", -1, "Insert 5 at index 2. Not index 0, so we walk to the node just before it, index 1.", 1),
-    F([3,7,9], 0,"right", -1, "Start at index 0 (3). We need to stop one before the target.", [3,4]),
-    F([3,7,9], 1,"right", -1, "Step to index 1 (7). Stop — the new node goes right after this one.", [3,4]),
-    F([3,7,5,9], 2,"left head landed", 2, "Point 5's next at 9 (what 7 pointed to), then point 7's next at 5. Spliced in.", [7,8]),
-    F([3,7,5,9], -1,"", -1, "5 now sits at index 2. Walk was O(n); the splice itself was two writes, O(1).", 9)
-  ]});
+  play("idxStage","idxSvg","idxNarr","idxCode",IDX_CODE,[
+    { code:[0,1], narr:"Insert 5 at index 2 of 3 → 7 → 9. It isn't index 0, so we walk to the node just BEFORE it — index 1.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:2, narr:"Start cur at index 0 (the value 3).",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD','cur'],cls:'active',next:'b'}), N('b',7,0,1,{next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:[3,4], narr:"Step forward: cur = cur->next. Now cur is at index 1 (the value 7) — the node just before our target slot. Stop.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'c'}), N('c',9,0,2,{next:'null'}) ] },
+    { code:5, narr:"malloc a new empty node, sitting below the gap where it will go.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],next:'c'}), N('c',9,0,2,{next:'null'}), N('x',null,1,1.5,{cls:'active'}) ] },
+    { code:6, narr:"Store 5 in it.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],next:'c'}), N('c',9,0,2,{next:'null'}), N('x',5,1,1.5,{cls:'active'}) ] },
+    { code:7, narr:"Point the new node's next at whatever 7 currently points to — that's 9. For a moment BOTH 7 and 5 point at 9; that's fine.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],next:'c'}), N('c',9,0,2,{next:'null'}), N('x',5,1,1.5,{cls:'active',next:'c',nextCls:'formed'}) ] },
+    { code:8, narr:"Now re-point 7's next at the new node. 7 no longer points straight to 9 — it goes through 5.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{ptrs:['cur'],cls:'active',next:'x',nextCls:'active'}), N('c',9,0,2,{next:'null'}), N('x',5,1,1.5,{next:'c',nextCls:'formed'}) ] },
+    { code:9, narr:"5 now sits at index 2. Because we linked 5 → 9 BEFORE re-pointing 7, nothing was ever lost. O(n) to walk, O(1) to splice.",
+      nodes:[ N('a',3,0,0,{ptrs:['HEAD'],next:'b'}), N('b',7,0,1,{next:'x'}), N('x',5,0,2,{next:'c'}), N('c',9,0,3,{next:'null'}) ] }
+  ]);
 })();
 </script>
 </body>
