@@ -46,6 +46,55 @@
   function slotX(col){ return PADX + col*COLW; }
   function slotY(row){ return PADY + row*ROWH; }
 
+  /* Inject our own stylesheet so the boxes never depend on a (possibly
+     browser-cached) theme.css. This file is the single source of truth for
+     the LLAnim visuals. Runs once. */
+  var cssInjected=false;
+  function injectCSS(){
+    if(cssInjected) return; cssInjected=true;
+    var css=[
+      ".ll-stage{position:relative;overflow-x:auto;overflow-y:hidden;padding:6px 0 2px}",
+      ".ll-stage .ll-svg{position:absolute;left:0;top:0;pointer-events:none;z-index:1}",
+      ".ll-node{position:absolute;display:flex;width:88px;height:48px;z-index:2;transition:left .5s var(--ease,ease),top .5s var(--ease,ease),opacity .4s var(--ease,ease),transform .4s var(--ease,ease)}",
+      ".ll-node .ll-val{flex:1 1 auto;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:17px;color:var(--ink,#1C2B24);background:#fff;border:2px solid var(--ink,#1C2B24);border-right:none;border-radius:6px 0 0 6px}",
+      ".ll-node .ll-val.empty{color:transparent;background:repeating-linear-gradient(45deg,#fff,#fff 5px,#eef2e6 5px,#eef2e6 10px)}",
+      ".ll-node .ll-val.fill{animation:llfill .5s var(--ease,ease)}",
+      ".ll-node .ll-nextcell{flex:0 0 26px;display:flex;align-items:center;justify-content:center;background:#F4F7EE;border:2px solid var(--ink,#1C2B24);border-radius:0 6px 6px 0}",
+      ".ll-node .ll-dot{width:9px;height:9px;border-radius:50%;background:var(--ink,#1C2B24)}",
+      ".ll-node.pop{animation:llpop .45s var(--ease,ease)}",
+      ".ll-node.gone{opacity:0;transform:translateY(14px) scale(.9)}",
+      ".ll-node.active .ll-val,.ll-node.active .ll-nextcell{border-color:var(--stamp,#BE3A1D)}",
+      ".ll-node.active .ll-dot{background:var(--stamp,#BE3A1D)}",
+      ".ll-node.active .ll-val{color:var(--stamp,#BE3A1D)}",
+      ".ll-node.target .ll-val,.ll-node.target .ll-nextcell{border-color:var(--plot,#1F4E79)}",
+      ".ll-node.target .ll-dot{background:var(--plot,#1F4E79)}",
+      ".ll-node.found .ll-val,.ll-node.found .ll-nextcell{border-color:var(--seal,#2E6B4F)}",
+      ".ll-node.found .ll-val{color:var(--seal,#2E6B4F)}",
+      ".ll-node.dim{opacity:.4}",
+      ".ll-ptr{position:absolute;z-index:3;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;transition:left .5s var(--ease,ease),top .5s var(--ease,ease)}",
+      ".ll-ptr .ll-ptr-lbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.03em;color:#fff;background:var(--pc,#BE3A1D);padding:2px 7px;border-radius:4px;white-space:nowrap}",
+      ".ll-ptr .ll-ptr-stem{width:2px;height:12px;background:var(--pc,#BE3A1D)}",
+      ".ll-arrow{stroke:var(--ink-soft,#5D6E61);stroke-width:2.2;transition:d .4s var(--ease,ease)}",
+      ".ll-arrow.active{stroke:var(--stamp,#BE3A1D);stroke-width:2.8}",
+      ".ll-arrow.formed{stroke:var(--seal,#2E6B4F);stroke-width:2.8}",
+      ".llhead{fill:var(--ink-soft,#5D6E61)} .llhead.active{fill:var(--stamp,#BE3A1D)} .llhead.formed{fill:var(--seal,#2E6B4F)}",
+      ".ll-null{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;fill:var(--ink-soft,#5D6E61)}",
+      ".ll-ctrls{display:flex;align-items:center;gap:7px;margin:10px 0 2px;flex-wrap:wrap}",
+      ".ll-cbtn{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;line-height:1;padding:7px 13px;border:1px solid var(--ink,#1C2B24);background:#F4F7EE;color:var(--ink,#1C2B24);border-radius:5px;cursor:pointer}",
+      ".ll-cbtn:hover{background:var(--ink,#1C2B24);color:var(--paper,#EAEFE2)}",
+      ".ll-step{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--ink-soft,#5D6E61);margin-left:6px}",
+      "@keyframes llpop{0%{opacity:0;transform:scale(.6) translateY(10px)}100%{opacity:1;transform:none}}",
+      "@keyframes llfill{0%{transform:scale(1.5);color:var(--seal,#2E6B4F)}100%{transform:scale(1);color:var(--ink,#1C2B24)}}"
+    ].join("\n");
+    var s=document.createElement("style"); s.setAttribute("data-ll-anim","1");
+    s.appendChild(document.createTextNode(css));
+    (document.head||document.documentElement).appendChild(s);
+  }
+  function cbtn(txt,label){
+    var b=document.createElement("button"); b.type="button"; b.className="ll-cbtn";
+    b.textContent=txt; b.setAttribute("aria-label",label); return b;
+  }
+
   /* ---- code panel (line-numbered C, active line highlighted) ---- */
   function lineSet(cl){
     if(cl==null) return [];
@@ -205,17 +254,35 @@
   }
 
   function play(cfg){
-    var host=cfg.host, svg=cfg.svg, i=0;
-    function step(){
-      var f=cfg.frames[i];
+    injectCSS();
+    var host=cfg.host, svg=cfg.svg, frames=cfg.frames, i=0, timer=null, playing=false, bPlay, lbl;
+    function draw(){
+      var f=frames[i];
       render(host, svg, f);
       if(cfg.narrEl) cfg.narrEl.textContent=f.narr||"";
       if(cfg.codeHost) renderCode(cfg.codeHost, cfg.code, f.code);
-      i=(i+1)%cfg.frames.length;
+      if(lbl) lbl.textContent=(i+1)+" / "+frames.length;
     }
-    step();
-    var timer=setInterval(step, cfg.ms||1600);
-    return { stop:function(){ clearInterval(timer); } };
+    function go(n){ i=((n%frames.length)+frames.length)%frames.length; draw(); }
+    function start(){ playing=true; if(timer) clearInterval(timer);
+      timer=setInterval(function(){ go(i+1); }, cfg.ms||1900); if(bPlay) bPlay.textContent="Pause"; }
+    function stop(){ playing=false; if(timer){ clearInterval(timer); timer=null; } if(bPlay) bPlay.textContent="Play"; }
+
+    var bar=document.createElement("div"); bar.className="ll-ctrls";
+    var bPrev=cbtn("◀ Back","Previous step");
+    bPlay=cbtn("Pause","Play or pause");
+    var bNext=cbtn("Step ▶","Next step");
+    lbl=document.createElement("span"); lbl.className="ll-step";
+    bPrev.onclick=function(){ stop(); go(i-1); };
+    bNext.onclick=function(){ stop(); go(i+1); };
+    bPlay.onclick=function(){ if(playing) stop(); else start(); };
+    bar.appendChild(bPrev); bar.appendChild(bPlay); bar.appendChild(bNext); bar.appendChild(lbl);
+    var stage=host.parentNode;
+    if(stage && stage.parentNode) stage.parentNode.insertBefore(bar, stage.nextSibling);
+
+    draw();
+    start();
+    return { stop:stop, start:start, go:go };
   }
 
   window.LLAnim={ play:play, render:render, renderCode:renderCode };
