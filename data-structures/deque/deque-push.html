@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deque · Push</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="deque.html">&larr; Deque overview</a>
+      <p class="eyebrow">Add At Either End</p>
+      <h1>Push (front &amp; rear)</h1>
+    </div>
+    <p class="note">Two directions, same wrapping array: rear moves forward, front moves backward — both with <code>% MAX</code>.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Deque pages">
+    <a href="deque.html">Overview</a>
+    <a class="here" href="deque-push.html">Push (both ends)</a>
+    <a href="deque-pop.html">Pop (both ends)</a>
+    <a href="deque-visualizer.html">Playground</a>
+  </nav>
+
+  <!-- PUSH REAR -->
+  <section class="panel">
+    <div class="panel-head"><h2>Push rear: add on the right</h2><span class="sub">O(1)</span></div>
+    <div class="panel-body notes">
+      <p>Pushing at the rear is identical to a <a href="../circular-queue/circular-queue.html">circular
+      queue</a>'s enqueue: the next free slot on the right is <code>(front + size) % MAX</code>. Write there and
+      grow <code>size</code>.</p>
+
+      <ol class="steps">
+        <li>Compute the write index <code>i = (front + size) % MAX</code>.</li>
+        <li>Store the value at <code>items[i]</code>, then <code>size++</code>.</li>
+      </ol>
+
+      <div class="demo-wrap">
+        <div class="scroller"><div id="rearStage"></div></div>
+        <p class="narr" id="rearNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="rearCode" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PUSH FRONT -->
+  <section class="panel">
+    <div class="panel-head"><h2>Push front: add on the left</h2><span class="sub">O(1)</span></div>
+    <div class="panel-body notes">
+      <p>This is the move a plain queue can't make. To add at the left, the <code>front</code> index steps
+      <em>backward</em> by one — and because it might fall below 0, the wrap uses
+      <code>(front - 1 + MAX) % MAX</code>. The <code>+ MAX</code> keeps the number non-negative before the
+      <code>%</code> takes the remainder, so front-of-0 wraps neatly to the last slot.</p>
+
+      <ol class="steps">
+        <li>Step the front back: <code>front = (front - 1 + MAX) % MAX</code>.</li>
+        <li>Write the value at the new <code>items[front]</code>, then <code>size++</code>.</li>
+      </ol>
+
+      <div class="demo-wrap">
+        <div class="scroller"><div id="frontStage"></div></div>
+        <p class="narr" id="frontNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="frontCode" style="margin-top:12px"></div>
+      </div>
+
+      <div class="callout">
+        <b>Why <code>+ MAX</code>?</b> In C, a negative index modulo a positive number can come out negative,
+        which would point outside the array. Adding <code>MAX</code> first guarantees a non-negative value, so
+        the wrap always lands in 0…MAX-1.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="deque-visualizer.html">Try pushing both ends in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: <a href="deque-pop.html">Pop (both ends)</a> — removing from the front or the rear.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  var CAP=6;
+  var PUSHR=[
+    "void pushRear(Deque *d, int val) {",
+    "  int i = (d->front + d->size) % MAX;",
+    "  d->items[i] = val;",
+    "  d->size++;",
+    "}"];
+  var PUSHF=[
+    "void pushFront(Deque *d, int val) {",
+    "  d->front = (d->front - 1 + MAX) % MAX;  // step back",
+    "  d->items[d->front] = val;",
+    "  d->size++;",
+    "}"];
+  function slotsFor(arr, front, size, active, activeCls){
+    var occ={}; for(var k=0;k<size;k++) occ[(front+k)%CAP]=true;
+    var rear=(front+size-1+CAP)%CAP, out=[];
+    for(var i=0;i<CAP;i++){
+      var s={ val:(occ[i]||active===i)?arr[i]:null };
+      if(active===i) s.cls=activeCls||"active";
+      var p=[]; if(size>0&&i===front)p.push("FRONT"); if(size>0&&i===rear)p.push("REAR");
+      if(p.length) s.ptrs=p;
+      out.push(s);
+    }
+    return out;
+  }
+  function F(arr, front, size, active, activeCls, code, line, narr){
+    var rear=size>0?((front+size-1)%CAP):-1;
+    return { slots:slotsFor(arr,front,size,active,activeCls), dir:"h", note:"front = "+front+"   rear = "+rear+"   size = "+size, codeLines:code, code:line, narr:narr };
+  }
+  var base=[10,20,30,undefined,undefined,undefined];
+  ArrAnim.play({ host:document.getElementById("rearStage"), narrEl:document.getElementById("rearNarr"),
+    codeHost:document.getElementById("rearCode"), ms:1900, frames:[
+      F(base, 0, 3, 3, "active", PUSHR, 1, "Push 40 at the rear: i = (0 + 3) % 6 = 3."),
+      F((function(){var a=base.slice(); a[3]=40; return a;})(), 0, 3, 3, "active", 2, "Write 40 at index 3."),
+      F((function(){var a=base.slice(); a[3]=40; return a;})(), 0, 4, -1, null, PUSHR, 3, "size++ → 4. 40 is the new rear.")
+    ]});
+  // front push: start front=0; stepping back wraps to 5
+  ArrAnim.play({ host:document.getElementById("frontStage"), narrEl:document.getElementById("frontNarr"),
+    codeHost:document.getElementById("frontCode"), ms:1900, frames:[
+      F(base, 0, 3, -1, null, PUSHF, 1, "Push 5 at the front. front = (0 - 1 + 6) % 6 = 5 — it wrapped to the last slot."),
+      F((function(){var a=base.slice(); a[5]=5; return a;})(), 5, 4, 5, "active", [2,3], "Write 5 at the new front (index 5), size++ → 4. In the ring, 5 now sits just before 10.")
+    ]});
+})();
+</script>
+</body>
+</html>
