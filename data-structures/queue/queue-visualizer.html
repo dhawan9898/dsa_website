@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+</style>
 </head>
 <body>
 
@@ -16,25 +34,39 @@
     <div>
       <a class="masthead-nav" href="queue.html">&larr; Queue notes</a>
       <p class="eyebrow">First In &middot; First Out</p>
-      <h1>Queue&nbsp;Visualizer</h1>
+      <h1>Queue&nbsp;Playground</h1>
     </div>
-    <p class="note">An array with two indices: <code>front</code> (where you leave) and <code>rear</code> (where you join). Enqueue writes at <code>++rear</code>; dequeue reads at <code>front++</code>.</p>
+    <p class="note">Start from an empty queue and build it yourself. Pick an operation, and only then does its input and explanation appear.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Queue pages">
+    <a href="queue.html">Overview</a>
+    <a href="queue-enqueue.html">Enqueue</a>
+    <a href="queue-dequeue.html">Dequeue &amp; Peek</a>
+    <a class="here" href="queue-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Choose an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Value</span><input type="number" id="valF" value="5"></label>
-        <button id="opEnq" class="primary">Enqueue</button>
-        <button id="opDeq">Dequeue</button>
-        <button id="opPeek">Peek</button>
-        <button id="opReset">Reset</button>
+      <div class="opbtns">
+        <button class="opbtn" data-op="enq">Enqueue</button>
+        <button class="opbtn" data-op="deq">Dequeue</button>
+        <button class="opbtn" data-op="peek">Peek</button>
+        <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <p class="hint" id="hint">Enqueue adds at the rear; dequeue removes from the front — first come, first served.</p>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow" id="valWrap" hidden><span>Value</span><input type="number" id="valF" value="5"></label>
+          <button class="primary" id="opRun">Run</button>
+        </div>
+      </div>
+      <p class="hint" id="hint" style="margin-top:12px">The queue is empty. Click <b>Enqueue</b> to add your first value.</p>
     </div>
   </section>
 
@@ -48,7 +80,7 @@
         <button class="arr-cbtn" id="aStep">Step ▶</button>
         <span class="arr-step" id="aCount">0 / 0</span>
       </div>
-      <p class="narr" id="narr" style="margin-top:12px">Loading…</p>
+      <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
       <div class="legend" style="margin-top:6px">
         <span class="key"><i class="swatch right"></i> the item being enqueued / dequeued / peeked</span>
         <span class="key"><i class="swatch dim" style="border-color:var(--ink);opacity:.4"></i> consumed slot — dead space a linear queue can't reuse</span>
@@ -65,10 +97,9 @@
   </section>
 
   <footer>
-    Enqueue and dequeue each touch only one end, so both are O(1) — no shifting. But notice the flaw: once
-    <code>rear</code> reaches the last slot, this queue is "full" even if dequeues have freed slots at the
-    front. Those slots are dead space. The <a href="../circular-queue/circular-queue.html">Circular Queue</a>
-    fixes exactly this by wrapping the indices around.
+    Enqueue and dequeue each touch only one end, so both are O(1). But once <code>rear</code> reaches the last
+    slot, this linear queue is "full" even if dequeues freed slots at the front — dead space the
+    <a href="../circular-queue/circular-queue.html">Circular Queue</a> fixes by wrapping the indices.
   </footer>
 </div>
 
@@ -79,7 +110,6 @@
   "use strict";
   var CAP=6;
   var Q={arr:[], front:-1, rear:-1};
-  function seed(){ Q={arr:[10,20,30], front:0, rear:2}; } seed();
 
   var ENQ_CODE=[
     "void enqueue(Queue *q, int val) {",
@@ -104,22 +134,18 @@
   function slotsFor(arr, front, rear, active, activeCls){
     var out=[];
     for(var i=0;i<CAP;i++){
-      var live = front!==-1 && i>=front && i<=rear;
-      var consumed = front!==-1 && i<front;
+      var live=front!==-1 && i>=front && i<=rear, consumed=front!==-1 && i<front;
       var s={ val:(live||consumed)?arr[i]:null };
-      if(active===i) s.cls=activeCls||"active";
-      else if(consumed) s.cls="dim";
-      var p=[];
-      if(front!==-1 && i===front) p.push("FRONT");
-      if(front!==-1 && i===rear) p.push("REAR");
+      if(active===i) s.cls=activeCls||"active"; else if(consumed) s.cls="dim";
+      var p=[]; if(front!==-1&&i===front)p.push("FRONT"); if(front!==-1&&i===rear)p.push("REAR");
       if(p.length) s.ptrs=p;
       out.push(s);
     }
     return out;
   }
-  function F(arr, front, rear, active, activeCls, codeLines, line, narr){
+  function F(arr, front, rear, active, activeCls, code, line, narr){
     return { slots:slotsFor(arr,front,rear,active,activeCls), dir:"h",
-      note:"front = "+front+"    rear = "+rear, codeLines:codeLines, code:line, narr:narr };
+      note:"front = "+front+"    rear = "+rear, codeLines:code, code:line, narr:narr };
   }
 
   function opEnq(val){
@@ -173,17 +199,44 @@
   playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
 
   function hint(m){ document.getElementById("hint").textContent=m; }
-  function numV(){ var v=Number(document.getElementById("valF").value); return isFinite(v)?v:null; }
-  function run(r){ if(r.error){ stopP(); hint(r.error); return; } hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play."); loadFrames(r.frames); }
+  function drawEmpty(){ P.frames=[F(Q.arr.slice(),Q.front,Q.rear,-1,null,null,null, Q.front===-1?"The queue is empty (front == -1).":"Current queue.")]; P.i=0; drawP(); }
 
-  document.getElementById("opEnq").onclick=function(){ var v=numV(); if(v==null) return hint("Enter a value to enqueue."); run(opEnq(v)); };
-  document.getElementById("opDeq").onclick=function(){ run(opDeq()); };
-  document.getElementById("opPeek").onclick=function(){ run(opPeek()); };
-  document.getElementById("opReset").onclick=function(){ stopP(); seed();
-    P.frames=[F(Q.arr.slice(),Q.front,Q.rear,-1,null,null,null,"Fresh queue: 10, 20, 30. Front is 10, rear is 30.")]; P.i=0; drawP(); hint("Queue reset."); };
+  var OPS={
+    enq:{ name:"Enqueue", needsValue:true, desc:"Add a value at the rear. Enter a value and run — ++rear moves the back index up and the value is written at items[rear]." },
+    deq:{ name:"Dequeue", needsValue:false, desc:"Remove and return the value at the front. front++ moves forward, leaving the old slot as dead space. Fails on an empty queue." },
+    peek:{ name:"Peek", needsValue:false, desc:"Look at the front value without removing it. front and rear do not move. Fails on an empty queue." },
+    reset:{ name:"Reset", needsValue:false, desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"),
+      opdescEl=document.getElementById("opdesc"), valWrap=document.getElementById("valWrap"), valF=document.getElementById("valF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ Q={arr:[],front:-1,rear:-1}; stopP(); drawEmpty(); ArrAnim.renderCode(codeHost,null,null);
+      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Queue cleared. Click Enqueue to start building it."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    valWrap.hidden=!meta.needsValue; panel.hidden=false; hint("");
+    if(meta.needsValue){ valF.focus(); valF.select(); }
+  }
+  function runCurrent(){
+    if(!current) return;
+    var r;
+    if(current==="enq"){ var v=Number(valF.value); if(!isFinite(v)) return hint("Enter a value to enqueue."); r=opEnq(v); }
+    else if(current==="deq"){ r=opDeq(); }
+    else if(current==="peek"){ r=opPeek(); }
+    if(!r) return;
+    if(r.error){ stopP(); hint(r.error); return; }
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+  valF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
 
-  P.frames=[F(Q.arr.slice(),Q.front,Q.rear,-1,null,null,null,"Current queue: 10, 20, 30 — front is 10, rear is 30. Enqueue, dequeue, or peek.")];
-  P.i=0; drawP();
+  drawEmpty();
 })();
 </script>
 </body>

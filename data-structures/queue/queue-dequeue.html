@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queue · Dequeue &amp; Peek</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="queue.html">&larr; Queue overview</a>
+      <p class="eyebrow">Leave From The Front &middot; Or Just Look</p>
+      <h1>Dequeue &amp; Peek</h1>
+    </div>
+    <p class="note">Dequeue serves the person at the front and moves the line up; peek just checks who's next.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Queue pages">
+    <a href="queue.html">Overview</a>
+    <a href="queue-enqueue.html">Enqueue</a>
+    <a class="here" href="queue-dequeue.html">Dequeue &amp; Peek</a>
+    <a href="queue-visualizer.html">Playground</a>
+  </nav>
+
+  <!-- DEQUEUE -->
+  <section class="panel">
+    <div class="panel-head"><h2>Dequeue: take from the front</h2><span class="sub">O(1)</span></div>
+    <div class="panel-body notes">
+      <p>Dequeue removes the value at the <code>front</code> — the one that has waited longest — and returns it.
+      It reads that slot, then moves <code>front</code> one step to the right so the next person becomes the new
+      front.</p>
+
+      <ol class="steps">
+        <li><b>Check it isn't empty.</b> If <code>front == -1</code>, there's nobody in line — stop.</li>
+        <li><b>Read and advance.</b> Take <code>items[front]</code>, then <code>front++</code> steps the front
+        index forward.</li>
+        <li><b>Reset if drained.</b> If <code>front</code> has now passed <code>rear</code>, the queue is empty
+        again — set both back to <code>-1</code> for a clean start.</li>
+      </ol>
+
+      <div class="demo-wrap">
+        <div class="scroller"><div id="deqStage"></div></div>
+        <p class="narr" id="deqNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="deqCode" style="margin-top:12px"></div>
+      </div>
+
+      <div class="callout">
+        <b>Watch the dead space.</b> Notice the slot the departed front left behind (dimmed). <code>front</code>
+        never moves back, so a plain array queue can't reuse it — the flaw the
+        <a href="../circular-queue/circular-queue.html">Circular Queue</a> exists to fix.
+      </div>
+    </div>
+  </section>
+
+  <!-- PEEK -->
+  <section class="panel">
+    <div class="panel-head"><h2>Peek: look without removing</h2><span class="sub">O(1)</span></div>
+    <div class="panel-body notes">
+      <p>Peek (also "front") returns <code>items[front]</code> but changes nothing — no index moves. It's how you
+      check who's next without pulling them out of line.</p>
+
+      <div class="demo-wrap">
+        <div class="scroller"><div id="peekStage"></div></div>
+        <p class="narr" id="peekNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="peekCode" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="queue-visualizer.html">Try dequeue and peek in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    That's the whole queue: <a href="queue-enqueue.html">enqueue</a> at the rear, dequeue at the front, peek to
+    look. The dead space you saw is fixed next in the <a href="../circular-queue/circular-queue.html">Circular
+    Queue</a>.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/arr-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  var CAP=6;
+  var DEQ_CODE=[
+    "int dequeue(Queue *q) {",
+    "  if (q->front == -1) return -1;     // empty",
+    "  int val = q->items[q->front++];    // take front, move up",
+    "  if (q->front > q->rear)            // now empty?",
+    "    q->front = q->rear = -1;",
+    "  return val;",
+    "}"];
+  var PEEK_CODE=[
+    "int peek(Queue *q) {",
+    "  if (q->front == -1) return -1;",
+    "  return q->items[q->front];         // look, don't remove",
+    "}"];
+  function slotsFor(arr, front, rear, active, activeCls){
+    var out=[];
+    for(var i=0;i<CAP;i++){
+      var live=front!==-1 && i>=front && i<=rear, consumed=front!==-1 && i<front;
+      var s={ val:(live||consumed)?arr[i]:null };
+      if(active===i) s.cls=activeCls||"active"; else if(consumed) s.cls="dim";
+      var p=[]; if(front!==-1&&i===front)p.push("FRONT"); if(front!==-1&&i===rear)p.push("REAR");
+      if(p.length) s.ptrs=p;
+      out.push(s);
+    }
+    return out;
+  }
+  function F(arr, front, rear, active, activeCls, code, line, narr){
+    return { slots:slotsFor(arr,front,rear,active,activeCls), dir:"h", note:"front = "+front+"   rear = "+rear, codeLines:code, code:line, narr:narr };
+  }
+  ArrAnim.play({ host:document.getElementById("deqStage"), narrEl:document.getElementById("deqNarr"),
+    codeHost:document.getElementById("deqCode"), ms:1900, frames:[
+      F([10,20,30], 0, 2, 0, "active", DEQ_CODE, [1,2], "Dequeue. front is 10 at index 0."),
+      F([10,20,30], 1, 2, -1, null, DEQ_CODE, 2, "Return 10; front++ moves to 1. Index 0 is now consumed dead space (dimmed)."),
+      F([10,20,30], 1, 2, -1, null, DEQ_CODE, 5, "front (1) hasn't passed rear (2), so we're done. New front is 20.")
+    ]});
+
+  ArrAnim.play({ host:document.getElementById("peekStage"), narrEl:document.getElementById("peekNarr"),
+    codeHost:document.getElementById("peekCode"), ms:2000, frames:[
+      F([10,20,30], 0, 2, 0, "found", PEEK_CODE, 2, "Peek returns items[front] = 10 — and that's it."),
+      F([10,20,30], 0, 2, 0, "found", PEEK_CODE, 2, "front and rear are unchanged; the queue is exactly as it was.")
+    ]});
+})();
+</script>
+</body>
+</html>
