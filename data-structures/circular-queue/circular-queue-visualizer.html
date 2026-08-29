@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+</style>
 </head>
 <body>
 
@@ -16,25 +34,39 @@
     <div>
       <a class="masthead-nav" href="circular-queue.html">&larr; Circular Queue notes</a>
       <p class="eyebrow">The Queue That Wraps Around</p>
-      <h1>Circular&nbsp;Queue&nbsp;Visualizer</h1>
+      <h1>Circular&nbsp;Queue&nbsp;Playground</h1>
     </div>
-    <p class="note">Same array, same front/rear — but the indices wrap with <code>% MAX</code>, so a freed front slot gets reused instead of wasted.</p>
+    <p class="note">Start empty and build it yourself. Enqueue past the end and watch the indices wrap back to 0 with <code>% MAX</code>.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Circular Queue pages">
+    <a href="circular-queue.html">Overview</a>
+    <a href="circular-queue-enqueue.html">Enqueue</a>
+    <a href="circular-queue-dequeue.html">Dequeue &amp; Peek</a>
+    <a class="here" href="circular-queue-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Choose an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Value</span><input type="number" id="valF" value="5"></label>
-        <button id="opEnq" class="primary">Enqueue</button>
-        <button id="opDeq">Dequeue</button>
-        <button id="opPeek">Peek</button>
-        <button id="opReset">Reset</button>
+      <div class="opbtns">
+        <button class="opbtn" data-op="enq">Enqueue</button>
+        <button class="opbtn" data-op="deq">Dequeue</button>
+        <button class="opbtn" data-op="peek">Peek</button>
+        <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <p class="hint" id="hint">Dequeue a couple, then enqueue past the end — watch REAR wrap back to index 0 and reuse the freed slots.</p>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow" id="valWrap" hidden><span>Value</span><input type="number" id="valF" value="5"></label>
+          <button class="primary" id="opRun">Run</button>
+        </div>
+      </div>
+      <p class="hint" id="hint" style="margin-top:12px">The queue is empty. Click <b>Enqueue</b> to add your first value, then dequeue a few and enqueue past the end to see the wrap.</p>
     </div>
   </section>
 
@@ -48,7 +80,7 @@
         <button class="arr-cbtn" id="aStep">Step ▶</button>
         <span class="arr-step" id="aCount">0 / 0</span>
       </div>
-      <p class="narr" id="narr" style="margin-top:12px">Loading…</p>
+      <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
       <div class="legend" style="margin-top:6px">
         <span class="key"><i class="swatch right"></i> the item being written / read</span>
         <span class="key"><i class="swatch" style="border-color:var(--rule);border-style:dashed"></i> a free slot (reusable)</span>
@@ -65,9 +97,8 @@
   </section>
 
   <footer>
-    The trick is the whole difference from a linear queue: instead of letting <code>rear</code> run off the end,
-    <code>(index + 1) % MAX</code> sends it back to 0. A separate <code>size</code> counter tells full from empty,
-    since <code>front == rear</code> could otherwise mean either. Now every slot is reusable — no dead space.
+    Instead of letting <code>rear</code> run off the end, <code>(index + 1) % MAX</code> sends it back to 0. A
+    separate <code>size</code> counter tells full from empty. Now every slot is reusable — no dead space.
   </footer>
 </div>
 
@@ -78,7 +109,6 @@
   "use strict";
   var CAP=6;
   var Q={arr:[], front:0, size:0};
-  function seed(){ Q={arr:[10,20,30,undefined,undefined,undefined], front:0, size:3}; } seed();
 
   var ENQ_CODE=[
     "void enqueue(CQ *q, int val) {",
@@ -105,11 +135,9 @@
     var occ={}; for(var k=0;k<size;k++) occ[(front+k)%CAP]=true;
     var rear=(front+size-1+CAP)%CAP, out=[];
     for(var i=0;i<CAP;i++){
-      var s={ val: (occ[i]||active===i)?arr[i]:null };
+      var s={ val:(occ[i]||active===i)?arr[i]:null };
       if(active===i) s.cls=activeCls||"active";
-      var p=[];
-      if(size>0 && i===front) p.push("FRONT");
-      if(size>0 && i===rear) p.push("REAR");
+      var p=[]; if(size>0&&i===front)p.push("FRONT"); if(size>0&&i===rear)p.push("REAR");
       if(p.length) s.ptrs=p;
       out.push(s);
     }
@@ -170,17 +198,44 @@
   playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
 
   function hint(m){ document.getElementById("hint").textContent=m; }
-  function numV(){ var v=Number(document.getElementById("valF").value); return isFinite(v)?v:null; }
-  function run(r){ if(r.error){ stopP(); hint(r.error); return; } hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play."); loadFrames(r.frames); }
+  function drawEmpty(){ P.frames=[F(Q.arr.slice(),Q.front,Q.size,-1,null,null,null, Q.size===0?"The queue is empty (size == 0).":"Current queue.")]; P.i=0; drawP(); }
 
-  document.getElementById("opEnq").onclick=function(){ var v=numV(); if(v==null) return hint("Enter a value to enqueue."); run(opEnq(v)); };
-  document.getElementById("opDeq").onclick=function(){ run(opDeq()); };
-  document.getElementById("opPeek").onclick=function(){ run(opPeek()); };
-  document.getElementById("opReset").onclick=function(){ stopP(); seed();
-    P.frames=[F(Q.arr.slice(),Q.front,Q.size,-1,null,null,null,"Fresh queue: 10, 20, 30.")]; P.i=0; drawP(); hint("Queue reset."); };
+  var OPS={
+    enq:{ name:"Enqueue", needsValue:true, desc:"Add a value at the rear. The write index is (front + size) % MAX, so once the array is full at the end it wraps back to 0 and reuses a freed slot." },
+    deq:{ name:"Dequeue", needsValue:false, desc:"Remove and return the front value. front advances with (front + 1) % MAX and size drops — the old slot becomes free to reuse. Fails when size == 0." },
+    peek:{ name:"Peek", needsValue:false, desc:"Look at the front value without removing it. Nothing moves. Fails when size == 0." },
+    reset:{ name:"Reset", needsValue:false, desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"),
+      opdescEl=document.getElementById("opdesc"), valWrap=document.getElementById("valWrap"), valF=document.getElementById("valF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ Q={arr:[],front:0,size:0}; stopP(); drawEmpty(); ArrAnim.renderCode(codeHost,null,null);
+      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Queue cleared. Click Enqueue to start building it."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    valWrap.hidden=!meta.needsValue; panel.hidden=false; hint("");
+    if(meta.needsValue){ valF.focus(); valF.select(); }
+  }
+  function runCurrent(){
+    if(!current) return;
+    var r;
+    if(current==="enq"){ var v=Number(valF.value); if(!isFinite(v)) return hint("Enter a value to enqueue."); r=opEnq(v); }
+    else if(current==="deq"){ r=opDeq(); }
+    else if(current==="peek"){ r=opPeek(); }
+    if(!r) return;
+    if(r.error){ stopP(); hint(r.error); return; }
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+  valF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
 
-  P.frames=[F(Q.arr.slice(),Q.front,Q.size,-1,null,null,null,"Current queue: 10, 20, 30. Dequeue a few, then enqueue past the end to see the wrap.")];
-  P.i=0; drawP();
+  drawEmpty();
 })();
 </script>
 </body>
