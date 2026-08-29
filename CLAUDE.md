@@ -74,3 +74,36 @@ The engines look up fixed element ids — pages just supply matching markup: `pl
 - New algorithmic technique (backtracking, greedy, and future ones like DP or sliding-window that aren't a sort/search, a persistent structure, or a foundational concept): create `techniques/<name>/` with both `<name>.html` (notes + loop demo) and `<name>-visualizer.html`, cross-linked via masthead-nav and the notes page's `.cta` — same `VizDS.init`/`VizDS.loopDemo` engine as a data-structure page, but typically with a page-local `renderExtra` (see the `DSRender` section above). n-queens/ pairs a page-local board renderer with `DSRender.callstack` for its recursive search; activity-selection/ is a fully page-local Gantt-timeline renderer, since no `DSRender` function fits an interval visual.
 - Whichever it is, copying an existing page into its new folder means every `shared/*`/`index.html`/cross-page reference in it needs its relative path re-derived for the new depth (see "File layout" above) — don't just copy the old page's hrefs verbatim.
 - Either way, add an `.algo-card` to the matching section of `index.html` and update that section's count in its `panel-head` `.sub` (e.g. "13 structures"). A topic that doesn't fit an existing section (e.g. Dijkstra/Topological Sort/Kruskal's MST — graph algorithms, not persistent data structures, so they live under `data-structures/<name>/` for the engine/renderer fit but get their own "Graph Algorithms" `index.html` section; N-Queens/Activity Selection similarly get their own "Algorithmic Techniques" section) can start a new section the same way the existing ones were: `panel-head` + `.sub` count + `.algo-grid`.
+
+## Beginner-first rework (in progress)
+
+An ongoing pass is rebuilding each topic for a reader with **zero C and zero DSA background**: notes rewritten into clear levels, and animations that show **what every C line does** (a box is created empty, its value fills in, links/indices rewire, pointers glide) rather than jumping from "before" to "after". Reworked topics move off the older `DSRender`/`VizDS` engine onto two new renderers below. Both systems coexist — a topic keeps using `ds-engine.js`/`DSRender` until it's reworked.
+
+### New step renderers (self-contained, cache-proof)
+
+- **`shared/ll-anim.js` (`LLAnim`)** — linked-list "mechanism" renderer. Persistent, id-keyed node boxes drawn as `[value | next•]` + an SVG arrow overlay, positioned from each node's `{row,col}` grid slot (never measured), so pointer tags (HEAD/cur/prev/target) and arrows can transition. One frame per code line; arrow states `active` (red, changing) / `formed` (green, just wired). Used by the linked list family.
+- **`shared/arr-anim.js` (`ArrAnim`)** — fixed-slot **array** renderer (sibling of the above). A row/column of numbered slots (`dir:"v"` = index 0 at bottom for a stack; `dir:"h"` = index 0 at left for a queue), empties hatched, occupied slots hold a value, pointer tags (TOP/FRONT/REAR) glide when an index moves — the picture behind `++top` / `(front+size)%MAX`. Used by stack, queue, circular queue, deque (and later sorting/searching).
+- **Both** expose `render(host, frame[, svg])`, `renderCode(host, lines, codeLine)`, `injectCSS()`, and a looping `play({host, narrEl, codeHost, code, frames, ms})` that builds its own ◀ Back / Play-Pause / Step ▶ controls. `render()` calls `injectCSS()` itself, so the `.ll-*` / `.arr-*` styles ride with the JS (a **new file that can't be a stale browser cache** — the fix for the earlier "unstyled boxes" bug). Frames may carry their own `codeLines` (per-frame code array) which overrides `play`'s `cfg.code`. Interactive playgrounds don't call `play()`; they run a small **page-local non-looping player** (see any reworked `*-visualizer.html`) driving `render`/`renderCode` with its own persistent control bar. Because styles are JS-injected, `theme.css` no longer holds them; the script tags are cache-busted with `?v=N` — bump N only when the renderer's own CSS changes.
+
+### Reworked page template (supersedes notes+visualizer for these topics)
+
+A reworked structure is **one overview + N operation deep-dive pages + one playground**, all sharing a pill **`.subnav`** (Overview · each operation · Playground) and inline card CSS (`.dive-grid`/`.dive-card`, `.opbtns`/`.opbtn`, `.oppanel`):
+
+- **Overview `<topic>.html` — no code at all.** Level 1 analogy → Level 2 "how it works" prose + a **code-free** looping demo (`play()` with no `codeHost`) → a `.dive-grid` of cards linking the operation pages → deeper level(s) (edge cases, trade-offs, uses) + the `.notes-table`. Links out to the `foundations/*` pages instead of re-teaching pointers/arrays/Big-O. Ends with a `.cta` to the playground.
+- **Operation pages `<topic>-<op>.html`** — one per operation group (e.g. `stack-push.html`, `stack-pop.html`; `queue-enqueue.html`, `queue-dequeue.html`; `deque-push.html`, `deque-pop.html`). Each: thought-process `.steps` (numbered) → a **line-by-line** `play()` animation with its `codeHost` → prose reading the C. This is where the code lives now.
+- **Playground `<topic>-visualizer.html` — starts EMPTY and is operation-first.** No input box up front: a row of `.opbtn` operation buttons only. Clicking one reveals a single `.oppanel` with that operation's name + explanation and **only the input it needs** (a value field for push/enqueue; nothing for pop/dequeue/peek), then a **Run** button animates it via the page-local player. Reset clears back to empty. See `stack-visualizer.html` for the reference implementation of this control flow.
+
+### Status
+
+- **Done (merged to `main`):** Linked List (overview + `insertion`/`deletion`/`traversal` deep-dive pages, on `LLAnim`), Stack, Queue, Circular Queue, Deque (each: code-free overview + 2 operation pages + operation-first empty playground, on `ArrAnim`). The linear four are a deliberate teaching arc: Stack → Queue (reveals dead space) → Circular Queue (fixes it with `%MAX`) → Deque (generalizes both).
+- **Known gap:** the Linked List **playground** (`linked-list-visualizer.html`) is on `LLAnim` but still uses the older control layout — not yet empty-start / operation-first. Retrofit it for consistency when convenient.
+
+### Plan of action (remaining order)
+
+1. **Doubly Linked List, Hash Table** — reuse `LLAnim` (`double` node boxes / prev arrows; collision chains).
+2. **Trees: BST, AVL, Priority Queue (heap), Trie** — build a new **tree step-renderer** first (per-line node insert/rotate/heapify), the tree-world sibling of `LLAnim`/`ArrAnim`.
+3. **Graphs: Graph (BFS/DFS), Dijkstra, Topological Sort, Kruskal's MST, Union-Find** — a **graph step-renderer**.
+4. **Sorting (8) and Searching (3)** — an **array-bars** step-renderer (reuse `ArrAnim`'s slot model where it fits).
+5. **Foundations & techniques** — lighter touch; already conceptual.
+
+Work one topic per PR, merged as it goes. When reworking, **copy the nearest already-reworked topic** (e.g. Stack) rather than an un-reworked one, and re-derive every `shared/*`/cross-page href for the folder depth.
