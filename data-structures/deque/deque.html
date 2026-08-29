@@ -9,15 +9,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
 <style>
-  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
-  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
-  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
-    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
-    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;
-    display:flex;align-items:center;justify-content:center}
-  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);
-    padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
   .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:21px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
 </style>
 </head>
 <body>
@@ -35,7 +42,13 @@
 
 <div class="wrap">
 
-  <!-- LEVEL 1 -->
+  <nav class="subnav" aria-label="Deque pages">
+    <a class="here" href="deque.html">Overview</a>
+    <a href="deque-push.html">Push (both ends)</a>
+    <a href="deque-pop.html">Pop (both ends)</a>
+    <a href="deque-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
     <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
@@ -46,44 +59,47 @@
 
       <div class="callout">
         <b>Four moves.</b> <b>Push front</b> and <b>push rear</b> add a value at the left or right end;
-        <b>pop front</b> and <b>pop rear</b> remove from the left or right end. (Many libraries also offer
-        peek-front and peek-rear to look without removing.)
+        <b>pop front</b> and <b>pop rear</b> remove from the left or right end. Each pair gets its own page below.
       </div>
 
       <p>Because it can do everything a stack and a queue can, a deque is a kind of Swiss-army container:
-      restrict it to one end and it behaves as a <a href="../stack/stack.html">stack</a> (LIFO); push at one
-      end and pop at the other and it's a queue (FIFO).</p>
+      restrict it to one end and it behaves as a <a href="../stack/stack.html">stack</a> (LIFO); push at one end
+      and pop at the other and it's a queue (FIFO).</p>
     </div>
   </section>
 
-  <!-- LEVEL 2 -->
   <section class="panel">
-    <div class="panel-head"><h2>How it actually works</h2><span class="sub">a wrapping array, moving both ways</span></div>
+    <div class="panel-head"><h2>How it works</h2><span class="sub">a wrapping array, moving both ways</span></div>
     <div class="panel-body notes">
-      <p>The cleanest build reuses the <a href="../circular-queue/circular-queue.html">circular queue</a>'s
-      trick — a fixed array with indices that wrap using <code>% MAX</code> — but now the <code>front</code>
-      index can move <em>backwards</em> too, not just <code>rear</code> forwards. Keep <code>front</code> and a
-      <code>size</code> count; the rear is always <code>(front + size - 1) % MAX</code>.</p>
-
-      <ul class="steps">
-        <li><b>Push rear:</b> write at <code>(front + size) % MAX</code>, then <code>size++</code> — same as the
-        circular queue.</li>
-        <li><b>Push front:</b> step <code>front</code> <em>back</em> one with a wrap,
-        <code>front = (front - 1 + MAX) % MAX</code>, write there, then <code>size++</code>. (The
-        <code>+ MAX</code> keeps the number non-negative before the <code>%</code>.)</li>
-        <li><b>Pop front / pop rear:</b> read the end slot, then shrink from that side.</li>
-      </ul>
-
-      <p>Every move is a couple of index steps — no shifting, no walking — so all four are <b>O(1)</b>. Try each
-      end in the visualizer:</p>
+      <p>The cleanest build reuses the <a href="../circular-queue/circular-queue.html">circular queue</a>'s trick
+      — a fixed array with indices that wrap using <code>% MAX</code> — but now the <code>front</code> index can
+      move <em>backwards</em> too, not just <code>rear</code> forwards. Keep <code>front</code> and a
+      <code>size</code> count; the rear is always <code>(front + size - 1) % MAX</code>. Every move is a couple
+      of index steps — no shifting, no walking — so all four are <b>O(1)</b>. Watch both ends in action:</p>
 
       <div class="scroller"><div id="demoStage"></div></div>
       <p class="narr" id="demoNarr" style="margin-top:12px">&nbsp;</p>
-      <div class="code-panel" id="demoCode" style="margin-top:12px"></div>
     </div>
   </section>
 
-  <!-- LEVEL 3 -->
+  <section class="panel">
+    <div class="panel-head"><h2>Learn each operation in depth</h2><span class="sub">the thought process, an animation, and the C</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="deque-push.html">
+          <span class="num">01</span><h3>Push (both ends)</h3>
+          <p>Add at the rear with <code>(front+size)%MAX</code>, or at the front by stepping <code>front</code> back one with a wrap.</p>
+          <span class="go">Open push &rarr;</span>
+        </a>
+        <a class="dive-card" href="deque-pop.html">
+          <span class="num">02</span><h3>Pop (both ends)</h3>
+          <p>Remove from the front by advancing <code>front</code>, or from the rear by computing it and shrinking <code>size</code>.</p>
+          <span class="go">Open pop &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <section class="panel">
     <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs and where deques show up</span></div>
     <div class="panel-body notes">
@@ -101,21 +117,21 @@
       <p><b>Where you'll meet deques.</b> The classic use is the <b>sliding-window maximum</b> problem, where a
       deque of indices keeps a window's largest value in O(1); also undo/redo with a bounded history (drop the
       oldest from one end while pushing new work on the other), work-stealing schedulers (a thread pushes and
-      pops its own end while idle threads steal from the far end), and a browser's combined back/forward
-      history. Backed by a <a href="../linked-list/linked-list.html">doubly linked list</a> instead of an array,
-      a deque needs no fixed capacity at all.</p>
+      pops its own end while idle threads steal from the far end), and a browser's combined back/forward history.
+      Backed by a <a href="../linked-list/linked-list.html">doubly linked list</a> instead of an array, a deque
+      needs no fixed capacity at all.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="deque-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="deque-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: open the visualizer and push at both ends, then pop from both — notice it can act like a stack or a
-    queue depending on which ends you use.
+    Next: read the Push and Pop pages, then build a deque in the playground — push at both ends and pop from
+    both, and notice it can act like a stack or a queue depending on which ends you use.
   </footer>
 </div>
 
@@ -125,54 +141,35 @@
 (function(){
   "use strict";
   var CAP=6;
-  var PUSHR=[
-    "void pushRear(Deque *d, int val) {",
-    "  int i = (d->front + d->size) % MAX;",
-    "  d->items[i] = val;  d->size++;",
-    "}"];
-  var PUSHF=[
-    "void pushFront(Deque *d, int val) {",
-    "  d->front = (d->front - 1 + MAX) % MAX;",
-    "  d->items[d->front] = val;  d->size++;",
-    "}"];
-  var POPF=[
-    "int popFront(Deque *d) {",
-    "  int val = d->items[d->front];",
-    "  d->front = (d->front + 1) % MAX;  d->size--;",
-    "}"];
-
-  function slotsFor(arr, front, size, active, activeCls){
+  function slotsFor(arr, front, size, active){
     var occ={}; for(var k=0;k<size;k++) occ[(front+k)%CAP]=true;
     var rear=(front+size-1+CAP)%CAP, out=[];
     for(var i=0;i<CAP;i++){
       var s={ val:(occ[i]||active===i)?arr[i]:null };
-      if(active===i) s.cls=activeCls||"active";
+      if(active===i) s.cls="active";
       var p=[]; if(size>0&&i===front)p.push("FRONT"); if(size>0&&i===rear)p.push("REAR");
       if(p.length) s.ptrs=p;
       out.push(s);
     }
     return out;
   }
-  function F(arr, front, size, active, activeCls, code, line, narr){
+  function F(arr, front, size, active, narr){
     var rear=size>0?((front+size-1)%CAP):-1;
-    return { slots:slotsFor(arr,front,size,active,activeCls), dir:"h",
-      note:"front = "+front+"   rear = "+rear+"   size = "+size, codeLines:code, code:line, narr:narr };
+    return { slots:slotsFor(arr,front,size,active), dir:"h", note:"front = "+front+"   rear = "+rear+"   size = "+size, narr:narr };
   }
   function scriptFrames(){
     var arr=[10,20,30,undefined,undefined,undefined], front=0, size=3, frames=[];
     function pushR(v){ var i=(front+size)%CAP; arr=arr.slice(); arr[i]=v; size++;
-      frames.push(F(arr, front, size, i, "active", PUSHR, 1, "Push "+v+" at the rear, index "+i+".")); }
+      frames.push(F(arr, front, size, i, "Push "+v+" at the rear, index "+i+".")); }
     function pushF(v){ front=(front-1+CAP)%CAP; arr=arr.slice(); arr[front]=v; size++;
-      frames.push(F(arr, front, size, front, "active", PUSHF, [1,2], "Push "+v+" at the front — front steps back to "+front+".")); }
+      frames.push(F(arr, front, size, front, "Push "+v+" at the front — front steps back to "+front+".")); }
     function popF(){ var v=arr[front]; front=(front+1)%CAP; size--;
-      frames.push(F(arr, front, size, -1, null, POPF, 2, "Pop front "+v+"; front advances.")); }
-    pushR(40);
-    pushF(5);
-    popF();
+      frames.push(F(arr, front, size, -1, "Pop front "+v+"; front advances.")); }
+    pushR(40); pushF(5); popF();
     return frames;
   }
   ArrAnim.play({ host:document.getElementById("demoStage"), narrEl:document.getElementById("demoNarr"),
-    codeHost:document.getElementById("demoCode"), frames:scriptFrames(), ms:1800 });
+    frames:scriptFrames(), ms:1800 });
 })();
 </script>
 </body>

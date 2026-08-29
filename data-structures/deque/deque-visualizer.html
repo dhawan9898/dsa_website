@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+</style>
 </head>
 <body>
 
@@ -16,28 +34,40 @@
     <div>
       <a class="masthead-nav" href="deque.html">&larr; Deque notes</a>
       <p class="eyebrow">Double-Ended Queue</p>
-      <h1>Deque&nbsp;Visualizer</h1>
+      <h1>Deque&nbsp;Playground</h1>
     </div>
-    <p class="note">Add or remove at <em>either</em> end. Same wrapping array as the circular queue — front can step backwards, rear forwards.</p>
+    <p class="note">Start empty and build it from either end. Pick an operation, and only then does its input and explanation appear.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Deque pages">
+    <a href="deque.html">Overview</a>
+    <a href="deque-push.html">Push (both ends)</a>
+    <a href="deque-pop.html">Pop (both ends)</a>
+    <a class="here" href="deque-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Choose an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2><span class="sub">fixed capacity: 6 slots</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Value</span><input type="number" id="valF" value="5"></label>
-        <button id="opPushF" class="primary">Push front</button>
-        <button id="opPushR" class="primary">Push rear</button>
+      <div class="opbtns">
+        <button class="opbtn" data-op="pushF">Push front</button>
+        <button class="opbtn" data-op="pushR">Push rear</button>
+        <button class="opbtn" data-op="popF">Pop front</button>
+        <button class="opbtn" data-op="popR">Pop rear</button>
+        <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <div class="row" style="margin-top:10px">
-        <button id="opPopF">Pop front</button>
-        <button id="opPopR">Pop rear</button>
-        <button id="opReset">Reset</button>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow" id="valWrap" hidden><span>Value</span><input type="number" id="valF" value="5"></label>
+          <button class="primary" id="opRun">Run</button>
+        </div>
       </div>
-      <p class="hint" id="hint">A deque is a stack and a queue at once: push/pop at the front, the rear, or both.</p>
+      <p class="hint" id="hint" style="margin-top:12px">The deque is empty. Push a value at either end to start.</p>
     </div>
   </section>
 
@@ -51,7 +81,7 @@
         <button class="arr-cbtn" id="aStep">Step ▶</button>
         <span class="arr-step" id="aCount">0 / 0</span>
       </div>
-      <p class="narr" id="narr" style="margin-top:12px">Loading…</p>
+      <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
       <div class="legend" style="margin-top:6px">
         <span class="key"><i class="swatch right"></i> the item being added / removed</span>
         <span class="key"><i class="swatch" style="border-color:var(--rule);border-style:dashed"></i> a free slot</span>
@@ -68,10 +98,9 @@
   </section>
 
   <footer>
-    A deque generalizes both of its cousins: use only the rear and it's a
-    <a href="../stack/stack.html">stack</a>; push at the rear and pop at the front and it's a
-    <a href="../queue/queue.html">queue</a>. Every one of the four operations is O(1) — just an index step
-    with a <code>% MAX</code> wrap.
+    Use only the rear and it's a <a href="../stack/stack.html">stack</a>; push rear and pop front and it's a
+    <a href="../queue/queue.html">queue</a>. Every one of the four operations is O(1) — an index step with a
+    <code>% MAX</code> wrap.
   </footer>
 </div>
 
@@ -82,7 +111,6 @@
   "use strict";
   var CAP=6;
   var D={arr:[], front:0, size:0};
-  function seed(){ D={arr:[10,20,30,undefined,undefined,undefined], front:0, size:3}; } seed();
 
   var PUSHR=[
     "void pushRear(Deque *d, int val) {",
@@ -186,18 +214,46 @@
   playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
 
   function hint(m){ document.getElementById("hint").textContent=m; }
-  function numV(){ var v=Number(document.getElementById("valF").value); return isFinite(v)?v:null; }
-  function run(r){ if(r.error){ stopP(); hint(r.error); return; } hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play."); loadFrames(r.frames); }
+  function drawEmpty(){ P.frames=[F(D.arr.slice(),D.front,D.size,-1,null,null,null, D.size===0?"The deque is empty.":"Current deque.")]; P.i=0; drawP(); }
 
-  document.getElementById("opPushF").onclick=function(){ var v=numV(); if(v==null) return hint("Enter a value."); run(opPushF(v)); };
-  document.getElementById("opPushR").onclick=function(){ var v=numV(); if(v==null) return hint("Enter a value."); run(opPushR(v)); };
-  document.getElementById("opPopF").onclick=function(){ run(opPopF()); };
-  document.getElementById("opPopR").onclick=function(){ run(opPopR()); };
-  document.getElementById("opReset").onclick=function(){ stopP(); seed();
-    P.frames=[F(D.arr.slice(),D.front,D.size,-1,null,null,null,"Fresh deque: 10, 20, 30.")]; P.i=0; drawP(); hint("Deque reset."); };
+  var OPS={
+    pushF:{ name:"Push front", needsValue:true, desc:"Add a value at the left end. front steps back one with a wrap, (front-1+MAX)%MAX, then the value is written there." },
+    pushR:{ name:"Push rear", needsValue:true, desc:"Add a value at the right end. The write index is (front+size)%MAX — same as a circular queue's enqueue." },
+    popF:{ name:"Pop front", needsValue:false, desc:"Remove and return the left end. front advances with (front+1)%MAX and size drops. Fails on an empty deque." },
+    popR:{ name:"Pop rear", needsValue:false, desc:"Remove and return the right end. rear = (front+size-1)%MAX; size drops and front stays put. Fails on an empty deque." },
+    reset:{ name:"Reset", needsValue:false, desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"),
+      opdescEl=document.getElementById("opdesc"), valWrap=document.getElementById("valWrap"), valF=document.getElementById("valF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ D={arr:[],front:0,size:0}; stopP(); drawEmpty(); ArrAnim.renderCode(codeHost,null,null);
+      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Deque cleared. Push a value at either end to start."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    valWrap.hidden=!meta.needsValue; panel.hidden=false; hint("");
+    if(meta.needsValue){ valF.focus(); valF.select(); }
+  }
+  function runCurrent(){
+    if(!current) return;
+    var r, v=Number(valF.value);
+    if(current==="pushF"){ if(!isFinite(v)) return hint("Enter a value."); r=opPushF(v); }
+    else if(current==="pushR"){ if(!isFinite(v)) return hint("Enter a value."); r=opPushR(v); }
+    else if(current==="popF"){ r=opPopF(); }
+    else if(current==="popR"){ r=opPopR(); }
+    if(!r) return;
+    if(r.error){ stopP(); hint(r.error); return; }
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+  valF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
 
-  P.frames=[F(D.arr.slice(),D.front,D.size,-1,null,null,null,"Current deque: 10 (front) … 30 (rear). Push or pop at either end.")];
-  P.i=0; drawP();
+  drawEmpty();
 })();
 </script>
 </body>
