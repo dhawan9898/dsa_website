@@ -3,11 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Priority Queue</title>
+<title>Priority Queue (Heap)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+  .arrline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .arrline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
@@ -15,173 +35,146 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Binary Heap &middot; Root Is Always Next</p>
-      <h1>Priority&nbsp;Queue</h1>
+      <p class="eyebrow">Smallest Always On Top</p>
+      <h1>Priority&nbsp;Queue&nbsp;<span style="font-weight:500">(Heap)</span></h1>
     </div>
-    <p class="note">A queue where what comes out next isn't who arrived first, but whoever has the highest priority.</p>
+    <p class="note">A queue where items leave in priority order, not arrival order — built on a clever array-as-tree called a binary heap.</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
-    <div class="panel-body notes">
-      <p>A priority queue always hands back its highest-priority element first, regardless of insertion
-      order. The standard way to build one is a <b>binary heap</b>: a complete binary tree (every level full
-      except possibly the last, filled left to right) where every parent outranks its children — a
-      <b>max-heap</b> keeps the largest value at the root, a <b>min-heap</b> the smallest.</p>
-      <p>Because it's always complete, a heap can be stored compactly in a plain array with no pointers at
-      all: node <code>i</code>'s children live at <code>2i+1</code> and <code>2i+2</code>, and its parent at
-      <code>(i-1)/2</code>. Insert appends a new leaf and <b>sifts it up</b> past any parent it outranks;
-      extracting the root moves the last leaf into its place and <b>sifts it down</b> past whichever child
-      outranks it, exactly the mechanics behind <a href="../../sorting/heap-sort/heap-sort-visualizer.html">heap sort</a>.</p>
+  <nav class="subnav" aria-label="Priority Queue pages">
+    <a class="here" href="priority-queue.html">Overview</a>
+    <a href="priority-queue-operations.html">Insert &amp; Extract</a>
+    <a href="priority-queue-visualizer.html">Playground</a>
+  </nav>
 
+  <section class="panel">
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
+    <div class="panel-body notes">
+      <p>A hospital emergency room doesn't treat people first-come-first-served — the most urgent case goes next,
+      no matter when they arrived. A <b>priority queue</b> is that rule as a data structure: you add items with a
+      priority, and each time you remove one you get the highest-priority item currently waiting. (A plain
+      <a href="../queue/queue.html">queue</a> is the special case where priority = arrival time.)</p>
+
+      <p>The catch is doing both operations — <em>add anything</em> and <em>always remove the best</em> — fast. A
+      sorted list makes remove-best O(1) but insert O(n); an unsorted list makes insert O(1) but remove-best
+      O(n). The <b>binary heap</b> is the elegant compromise: <b>both</b> are O(log n).</p>
+
+      <div class="callout">
+        <b>The heap property.</b> A heap is a <em>complete</em> binary tree (every level full, last level filled
+        left-to-right) with one rule: every parent is <b>≤ both of its children</b> (a min-heap). That rule,
+        applied everywhere, forces the smallest value to sit at the <b>root</b> — so "find the minimum" is
+        instant, O(1). (Flip the comparison for a max-heap, where the largest is on top.)
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The trick: a tree with no pointers</h2><span class="sub">the heap lives in a flat array</span></div>
+    <div class="panel-body notes">
+      <p>Here's the neat part: because a heap is always a <em>complete</em> tree, you don't need any pointers to
+      store it — a plain array is enough. Lay the nodes out top-to-bottom, left-to-right, and the tree shape is
+      implied by arithmetic:</p>
+      <p class="arrline">the node at index <b>i</b> has its children at <b>2i+1</b> and <b>2i+2</b>, and its parent at <b>(i−1)/2</b>.</p>
+      <p>So the tree you see below and the array are the same thing — the tree is just a picture of the array.
+      Watch a few values get inserted, each bubbling up to keep the smallest on top:</p>
+
+      <div class="scroller"><div id="demoHost"></div><svg class="tree-svg" id="demoSvg"></svg></div>
+      <p class="arrline" id="demoArr">array: <b>[]</b></p>
+      <p class="narr" id="demoNarr" style="margin-top:6px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn the operations</h2><span class="sub">the thought process, an animation, and the C</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="priority-queue-operations.html">
+          <span class="num">01</span><h3>Insert &amp; Extract</h3>
+          <p>Insert drops a value at the end and bubbles it up; extract-min takes the root, moves the last value up, and sifts it down.</p>
+          <span class="go">Open operations &rarr;</span>
+        </a>
+        <a class="dive-card" href="priority-queue-visualizer.html">
+          <span class="num">02</span><h3>Playground</h3>
+          <p>Insert and extract values and watch the tree — and the array beneath it — rearrange to keep the heap valid.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs and where heaps show up</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
-        <tr><td>Insert</td><td>Append a leaf, sift it up</td><td><b>O(log n)</b></td></tr>
-        <tr><td>Extract</td><td>Remove the root, move the last leaf there, sift it down</td><td><b>O(log n)</b></td></tr>
-        <tr><td>Peek</td><td>Look at the root without removing it</td><td><b>O(1)</b></td></tr>
+        <tr><td>Peek min</td><td>Look at the root</td><td><b>O(1)</b></td></tr>
+        <tr><td>Insert</td><td>Add at the end, bubble up</td><td><b>O(log n)</b></td></tr>
+        <tr><td>Extract-min</td><td>Remove the root, sift down</td><td><b>O(log n)</b></td></tr>
+        <tr><td>Build heap</td><td>Heapify an existing array</td><td>O(n)</td></tr>
       </table>
 
-      <p>Used for Dijkstra's and Prim's algorithms (always expand the cheapest known option next), OS task
-      schedulers, and event simulations that need to process the next-soonest event regardless of when it
-      was scheduled.</p>
+      <p>Insert and extract each touch a single root-to-leaf path — the height, <code>log n</code> — because the
+      tree is always complete and so perfectly balanced by construction (no rotations needed, unlike an
+      <a href="../avl-tree/avl-tree.html">AVL tree</a>).</p>
 
-      <p><b>When it breaks:</b> get the comparison backwards (say, after switching a max-heap to a min-heap
-      without also re-validating the existing array) and the heap still <em>looks</em> complete — every slot
-      filled, correct shape — while silently violating the one property that actually matters, so the "next"
-      value extracted is no longer the right one. Off-by-one on the size counter is the other classic:
-      forget to grow it on insert, or shrink it on extract, and sift-up/sift-down compare against a stale
-      slot that's either garbage or about to be overwritten.</p>
-    </div>
-  </section>
+      <p><b>A heap is not sorted.</b> It only promises the <em>minimum</em> is on top — the rest is loosely
+      ordered. That's exactly enough for "always give me the smallest," and no more, which is why it's so cheap.</p>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; insert, then extract the max</span></div>
-    <div class="panel-body">
-      <div class="scroller">
-        <div class="treewrap" id="demoWrap">
-          <svg class="links" id="demoLinks"></svg>
-          <div id="demoHost"></div>
-        </div>
-      </div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / extractMax()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Where you'll meet heaps.</b> <a href="../dijkstra/dijkstra.html">Dijkstra's</a> shortest-path and
+      Prim's/<a href="../kruskal-mst/kruskal-mst.html">Kruskal's</a> MST use one to always expand the cheapest
+      edge next; OS and event schedulers use one to run the highest-priority task; <a href="../../sorting/heap-sort/heap-sort.html">heap
+      sort</a> is literally "insert everything, then extract-min repeatedly"; and "top-K" queries keep a heap of
+      the K best seen so far.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="priority-queue-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="priority-queue-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — insert a handful of values, then extract repeatedly and watch them come back
-    out largest-first.
+    Next: read Insert &amp; Extract, then build a heap in the playground — insert values in any order and watch
+    the smallest always bubble its way to the top.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var INSERT_CODE=[
-    "void insert(Heap *h, int val) {",
-    "  h->items[h->size] = val;",
-    "  int i = h->size++;",
-    "  while (i > 0) {",
-    "    int parent = (i - 1) / 2;",
-    "    if (h->items[i] <= h->items[parent]) break;   // max-heap",
-    "    swap(&h->items[i], &h->items[parent]);",
-    "    i = parent;",
-    "  }",
-    "}"
-  ];
-  var EXTRACT_CODE=[
-    "int extractMax(Heap *h) {",
-    "  int top = h->items[0];",
-    "  h->items[0] = h->items[--h->size];",
-    "  int i = 0;",
-    "  while (1) {",
-    "    int l = 2*i+1, r = 2*i+2, best = i;",
-    "    if (l < h->size && h->items[l] > h->items[best]) best = l;",
-    "    if (r < h->size && h->items[r] > h->items[best]) best = r;",
-    "    if (best == i) break;",
-    "    swap(&h->items[i], &h->items[best]);",
-    "    i = best;",
-    "  }",
-    "  return top;",
-    "}"
-  ];
-
-  function toTreeFromHeap(heap, activeIdx, activeRole, otherIdx){
-    function build(i){
-      if(i>=heap.length) return null;
-      var role = i===activeIdx ? activeRole : (i===otherIdx?"right":"");
-      return { id:i, val:heap[i], role:role, left:build(2*i+1), right:build(2*i+2) };
-    }
-    return build(0);
+  function one(k,v){var o={};o[k]=v;return o;}
+  function tree(arr, cls, ptrs){
+    var nodes={};
+    for(var i=0;i<arr.length;i++){ nodes["h"+i]={val:arr[i],left:(2*i+1<arr.length?"h"+(2*i+1):null),right:(2*i+2<arr.length?"h"+(2*i+2):null)}; if(cls&&cls[i]!==undefined)nodes["h"+i].cls=cls[i]; }
+    var p={}; if(ptrs) Object.keys(ptrs).forEach(function(i){ p["h"+i]=ptrs[i]; });
+    return {root:arr.length?"h0":null, nodes:nodes, ptrs:p};
   }
-
-  function scriptFrames(){
-    var heap=[], frames=[];
-    function push(activeIdx, activeRole, narr, otherIdx, code, codeLine){ frames.push({struct:{root:toTreeFromHeap(heap,activeIdx,activeRole,otherIdx)}, narr:narr, code:code, codeLine:codeLine}); }
-    function insert(v){
-      heap.push(v);
-      var i=heap.length-1;
-      push(i,"left head landed","Insert "+v+" at index "+i+".",undefined,INSERT_CODE,[1,2]);
-      while(i>0){
-        var p=Math.floor((i-1)/2);
-        if(heap[i]>heap[p]){
-          push(i,"right","Sift up past "+heap[p]+".",p,INSERT_CODE,[5,7]);
-          var t=heap[i]; heap[i]=heap[p]; heap[p]=t; i=p;
-          push(i,"left head landed", v+" now at index "+i+".",undefined,INSERT_CODE,7);
-        } else { push(i,"left head","Settled.",undefined,INSERT_CODE,5); break; }
-      }
-    }
-    function extract(){
-      var top=heap[0];
-      push(0,"left head","Extract the max, "+top+".",undefined,EXTRACT_CODE,1);
-      var last=heap.pop();
-      if(!heap.length){ push(undefined,"", top+" removed — heap empty.",undefined,EXTRACT_CODE,2); return; }
-      heap[0]=last;
-      push(0,"left head landed", "Move last leaf "+last+" to root, sift down.",undefined,EXTRACT_CODE,2);
-      var i=0;
-      while(true){
-        var l=2*i+1,r=2*i+2,best=i;
-        if(l<heap.length && heap[l]>heap[best]) best=l;
-        if(r<heap.length && heap[r]>heap[best]) best=r;
-        if(best===i){ push(i,"left head landed","Settled.",undefined,EXTRACT_CODE,8); break; }
-        push(best,"right","Swap up past "+heap[i]+".",i,EXTRACT_CODE,[6,9]);
-        var t=heap[i]; heap[i]=heap[best]; heap[best]=t; i=best;
-        push(i,"left head landed", last+" now at index "+i+".",undefined,EXTRACT_CODE,10);
-      }
-    }
-    push(undefined,"","Create the heap: an empty array.",undefined,INSERT_CODE,0);
-    insert(40); insert(70); insert(20); insert(90); insert(55);
-    extract(); extract();
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      DSRender.tree(document.getElementById("demoHost"), document.getElementById("demoLinks"), frame.struct.root, {});
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
+  function F(arr,cls,ptrs,narr){ var f=tree(arr,cls,ptrs); f.narr=narr; f._arr=arr.slice(); return f; }
+  var arrEl=document.getElementById("demoArr");
+  // insert 20,15,30,10 with bubble-ups (pre-scripted end-states of each stable step)
+  var frames=[
+    F([20], one(0,'active'), null, "Insert 20 — it's the root."),
+    F([20,15], one(1,'active'), null, "Insert 15 at the end (left child)."),
+    F([15,20], one(0,'active'), null, "15 < its parent 20 — bubble up. Now 15 is the root."),
+    F([15,20,30], one(2,'active'), null, "Insert 30 (right child). 30 ≥ 15, so it stays."),
+    F([15,20,30,10], one(3,'active'), null, "Insert 10 at the end."),
+    F([15,10,30,20], one(1,'active'), null, "10 < parent 20 — bubble up."),
+    F([10,15,30,20], one(0,'active'), null, "10 < parent 15 — bubble up to the root. The minimum, 10, is on top.")
+  ];
+  TreeAnim.play({ host:document.getElementById("demoHost"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:1700, frames:frames });
+  // keep the array line in sync with whichever frame is showing (match on its narration)
+  var nEl=document.getElementById("demoNarr");
+  var mo=new MutationObserver(function(){
+    for(var k=0;k<frames.length;k++){ if(frames[k].narr===nEl.textContent){ arrEl.innerHTML="array: <b>["+frames[k]._arr.join(", ")+"]</b>"; break; } }
   });
+  mo.observe(nEl,{childList:true,characterData:true,subtree:true});
 })();
 </script>
 </body>
