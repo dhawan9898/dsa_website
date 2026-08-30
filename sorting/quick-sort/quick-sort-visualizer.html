@@ -3,184 +3,160 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quick Sort — step by step</title>
+<title>Quick Sort Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .ctl-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .statline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .statline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="quick-sort.html">&larr; Quick Sort notes</a>
       <p class="eyebrow">Pick a Pivot &middot; Partition &middot; Recurse</p>
-      <h1>Quick&nbsp;Sort</h1>
+      <h1>Quick&nbsp;Sort&nbsp;Playground</h1>
     </div>
-    <p class="note">Picks a pivot, partitions the range around it so everything smaller ends up on the left and everything larger on the right, then recurses on each side.</p>
+    <p class="note">Type your own numbers or randomize, then watch each partition push smaller values left and lock the pivot — one C line at a time.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Quick Sort pages">
+    <a href="quick-sort.html">Overview</a>
+    <a class="here" href="quick-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Set the array</h2><span class="sub">2 &ndash; 16 numbers</span></div>
+    <div class="panel-head"><h2>Your array</h2><span class="sub">up to 9 numbers · pivot = last element (Lomuto)</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld">
-          <span>Numbers, separated by commas</span>
-          <input type="text" id="input" value="38, 27, 43, 3, 9, 82, 10" autocomplete="off" spellcheck="false">
-        </label>
-        <button id="load">Use this array</button>
-        <button id="rand">Random</button>
+      <div class="ctl-row">
+        <label class="fld"><span>Numbers (comma-separated)</span><input type="text" id="arrF" value="5, 2, 8, 1, 9, 3"></label>
+        <button class="opbtn" id="randBtn" style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;padding:10px 18px;border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer">Random</button>
+        <button class="primary" id="sortBtn">Sort it</button>
       </div>
-      <p class="hint" id="hint">Press Play to watch the sort, or step through one comparison at a time.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">Enter numbers and press <b>Sort it</b>. Then use ◀ Back / Step ▶ to move one line at a time.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Working array</h2><span class="sub">Lomuto partition, last element as pivot</span></div>
+    <div class="panel-head"><h2>The array</h2><span class="sub">gold = pivot; dimmed bars are outside the current partition; green is locked</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> boundary of the &le;-pivot region</span>
-        <span class="key"><i class="swatch right"></i> scanning pointer</span>
-        <span class="key"><i class="swatch pivot"></i> pivot</span>
-        <span class="key"><i class="swatch sorted"></i> in final sorted position</span>
-        <span class="key"><i class="swatch dim"></i> outside the range being partitioned right now</span>
+      <div class="bars-stage"><div id="barsHost"></div></div>
+      <div class="bars-ctrls" id="playbar">
+        <button class="bars-cbtn" id="aBack">◀ Back</button>
+        <button class="bars-cbtn" id="aPlay">Play</button>
+        <button class="bars-cbtn" id="aStep">Step ▶</button>
+        <span class="bars-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="statline" id="statLine">&nbsp;</p>
+      <p class="narr" id="narr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:#B07A17;border-color:#B07A17"></i> pivot</span>
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> i / j</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> locked</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; quickSort()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">line highlighted as it runs</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Load an array to begin.</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Once a pivot lands, it never moves again &mdash; everything on its left is guaranteed smaller and everything
-    on its right larger, forever. That's why dimmed-out regions from earlier partitions stay put while the
-    algorithm recurses into whichever side it's currently working on.
+    Each partition puts one pivot in its final place, then quick sort recurses on the smaller and larger sides. With
+    a middling pivot that's O(n log n); the dimmed bars show which partition is active right now.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
   var CODE=[
-    "void quickSort(int arr[], int lo, int hi) {",
-    "  if (lo >= hi) return;",
-    "  int pivot = arr[hi];",
-    "  int i = lo - 1;",
-    "  for (int j = lo; j < hi; j++) {",
-    "    if (arr[j] <= pivot) {",
-    "      i++;",
-    "      swap(&arr[i], &arr[j]);",
-    "    }",
-    "  }",
-    "  swap(&arr[i + 1], &arr[hi]);   // pivot lands at i+1",
-    "  quickSort(arr, lo, i);",
-    "  quickSort(arr, i + 2, hi);",
-    "}"
-  ];
-
-  function build(input){
-    var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0, fixed=new Array(n).fill(false);
-    function push(r,phase,narr,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,code:CODE,codeLine:codeLine,moves:moves}); }
-    function baseRoles(lo,hi){
-      var r=new Array(n).fill("");
-      for(var idx=0; idx<n; idx++){
-        if(fixed[idx]) r[idx]="sorted";
-        else if(idx<lo || idx>hi) r[idx]="dim";
-      }
-      return r;
-    }
-
-    push(baseRoles(0,n-1),"start","Quick sort picks a pivot, partitions the array around it, then recurses on each side. No merge step is needed — once partitioning finishes, the pivot is already where it belongs.",0);
-
-    function qsort(lo,hi){
+    "void quickSort(int a[], int lo, int hi) {",
+    "  if (lo >= hi) return;               // 0 or 1 element",
+    "  int pivot = a[hi], i = lo;",
+    "  for (int j = lo; j < hi; j++)",
+    "    if (a[j] < pivot) { swap(&a[i], &a[j]); i++; }",
+    "  swap(&a[i], &a[hi]);                // pivot into place",
+    "  quickSort(a, lo, i - 1);            // left side",
+    "  quickSort(a, i + 1, hi);            // right side",
+    "}"];
+  function runQuick(a){
+    a=a.slice(); var n=a.length, frames=[], comps=0, swaps=0, sorted={};
+    function barsFor(lo,hi,pivot,i,j){ return a.map(function(v,k){
+      var c=""; if(sorted[k]) c="sorted"; else if(k<lo||k>hi) c="dim"; else if(k===pivot) c="pivot"; else if(k===i||k===j) c="a";
+      var p=[]; if(k===i)p.push('i'); if(k===j)p.push('j'); return {val:v, cls:c, ptrs:p}; }); }
+    function snap(line,lo,hi,pivot,i,j,narr){ frames.push({bars:barsFor(lo,hi,pivot,i,j), code:line, codeLines:CODE, narr:narr, _c:comps, _s:swaps}); }
+    function qs(lo,hi){
       if(lo>hi) return;
-      if(lo===hi){
-        fixed[lo]=true;
-        push(baseRoles(lo,hi),"leaf","Index "+lo+" holds "+a[lo]+" alone — a single element is already in its correct position.",1);
-        return;
-      }
-      var pivot=a[hi];
-      var r0=baseRoles(lo,hi); r0[hi]="pivot";
-      push(r0,"pivot","Partitioning "+lo+"–"+hi+": pick "+pivot+" (index "+hi+") as the pivot. Everything ≤ pivot will end up on its left, everything greater on its right.",[2,3]);
-
-      var i=lo-1;
+      if(lo===hi){ sorted[lo]=1; snap(1,lo,hi,-1,-1,-1,"Single element a["+lo+"] = "+a[lo]+" — already in place."); return; }
+      var pivot=a[hi], i=lo;
+      snap(2,lo,hi,hi,i,-1,"Partition indices "+lo+"…"+hi+". Pivot = a["+hi+"] = "+pivot+". i = "+lo+".");
       for(var j=lo;j<hi;j++){
-        var r=baseRoles(lo,hi);
-        r[hi]="pivot";
-        r[j]="right head";
-        if(i>=lo) r[i]="left head";
-        cmp++;
-        var takeIn=a[j]<=pivot;
-        push(r,"compare","Compare "+a[j]+" (index "+j+") with the pivot "+pivot+". "+
-          (takeIn ? "Not greater than the pivot, so it belongs in the left region." : "Greater than the pivot, so it stays on the right for now."),5);
-        if(takeIn){
-          i++;
-          if(i!==j){
-            var tmp=a[i]; a[i]=a[j]; a[j]=tmp; swp++;
-            var r2=baseRoles(lo,hi);
-            r2[hi]="pivot"; r2[i]="left head landed"; r2[j]="right head landed";
-            push(r2,"swap","Swap "+a[i]+" and "+a[j]+" so the ≤-pivot region grows to include index "+i+".",[6,7],
-              [{from:i,to:j},{from:j,to:i}]);
-          } else {
-            var r3=baseRoles(lo,hi);
-            r3[hi]="pivot"; r3[i]="left head";
-            push(r3,"no-swap","Index "+i+" is already inside the ≤-pivot region, so no swap is needed.",6);
-          }
-        }
+        comps++;
+        snap([3,4],lo,hi,hi,i,j,"a["+j+"] = "+a[j]+(a[j]<pivot?(" < "+pivot+" — swap into the small region and advance i."):(" ≥ "+pivot+" — leave it.")));
+        if(a[j]<pivot){ if(i!==j){ var t=a[i]; a[i]=a[j]; a[j]=t; swaps++; } i++; }
       }
-      var p=i+1;
-      var tmp2=a[p]; a[p]=a[hi]; a[hi]=tmp2; swp++;
-      fixed[p]=true;
-      var r4=baseRoles(lo,hi); r4[p]="sorted landed";
-      push(r4,"place-pivot","Swap the pivot into index "+p+". Everything left of it is ≤ "+a[p]+" and everything right is greater — the pivot is now in its final sorted position.",10,
-        [{from:p,to:hi},{from:hi,to:p}]);
-
-      qsort(lo,p-1);
-      qsort(p+1,hi);
+      if(i!==hi){ var t2=a[i]; a[i]=a[hi]; a[hi]=t2; swaps++; }
+      sorted[i]=1;
+      snap(5,lo,hi,-1,-1,-1,"Swap the pivot into index i = "+i+". "+pivot+" is now in its final place (locked).");
+      qs(lo,i-1);
+      qs(i+1,hi);
     }
-
-    qsort(0,n-1);
-    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.",13);
+    snap(0,0,n-1,-1,-1,-1,"Start. quickSort on the whole array [0…"+(n-1)+"].");
+    qs(0,n-1);
+    var all={}; for(var k=0;k<n;k++) all[k]=1; sorted=all;
+    snap(0,0,n-1,-1,-1,-1,"Sorted: ["+a.join(", ")+"]. "+comps+" comparisons, "+swaps+" swaps.");
     return frames;
   }
 
-  Viz.init({
-    defaultInput: "38, 27, 43, 3, 9, 82, 10",
-    minN:2, maxN:16,
-    build: build,
-    statLabels: [{key:"cmp",label:"Comparisons"},{key:"swp",label:"Swaps"}]
-  });
+  var host=document.getElementById("barsHost"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount"), statEl=document.getElementById("statLine");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    BarsAnim.render(host, f); narrEl.textContent=f.narr||"";
+    statEl.innerHTML="comparisons: <b>"+(f._c||0)+"</b> &nbsp; swaps: <b>"+(f._s||0)+"</b>";
+    BarsAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1150);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function parseArr(){ return document.getElementById("arrF").value.split(/[,\s]+/).map(function(s){return parseInt(s,10);}).filter(function(x){return !isNaN(x);}).slice(0,9); }
+  function showArray(a){ var f={bars:a.map(function(v){return {val:v,cls:"",ptrs:[]};}), narr:a.length?"Ready to sort ["+a.join(", ")+"].":"Enter some numbers."}; P.frames=[f]; P.i=0; BarsAnim.render(host,f); narrEl.textContent=f.narr; statEl.innerHTML="&nbsp;"; BarsAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; }
+
+  document.getElementById("sortBtn").onclick=function(){ var a=parseArr(); if(a.length<2){ hint("Enter at least two numbers."); return; } hint("Use ◀ Back / Step ▶ to walk line by line, or let it play."); loadFrames(runQuick(a)); };
+  document.getElementById("randBtn").onclick=function(){ var n=5+Math.floor(Math.random()*4), a=[]; for(var i=0;i<n;i++) a.push(1+Math.floor(Math.random()*20)); document.getElementById("arrF").value=a.join(", "); stopP(); showArray(a); hint("Random array loaded. Press Sort it."); };
+  document.getElementById("arrF").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("sortBtn").click(); });
+
+  showArray(parseArr());
 })();
 </script>
 </body>
