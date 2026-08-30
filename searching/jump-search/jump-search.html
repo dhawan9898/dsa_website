@@ -8,159 +8,136 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Jump in Blocks &middot; Scan the Last One</p>
       <h1>Jump&nbsp;Search</h1>
     </div>
-    <p class="note">Requires sorted data. Leaps forward in fixed-size blocks to find where the target must live, then falls back to a plain scan inside just that block.</p>
+    <p class="note">On sorted data, leap ahead in fixed-size blocks until you overshoot, then walk back through just the last block.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Jump Search pages">
+    <a class="here" href="jump-search.html">Overview</a>
+    <a href="jump-search-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Jump search sits between linear search and binary search. Like binary search it needs sorted data,
-      but instead of always halving the range, it leaps forward in fixed-size <b>blocks</b> — checking only
-      the last element of each block — until it finds a block whose last value is &ge; the target. Since the
-      array is sorted, the target (if present) has to be somewhere in that one block, so the final step
-      falls back to an ordinary linear scan, but only across that single block instead of the whole array.</p>
+      <p>Flipping through a sorted phone book, you don't read every name and you don't binary-search either — you
+      flip a chunk of pages, check the top name, flip another chunk, and once you've gone <em>past</em> your name you
+      back up and read that one chunk carefully. <b>Jump search</b> is that on a sorted array: leap ahead in fixed
+      blocks of size ≈ √n, checking each block's last element, until that element is ≥ the target. Then linearly
+      scan just that one block.</p>
 
+      <div class="callout">
+        <b>Why block size √n?</b> With <em>n</em> elements and block size <em>k</em>, you do at most <em>n/k</em>
+        jumps and then <em>k</em> steps scanning a block — <em>n/k + k</em> total. That sum is smallest when
+        <em>k = √n</em>, giving <b>O(√n)</b>. It's the sweet spot between one-at-a-time (linear) and halving
+        (binary).
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">jump block by block, then scan the block that must contain it</span></div>
+    <div class="panel-body notes">
+      <p>The block boundary is checked on each jump; once it overshoots the target, the scan walks that final block:</p>
+      <div class="bars-stage"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> element being checked</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> found</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it &amp; read the code</h2><span class="sub">line-by-line on your own numbers</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="jump-search-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Enter numbers (auto-sorted) and a target, and watch it jump in √n blocks, then scan the final block.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost and where it fits</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Time</th></tr>
-        <tr><td>Every case</td><td><b>O(&radic;n)</b> with block size &radic;n</td></tr>
-        <tr><td>Space</td><td><b>O(1)</b></td></tr>
+        <tr><th>Case</th><th>When</th><th>Time</th></tr>
+        <tr><td>Whole search</td><td>≈ √n jumps + √n scan</td><td><b>O(√n)</b></td></tr>
+        <tr><td>Requirement</td><td>Array must be sorted</td><td>—</td></tr>
+        <tr><td>Space</td><td>No extra memory</td><td>O(1)</td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel below picks a block size of &radic;n specifically because
-      it's the size that <em>minimizes</em> the total work: jumping costs at most n/blockSize probes, and
-      the final scan costs at most blockSize more, and n/blockSize + blockSize is smallest exactly when
-      blockSize = &radic;n. That balance is the entire reason jump search exists — it was designed for tape
-      and disk drives where a long jump was cheap but a full binary search's scattered, unpredictable
-      probing pattern was expensive.</p>
-
-      <p><b>Common mistake:</b> forgetting to clamp the final block's upper bound to <code>n</code> — the
-      last jump can land past the end of the array if <code>n</code> isn't an exact multiple of the block
-      size, and scanning (or even just indexing) past the array's actual length is undefined behavior in C,
-      not a graceful "not found."</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; search for 72</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; jumpSearch()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p>Jump search sits between <a href="../linear-search/linear-search.html">linear</a> (O(n)) and
+      <a href="../binary-search/binary-search.html">binary</a> (O(log n)) search. Binary is faster asymptotically,
+      so why ever jump? Jump search only ever steps <em>forward</em>, which matters when jumping back is expensive —
+      e.g. searching data on a medium where seeking backward costs more than reading ahead (tape, some linked
+      structures). On a normal in-memory array, binary search is the better default.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="jump-search-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="jump-search-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: open the visualizer and compare its probe count against binary search on the same array — jump
-    search needs more comparisons, but each one is a much longer stride.
+    Jump search leaps in √n-sized blocks until it overshoots the target, then linearly scans that final block —
+    O(√n), a forward-only middle ground between linear and binary search.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "int jumpSearch(int arr[], int n, int target) {",
-    "  int blockSize = (int)sqrt(n);",
-    "  int step = blockSize, prev = 0;",
-    "  while (arr[min(step, n) - 1] < target) {   // jump forward a block at a time",
-    "    prev = step;",
-    "    step += blockSize;",
-    "    if (prev >= n) return -1;                 // ran off the end",
-    "  }",
-    "  int hi = min(step, n);",
-    "  for (int i = prev; i < hi; i++) {           // scan inside the block we landed in",
-    "    if (arr[i] == target) return i;           // found it",
-    "  }",
-    "  return -1;                                   // not in this block either",
-    "}"
-  ];
-
-  function scriptFrames(){
-    var a=[3,8,12,19,25,34,47,61,72,84,98], n=a.length, target=72, frames=[];
-    var blockSize=Math.max(1,Math.floor(Math.sqrt(n)));
-    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
-    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
-
-    push(new Array(n).fill(""),"Search for "+target+" using blocks of "+blockSize+" (√"+n+").",[1,2]);
-
-    var step=blockSize, prev=0;
-    while(true){
-      var probe=Math.min(step,n)-1;
-      var r=new Array(n).fill("");
-      for(var k=0;k<prev;k++) r[k]="dim";
-      r[probe]="left head";
-      var passedTarget=a[probe]>=target;
-      var reachedEnd=step>=n;
-      push(r,"Jump to index "+probe+": value is "+a[probe]+". "+
-        (passedTarget?"≥ target — the target, if present, is in this block.":(reachedEnd?"Reached the end.":"Still less — jump again.")),
-        passedTarget?3:(reachedEnd?6:[4,5]));
-      if(passedTarget||reachedEnd) break;
-      prev=step; step+=blockSize;
-    }
-
-    var hi=Math.min(step,n);
-    var r2=new Array(n).fill("");
-    for(var k2=0;k2<prev;k2++) r2[k2]="dim";
-    for(var k3=hi;k3<n;k3++) r2[k3]="dim";
-    push(r2,"Scan the block from index "+prev+" to "+(hi-1)+" one element at a time.",8);
-
-    for(var i=prev;i<hi;i++){
-      var r3=new Array(n).fill("");
-      for(var k4=0;k4<prev;k4++) r3[k4]="dim";
-      for(var k5=hi;k5<n;k5++) r3[k5]="dim";
-      for(var k6=prev;k6<i;k6++) r3[k6]="dim";
-      r3[i]="right head";
-      var match=a[i]===target;
-      push(r3,"Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match?"Yes — found it.":"No — keep scanning."),10);
-      if(match){
-        var rf=new Array(n).fill("");
-        for(var k7=0;k7<n;k7++) if(k7!==i) rf[k7]="dim";
-        rf[i]="found";
-        push(rf,"Found "+target+" at index "+i+".",10);
-        return frames;
-      }
-    }
-    push(new Array(n).fill("dim"),"Scanned the whole block — "+target+" isn't present.",12);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  function barsFor(a, checkIdx, dimTo, found){ return a.map(function(v,i){
+    var c=""; if(found>=0){ c=(i===found)?"found":"dim"; }
+    else { if(i<dimTo) c="dim"; if(i===checkIdx) c="a"; }
+    return {val:v, cls:c, ptrs:(i===checkIdx && found<0)?['cur']:[]}; }); }
+  function F(a,ci,dt,found,narr){ return {bars:barsFor(a,ci,dt,found), narr:narr}; }
+  var a=[1,3,5,7,9,11,13,15,17], frames=[]; // n=9, step=3, target 11
+  frames.push(F(a,-1,0,-1,"Search for 11 in 9 sorted items. Block size = √9 = 3."));
+  frames.push(F(a,2,0,-1,"Jump to the end of block 1: a[2] = 5. 5 < 11 — jump again."));
+  frames.push(F(a,5,3,-1,"End of block 2: a[5] = 11. 11 ≥ 11 — the target is in this block. Scan it."));
+  frames.push(F(a,3,3,-1,"Scan from index 3: a[3] = 7 ≠ 11."));
+  frames.push(F(a,4,3,-1,"a[4] = 9 ≠ 11."));
+  frames.push(F(a,5,3,5,"a[5] = 11 — found at index 5."));
+  BarsAnim.play({ host:document.getElementById("demoHost"), narrEl:document.getElementById("demoNarr"), ms:1550, frames:frames });
 })();
 </script>
 </body>

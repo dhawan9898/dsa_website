@@ -3,141 +3,147 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Linear Search — step by step</title>
+<title>Linear Search Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .ctl-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .ctl-row .narrow input{max-width:90px}
+  .statline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .statline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="linear-search.html">&larr; Linear Search notes</a>
       <p class="eyebrow">Check Every Index, In Order</p>
-      <h1>Linear&nbsp;Search</h1>
+      <h1>Linear&nbsp;Search&nbsp;Playground</h1>
     </div>
-    <p class="note">Walks the array from the front, checking each value against the target until it finds a match or runs out of array. Works on any array, sorted or not.</p>
+    <p class="note">Enter any array and a target, then watch the cursor check each index one C line at a time.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Linear Search pages">
+    <a href="linear-search.html">Overview</a>
+    <a class="here" href="linear-search-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Set the array &amp; target</h2><span class="sub">2 &ndash; 16 numbers</span></div>
+    <div class="panel-head"><h2>Your array &amp; target</h2><span class="sub">any order — up to 9 numbers</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld">
-          <span>Numbers, separated by commas</span>
-          <input type="text" id="input" value="12, 47, 3, 98, 25, 61, 8" autocomplete="off" spellcheck="false">
-        </label>
-        <label class="fld narrow">
-          <span>Target value</span>
-          <input type="number" id="target" value="98">
-        </label>
-        <button id="load">Use these</button>
-        <button id="rand">Random</button>
+      <div class="ctl-row">
+        <label class="fld"><span>Numbers (comma-separated)</span><input type="text" id="arrF" value="4, 8, 2, 7, 5, 1"></label>
+        <label class="fld narrow"><span>Target</span><input type="number" id="tgtF" value="7"></label>
+        <button class="opbtn" id="randBtn" style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;padding:10px 18px;border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer">Random</button>
+        <button class="primary" id="goBtn">Search</button>
       </div>
-      <p class="hint" id="hint">Press Play to watch the search, or step through one check at a time.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">Enter numbers and a target, then press <b>Search</b>. Use ◀ Back / Step ▶ to move one line at a time.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Working array</h2><span class="sub">scanned left to right</span></div>
+    <div class="panel-head"><h2>The array</h2><span class="sub">the cursor checks each index; dimmed bars were already ruled out</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> index being checked</span>
-        <span class="key"><i class="swatch dim"></i> already checked</span>
-        <span class="key"><i class="swatch found"></i> match found</span>
+      <div class="bars-stage"><div id="barsHost"></div></div>
+      <div class="bars-ctrls" id="playbar">
+        <button class="bars-cbtn" id="aBack">◀ Back</button>
+        <button class="bars-cbtn" id="aPlay">Play</button>
+        <button class="bars-cbtn" id="aStep">Step ▶</button>
+        <span class="bars-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="statline" id="statLine">&nbsp;</p>
+      <p class="narr" id="narr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> checking now</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> found</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; linearSearch()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">line highlighted as it runs</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Load an array to begin.</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Linear search needs no ordering at all, which is both its advantage and its cost: in the worst case it
-    has to look at every single element, giving it O(n) time no matter how the array is arranged.
+    Every step compares one element to the target. Best case it's the first (O(1)); worst case it's last or absent
+    and every element is checked (O(n)).
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
   var CODE=[
-    "int linearSearch(int arr[], int n, int target) {",
-    "  for (int i = 0; i < n; i++) {",
-    "    if (arr[i] == target) return i;   // found it",
-    "  }",
-    "  return -1;                          // never seen",
-    "}"
-  ];
-
-  function build(input, target){
-    var a=input.slice(), n=a.length, frames=[], cmp=0;
-    function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr,codeLine){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,code:CODE,codeLine:codeLine}); }
-
-    push(roles(),"start","Linear search checks every element in order until it finds the target, "+target+", or runs out of array. No assumption about sorted order is needed.",0);
-
+    "int linearSearch(int a[], int n, int target) {",
+    "  for (int i = 0; i < n; i++)",
+    "    if (a[i] == target)",
+    "      return i;              // found",
+    "  return -1;                 // not in the array",
+    "}"];
+  function barsFor(a, i, foundIdx){ return a.map(function(v,k){
+    var c=""; if(foundIdx>=0){ c=(k===foundIdx)?"found":"dim"; }
+    else { if(k<i) c="dim"; else if(k===i) c="a"; }
+    return {val:v, cls:c, ptrs:(k===i && foundIdx<0)?['i']:[]}; }); }
+  function runLinear(a, target){
+    var frames=[], n=a.length, comps=0;
+    function snap(line,i,found,narr){ frames.push({bars:barsFor(a,i,found), code:line, codeLines:CODE, narr:narr, _c:comps}); }
+    snap(1,0,-1,"Search for "+target+". Start the loop at index 0.");
     for(var i=0;i<n;i++){
-      var r=roles();
-      for(var k=0;k<i;k++) r[k]="dim";
-      r[i]="left head";
-      cmp++;
-      var match=a[i]===target;
-      push(r,"compare","Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match ? "Yes — found it." : "No — move to the next index."),2);
-      if(match){
-        var rf=roles();
-        for(var k2=0;k2<i;k2++) rf[k2]="dim";
-        rf[i]="found";
-        push(rf,"found","Found "+target+" at index "+i+" after "+cmp+" comparison"+(cmp===1?"":"s")+".",2);
-        return frames;
-      }
+      comps++;
+      snap(2,i,-1,"Check a["+i+"] = "+a[i]+" == "+target+"? "+(a[i]===target?"Yes!":"No."));
+      if(a[i]===target){ snap(3,i,i,"Match at index "+i+" — return "+i+". Checked "+comps+" element(s)."); return frames; }
     }
-    var rNo=roles();
-    for(var k3=0;k3<n;k3++) rNo[k3]="dim";
-    push(rNo,"not-found","Reached the end of the array without finding "+target+" — it isn't present. "+cmp+" comparisons made.",4);
+    snap(4,n,-2,target+" is not in the array — return −1 after checking all "+n+".");
     return frames;
   }
 
-  Viz.init({
-    defaultInput: "12, 47, 3, 98, 25, 61, 8",
-    defaultTarget: 98,
-    minN:2, maxN:16,
-    needsTarget: true,
-    build: build,
-    statLabels: [{key:"cmp",label:"Comparisons"}]
-  });
+  var host=document.getElementById("barsHost"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount"), statEl=document.getElementById("statLine");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    BarsAnim.render(host, f); narrEl.textContent=f.narr||"";
+    statEl.innerHTML="comparisons: <b>"+(f._c||0)+"</b>";
+    BarsAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1250);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function parseArr(){ return document.getElementById("arrF").value.split(/[,\s]+/).map(function(s){return parseInt(s,10);}).filter(function(x){return !isNaN(x);}).slice(0,9); }
+  function showArray(a){ var f={bars:barsFor(a,-1,-1), narr:a.length?"Ready to search ["+a.join(", ")+"].":"Enter some numbers."}; P.frames=[f]; P.i=0; BarsAnim.render(host,f); narrEl.textContent=f.narr; statEl.innerHTML="&nbsp;"; BarsAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; }
+
+  document.getElementById("goBtn").onclick=function(){ var a=parseArr(), t=parseInt(document.getElementById("tgtF").value,10); if(!a.length){ hint("Enter some numbers."); return; } if(isNaN(t)){ hint("Enter a target."); return; } hint("Use ◀ Back / Step ▶ to walk line by line, or let it play."); loadFrames(runLinear(a,t)); };
+  document.getElementById("randBtn").onclick=function(){ var n=5+Math.floor(Math.random()*4), a=[]; for(var i=0;i<n;i++) a.push(1+Math.floor(Math.random()*20)); document.getElementById("arrF").value=a.join(", "); document.getElementById("tgtF").value=a[Math.floor(Math.random()*n)]; stopP(); showArray(a); hint("Random array loaded. Press Search."); };
+  document.getElementById("tgtF").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("goBtn").click(); });
+  document.getElementById("arrF").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("goBtn").click(); });
+
+  showArray(parseArr());
 })();
 </script>
 </body>

@@ -8,127 +8,129 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Check Every Index, In Order</p>
       <h1>Linear&nbsp;Search</h1>
     </div>
-    <p class="note">Walks the array from the front, checking each value against the target until it finds a match or runs out of array. Works on any array, sorted or not.</p>
+    <p class="note">The most basic search: look at each element in turn until you find what you want — or run off the end.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Linear Search pages">
+    <a class="here" href="linear-search.html">Overview</a>
+    <a href="linear-search-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Linear search is the baseline every other search algorithm improves on: check index 0, then 1, then
-      2, and so on, until the target turns up or the array runs out. It needs no assumption at all about how
-      the data is arranged — it works identically on a sorted array, a shuffled one, or one full of
-      duplicates. That generality is exactly why it's slow: with no ordering to exploit, there's no way to
-      rule out large chunks of the array without actually looking at them.</p>
+      <p>Looking for a name in an <em>unsorted</em> list, you have no choice but to read down the list one entry at
+      a time until you hit it. That's <b>linear search</b>: start at the first element, compare, move to the next,
+      and stop the moment you find a match (or when you've checked them all and it isn't there).</p>
 
+      <div class="callout">
+        <b>Its one superpower: no assumptions.</b> Linear search works on <em>any</em> list — sorted or not, array
+        or linked list — because it just walks straight through. That generality is why it's the fallback when
+        faster searches (which need sorted data or an index) don't apply.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">scan left to right until the target appears</span></div>
+    <div class="panel-body notes">
+      <p>The cursor checks each bar in turn. A checked-and-rejected bar dims; the match lights up green:</p>
+      <div class="bars-stage"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> the element being checked</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> found</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it &amp; read the code</h2><span class="sub">line-by-line on your own numbers</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="linear-search-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Enter an array and a target, and watch the cursor check each index until it finds the value or runs out.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost and when to use it</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Comparisons</th><th>Time</th></tr>
-        <tr><td>Best (target at index 0)</td><td>1</td><td><b>O(1)</b></td></tr>
-        <tr><td>Worst (target absent, or at the end)</td><td>n</td><td><b>O(n)</b></td></tr>
-        <tr><td>Space</td><td colspan="2"><b>O(1)</b></td></tr>
+        <tr><th>Case</th><th>When</th><th>Time</th></tr>
+        <tr><td>Best</td><td>Target is first</td><td><b>O(1)</b></td></tr>
+        <tr><td>Average / Worst</td><td>Middle / last or absent</td><td><b>O(n)</b></td></tr>
+        <tr><td>Space</td><td>No extra memory</td><td>O(1)</td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel below is about as short as an algorithm gets — one loop, one
-      comparison, one early return. That simplicity is the whole point of having it on this site: every
-      other search algorithm here is a strategy for skipping comparisons that linear search cannot skip,
-      precisely because it assumes nothing about the data.</p>
-
-      <p><b>Common mistake:</b> continuing to scan after a match instead of returning immediately wastes
-      comparisons on an array with a unique target, but matters more with duplicates — if the array can
-      contain the target more than once and you need the <em>first</em> occurrence specifically, an early
-      return is what guarantees that, not an afterthought.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; search for 25</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; linearSearch()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p>If the data is <b>sorted</b>, <a href="../binary-search/binary-search.html">binary search</a> finds the
+      target in O(log n) — dramatically faster — and <a href="../jump-search/jump-search.html">jump search</a>
+      sits in between at O(√n). But those require sorted input; linear search is the honest O(n) baseline that
+      always works, and it's the right choice for small or one-off searches where sorting first wouldn't pay off.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="linear-search-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="linear-search-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try searching for a value that isn't in the array in the visualizer, and watch it check every
-    single index before giving up.
+    Linear search checks each element in order until it finds the target or reaches the end — O(n), no assumptions,
+    works on anything.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "int linearSearch(int arr[], int n, int target) {",
-    "  for (int i = 0; i < n; i++) {",
-    "    if (arr[i] == target) return i;   // found it",
-    "  }",
-    "  return -1;                          // never seen",
-    "}"
-  ];
-
-  function scriptFrames(){
-    var a=[12,47,3,98,25,61,8], n=a.length, target=25, frames=[];
-    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
-    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
-
-    push(new Array(n).fill(""),"Search for "+target+": check every index in order, from the front.",0);
-
-    for(var i=0;i<n;i++){
-      var r=new Array(n).fill("");
-      for(var k=0;k<i;k++) r[k]="dim";
-      r[i]="left head";
-      var match=a[i]===target;
-      push(r,"Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match?"Yes — found it.":"No — move on."),2);
-      if(match){
-        var rf=new Array(n).fill("");
-        for(var k2=0;k2<i;k2++) rf[k2]="dim";
-        rf[i]="found";
-        push(rf,"Found "+target+" at index "+i+".",2);
-        return frames;
-      }
-    }
-    var rNo=new Array(n).fill("dim");
-    push(rNo,"Reached the end without finding "+target+".",4);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  function bars(arr, cls, ptrs){ return arr.map(function(v,i){ return {val:v, cls:(cls&&cls[i])||"", ptrs:(ptrs&&ptrs[i])||[]}; }); }
+  function F(arr,cls,ptrs,narr){ return {bars:bars(arr,cls,ptrs), narr:narr}; }
+  var a=[4,8,2,7,5], target=7, frames=[];
+  function upto(k,curCls){ var c={}; for(var i=0;i<k;i++)c[i]='dim'; c[k]=curCls; return c; }
+  frames.push(F(a,{},{},"Find "+target+" in [4, 8, 2, 7, 5]. Start at index 0."));
+  frames.push(F(a,upto(0,'a'),{0:['cur']},"a[0] = 4 ≠ 7. Move on."));
+  frames.push(F(a,upto(1,'a'),{1:['cur']},"a[1] = 8 ≠ 7. Move on."));
+  frames.push(F(a,upto(2,'a'),{2:['cur']},"a[2] = 2 ≠ 7. Move on."));
+  frames.push(F(a,{0:'dim',1:'dim',2:'dim',3:'found'},{3:['cur']},"a[3] = 7 — match! Return index 3."));
+  BarsAnim.play({ host:document.getElementById("demoHost"), narrEl:document.getElementById("demoNarr"), ms:1400, frames:frames });
 })();
 </script>
 </body>
