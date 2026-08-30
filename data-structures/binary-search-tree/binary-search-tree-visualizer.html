@@ -8,306 +8,299 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="binary-search-tree.html">&larr; Binary Search Tree notes</a>
-      <p class="eyebrow">Left Is Smaller &middot; Right Is Larger</p>
-      <h1>Binary&nbsp;Search&nbsp;Tree</h1>
+      <a class="masthead-nav" href="binary-search-tree.html">&larr; BST notes</a>
+      <p class="eyebrow">Smaller Left, Bigger Right</p>
+      <h1>Binary&nbsp;Search&nbsp;Tree&nbsp;Playground</h1>
     </div>
-    <p class="note">Every node keeps its left subtree smaller and its right subtree larger — that single rule is what makes search, insert, and delete all O(height).</p>
+    <p class="note">Start empty and grow a tree. Every node keeps smaller keys on its left and bigger keys on its right — which is what makes lookups fast.</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="panel">
-    <div class="panel-head"><h2>Operate on the tree</h2><span class="sub">no duplicates</span></div>
-    <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Value</span><input type="number" id="val" value="45"></label>
-        <button id="btnInsert" class="primary">Insert</button>
-        <button id="btnDelete">Delete</button>
-        <button id="btnSearch">Search</button>
-        <button id="btnInOrder">In-order Traversal</button>
-      </div>
-      <p class="hint" id="hint">Delete a node with two children and watch its in-order successor take its place.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
-    </div>
-  </section>
+  <nav class="subnav" aria-label="BST pages">
+    <a href="binary-search-tree.html">Overview</a>
+    <a href="binary-search-tree-insert.html">Insert &amp; Search</a>
+    <a href="binary-search-tree-delete.html">Delete</a>
+    <a class="here" href="binary-search-tree-visualizer.html">Playground</a>
+  </nav>
 
   <section class="panel">
-    <div class="panel-head"><h2>The tree</h2><span class="sub">root at top</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2></div>
     <div class="panel-body">
-      <div class="scroller">
-        <div class="treewrap" id="treeWrap">
-          <svg class="links" id="treeLinks"></svg>
-          <div id="treeNodes"></div>
+      <div class="opbtns">
+        <button class="opbtn" data-op="insert">Insert</button>
+        <button class="opbtn" data-op="search">Search</button>
+        <button class="opbtn" data-op="del">Delete</button>
+        <button class="opbtn" data-op="reset">Reset</button>
+      </div>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow" id="valWrap" hidden><span>Key</span><input type="number" id="valF" value="50"></label>
+          <button class="primary" id="opRun">Run</button>
         </div>
       </div>
-      <div class="legend">
-        <span class="key"><i class="swatch right"></i> node being compared while walking down</span>
-        <span class="key"><i class="swatch left"></i> node just landed on / matched</span>
-        <span class="key"><i class="swatch sorted"></i> node that moved to fill a gap after a delete</span>
-        <span class="key"><i class="swatch found"></i> search match</span>
+      <p class="hint" id="hint" style="margin-top:12px">The tree is empty. Insert a key to make the root, then insert more — try 50, 30, 70, 20, 40, 60, 80.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The tree</h2><span class="sub">root at the top; left child smaller, right child bigger</span></div>
+    <div class="panel-body">
+      <div class="tree-stage"><div id="treeHost"></div><svg class="tree-svg" id="treeSvg"></svg></div>
+      <div class="tree-ctrls" id="playbar">
+        <button class="tree-cbtn" id="aBack">◀ Back</button>
+        <button class="tree-cbtn" id="aPlay">Play</button>
+        <button class="tree-cbtn" id="aStep">Step ▶</button>
+        <span class="tree-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> the walker, cur</span>
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> node being inserted / changed</span>
+        <span class="key"><i class="swatch found" style="border-color:var(--seal);background:var(--seal)"></i> found / matched</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / deleteNode() / search()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the operation you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    All three core operations follow the same left/right comparisons down from the root, so they all cost
-    O(height) — O(log n) if the tree stays reasonably balanced, but O(n) in the worst case (a tree that
-    degenerates into a straight line). The AVL Tree page shows one way to guarantee it never does.
+    Search, insert, and delete all follow one root-to-leaf path, so each is O(h) — the height of the tree. Keep
+    the tree balanced and h ≈ log n, giving O(log n); let it grow into a lopsided chain and h ≈ n, giving O(n).
+    That "keep it balanced" problem is exactly what the <a href="../avl-tree/avl-tree.html">AVL tree</a> solves.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  var nodes={}, root=null, nextId=0;
+  function mk(val){ var id="t"+(nextId++); nodes[id]={val:val,left:null,right:null}; return id; }
+  function one(k,v){ var o={}; o[k]=v; return o; }
 
-  var INSERT_CODE=[
-    "void insert(Node **root, int val) {",
-    "  Node *parent = NULL, *cur = *root;",
-    "  while (cur) {",
+  var INS=[
+    "void insert(BST *t, int key) {",
+    "  Node *cur = t->root, *parent = NULL;",
+    "  while (cur) {                    // walk down",
     "    parent = cur;",
-    "    cur = (val < cur->val) ? cur->left : cur->right;",
+    "    if (key < cur->val) cur = cur->left;",
+    "    else if (key > cur->val) cur = cur->right;",
+    "    else return;                   // already present",
     "  }",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->left = n->right = NULL;",
-    "  if (!parent) *root = n;",
-    "  else if (val < parent->val) parent->left = n;",
+    "  Node *n = newNode(key);          // new leaf",
+    "  if (!parent) t->root = n;",
+    "  else if (key < parent->val) parent->left = n;",
     "  else parent->right = n;",
-    "}"
-  ];
-  var DELETE_CODE=[
-    "void deleteNode(Node **root, int val) {",
-    "  Node *parent = NULL, *cur = *root;",
-    "  while (cur && cur->val != val) {",
+    "}"];
+  var SRCH=[
+    "Node* search(BST *t, int key) {",
+    "  Node *cur = t->root;",
+    "  while (cur) {",
+    "    if (key == cur->val) return cur;   // found",
+    "    cur = key < cur->val ? cur->left : cur->right;",
+    "  }",
+    "  return NULL;                          // not found",
+    "}"];
+  var DEL=[
+    "void deleteKey(BST *t, int key) {",
+    "  Node *cur = t->root, *parent = NULL;",
+    "  while (cur && cur->val != key) {      // find it",
     "    parent = cur;",
-    "    cur = (val < cur->val) ? cur->left : cur->right;",
+    "    cur = key < cur->val ? cur->left : cur->right;",
     "  }",
-    "  if (!cur) return;                          // not found",
-    "",
-    "  if (cur->left && cur->right) {              // two children",
-    "    Node *succParent = cur, *succ = cur->right;",
-    "    while (succ->left) { succParent = succ; succ = succ->left; }",
-    "    cur->val = succ->val;",
-    "    parent = succParent; cur = succ;          // splice out succ below",
+    "  if (!cur) return;                     // not found",
+    "  if (cur->left && cur->right) {        // two children",
+    "    Node *sp = cur, *s = cur->right;    // in-order successor",
+    "    while (s->left) { sp = s; s = s->left; }",
+    "    cur->val = s->val;                  // copy it up",
+    "    cur = s; parent = sp;               // delete s instead",
     "  }",
-    "",
     "  Node *child = cur->left ? cur->left : cur->right;",
-    "  if (!parent) *root = child;",
+    "  if (!parent) t->root = child;",
     "  else if (parent->left == cur) parent->left = child;",
     "  else parent->right = child;",
     "  free(cur);",
-    "}"
-  ];
-  var SEARCH_CODE=[
-    "Node* search(Node *root, int val) {",
-    "  Node *cur = root;",
-    "  while (cur) {",
-    "    if (val == cur->val) return cur;",
-    "    cur = (val < cur->val) ? cur->left : cur->right;",
-    "  }",
-    "  return NULL;",
-    "}"
-  ];
-  var INORDER_CODE=[
-    "void inOrder(Node *n, void (*visit)(int)) {",
-    "  if (!n) return;",
-    "  inOrder(n->left, visit);",
-    "  visit(n->val);",
-    "  inOrder(n->right, visit);",
-    "}"
-  ];
+    "}"];
 
-  function makeNode(val,id){ return {id:id, val:val, left:null, right:null}; }
-  function toTreeNode(n, activeId, activeRole){
-    if(!n) return null;
-    return {
-      id:n.id, val:n.val, role: n.id===activeId ? activeRole : "",
-      left: toTreeNode(n.left, activeId, activeRole),
-      right: toTreeNode(n.right, activeId, activeRole)
-    };
-  }
-  function frame(state, activeId, activeRole, phase, narr, ops, code, codeLine){
-    return {struct:{root: toTreeNode(state.root, activeId, activeRole)}, phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
-  }
-
-  function opInsert(state, val){
-    var oc=(state.opsCount||0)+1, nextId=state.nextId||0, frames=[];
-    if(!state.root){
-      frames.push(frame(state, undefined, "", "insert-start", "Insert "+val+": the tree is empty, so it becomes the root.", oc, INSERT_CODE, 8));
-      var node=makeNode(val,nextId++);
-      var newState={root:node, opsCount:oc, nextId:nextId};
-      frames.push(frame(newState, node.id, "left head landed", "inserted", val+" is the root.", oc, INSERT_CODE, 8));
-      return {frames:frames, state:newState};
-    }
-    frames.push(frame(state, state.root.id, "right", "insert-start",
-      "Insert "+val+": compare against each node — smaller goes left, larger goes right — until an empty spot opens up.", oc, INSERT_CODE, [1,4]));
-    var cur=state.root;
-    while(true){
-      if(val===cur.val) return {error: val+" is already in the tree — this BST doesn't store duplicates."};
-      if(val<cur.val){
-        if(!cur.left){
-          var n1=makeNode(val,nextId++); cur.left=n1;
-          var s1={root:state.root, opsCount:oc, nextId:nextId};
-          frames.push(frame(s1, n1.id, "left head landed", "inserted", val+" < "+cur.val+", and it has no left child — "+val+" becomes its left child.", oc, INSERT_CODE, 9));
-          return {frames:frames, state:s1};
-        }
-        frames.push(frame(state, cur.left.id, "right", "walk", val+" < "+cur.val+" — go left.", oc, INSERT_CODE, 4));
-        cur=cur.left;
-      } else {
-        if(!cur.right){
-          var n2=makeNode(val,nextId++); cur.right=n2;
-          var s2={root:state.root, opsCount:oc, nextId:nextId};
-          frames.push(frame(s2, n2.id, "left head landed", "inserted", val+" > "+cur.val+", and it has no right child — "+val+" becomes its right child.", oc, INSERT_CODE, 10));
-          return {frames:frames, state:s2};
-        }
-        frames.push(frame(state, cur.right.id, "right", "walk", val+" > "+cur.val+" — go right.", oc, INSERT_CODE, 4));
-        cur=cur.right;
-      }
-    }
-  }
-
-  function opDelete(state, val){
-    if(!state.root) return {error:"The tree is empty — nothing to delete."};
-    var oc=(state.opsCount||0)+1, frames=[];
-    frames.push(frame(state, state.root.id, "right", "delete-start", "Delete "+val+": first find it, the same way Search would.", oc, DELETE_CODE, [1,5]));
-    var parent=null, cur=state.root, isLeftChild=false;
-    while(cur && cur.val!==val){
-      frames.push(frame(state, cur.id, "right", "walk", val<cur.val ? (val+" < "+cur.val+" — go left.") : (val+" > "+cur.val+" — go right."), oc, DELETE_CODE, 4));
-      parent=cur;
-      if(val<cur.val){ isLeftChild=true; cur=cur.left; } else { isLeftChild=false; cur=cur.right; }
-    }
-    if(!cur) return {error: val+" isn't in the tree."};
-    frames.push(frame(state, cur.id, "left head", "delete-found", "Found "+val+".", oc, DELETE_CODE, 6));
-
-    function replaceInParent(newNode){
-      if(!parent) state.root=newNode;
-      else if(isLeftChild) parent.left=newNode;
-      else parent.right=newNode;
-    }
-
-    if(!cur.left && !cur.right){
-      replaceInParent(null);
-      frames.push(frame(state, undefined, "", "deleted", val+" was a leaf — just remove it.", oc, DELETE_CODE, [15,19]));
-    } else if(!cur.left || !cur.right){
-      var child=cur.left||cur.right;
-      replaceInParent(child);
-      frames.push(frame(state, child.id, "sorted landed", "deleted", val+" has one child ("+child.val+") — the child moves up into its place.", oc, DELETE_CODE, [15,19]));
-    } else {
-      var succParent=cur, succ=cur.right;
-      frames.push(frame(state, succ.id, "right", "successor-walk",
-        val+" has two children — find its in-order successor: the smallest value in its right subtree.", oc, DELETE_CODE, [8,9]));
-      while(succ.left){
-        succParent=succ; succ=succ.left;
-        frames.push(frame(state, succ.id, "right", "successor-walk", "Keep going left to "+succ.val+".", oc, DELETE_CODE, 10));
-      }
-      var succVal=succ.val;
-      frames.push(frame(state, succ.id, "left head", "successor-found", "Successor is "+succVal+". Copy its value into "+val+"'s node.", oc, DELETE_CODE, 11));
-      cur.val=succVal;
-      if(succParent===cur) succParent.right=succ.right;
-      else succParent.left=succ.right;
-      frames.push(frame(state, cur.id, "sorted landed", "deleted",
-        val+" is replaced by "+succVal+", and the original "+succVal+" node is spliced out of the right subtree.", oc, DELETE_CODE, [12,19]));
-    }
-    var newState={root:state.root, opsCount:oc, nextId:state.nextId};
-    return {frames:frames, state:newState};
-  }
-
-  function opSearch(state, val){
-    if(!state.root) return {error:"The tree is empty — nothing to search."};
-    var oc=(state.opsCount||0)+1, frames=[];
-    var cur=state.root;
-    while(cur){
-      if(val===cur.val){
-        frames.push(frame(state, cur.id, "found", "found", "Compare "+val+" with "+cur.val+" — equal. Found it.", oc, SEARCH_CODE, 3));
-        return {frames:frames, state:{root:state.root, opsCount:oc, nextId:state.nextId}};
-      }
-      frames.push(frame(state, cur.id, "left head", "compare",
-        val<cur.val ? ("Compare "+val+" with "+cur.val+": smaller — go left.") : ("Compare "+val+" with "+cur.val+": larger — go right."), oc, SEARCH_CODE, [3,4]));
-      cur = val<cur.val ? cur.left : cur.right;
-    }
-    frames.push(frame(state, undefined, "", "not-found", val+" isn't in the tree — hit an empty spot.", oc, SEARCH_CODE, 6));
-    return {frames:frames, state:{root:state.root, opsCount:oc, nextId:state.nextId}};
-  }
-
-  function opInOrder(state){
-    if(!state.root) return {error:"The tree is empty — nothing to traverse."};
-    var oc=(state.opsCount||0)+1, frames=[], order=[];
-    (function walk(n){
-      if(!n) return;
-      walk(n.left);
-      order.push(n.val);
-      frames.push(frame(state, n.id, "left head", "visit", "Visit "+n.val+". In-order so far: ["+order.join(", ")+"].", oc, INORDER_CODE, 3));
-      walk(n.right);
-    })(state.root);
-    frames.push(frame(state, undefined, "", "done",
-      "In-order traversal complete: ["+order.join(", ")+"] — a sorted list, exactly what in-order traversal of a BST always produces.", oc, INORDER_CODE, 1));
-    return {frames:frames, state:{root:state.root, opsCount:oc, nextId:state.nextId}};
-  }
-
-  function init(){
-    var state={root:null, opsCount:0, nextId:0};
-    var frames=[frame(state, undefined, "", "start", "Create the tree: an empty root pointer.", 0, INSERT_CODE, 0)];
-    [50,30,70,20,40,60,80].forEach(function(v){
-      var r=opInsert(state, v);
-      frames=frames.concat(r.frames);
-      state=r.state;
+  function snap(o){ o=o||{};
+    var out={};
+    Object.keys(nodes).forEach(function(id){
+      out[id]={val:nodes[id].val, left:nodes[id].left, right:nodes[id].right};
+      if(o.cls && o.cls[id]) out[id].cls=o.cls[id];
     });
-    return {state:state, frames:frames};
+    return {root:root, nodes:out, ptrs:o.ptrs, edgeCls:o.edgeCls};
   }
-  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+  function F(frame, code, line, narr){ frame.codeLines=code; frame.code=line; frame.narr=narr; return frame; }
 
-  VizDS.init({
-    init: init,
-    ops: {
-      insert: { btn:"btnInsert", enterOn:"val", run: function(state){
-        var v=num("val"); if(!isFinite(v)) return {error:"Enter a value."}; return opInsert(state,v);
-      }},
-      del: { btn:"btnDelete", run: function(state){
-        var v=num("val"); if(!isFinite(v)) return {error:"Enter a value."}; return opDelete(state,v);
-      }},
-      search: { btn:"btnSearch", run: function(state){
-        var v=num("val"); if(!isFinite(v)) return {error:"Enter a value."}; return opSearch(state,v);
-      }},
-      inorder: { btn:"btnInOrder", run: function(state){ return opInOrder(state); } }
-    },
-    renderExtra: function(frame){ DSRender.tree(document.getElementById("treeNodes"), document.getElementById("treeLinks"), frame.struct.root, {}); },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  function opInsert(key){
+    var frames=[];
+    if(root==null){ var id=mk(key); root=id; frames.push(F(snap({cls:one(id,'active')}), INS,[8,9], key+" goes into an empty tree — it becomes the root.")); return {frames:frames}; }
+    var cur=root, parent=null, dir=null;
+    frames.push(F(snap({ptrs:one(cur,['cur'])}), INS,[1,2], "Insert "+key+". Start the walk at the root, "+nodes[cur].val+"."));
+    while(cur!=null){
+      var v=nodes[cur].val;
+      if(key===v){ frames.push(F(snap({cls:one(cur,'found'),ptrs:one(cur,['cur'])}), INS,6, key+" is already in the tree — a BST holds no duplicates. Stop.")); return {frames:frames}; }
+      parent=cur; dir=(key<v)?'left':'right';
+      frames.push(F(snap({ptrs:one(cur,['cur'])}), INS,[4,5], key+" "+(key<v?"<":">")+" "+v+", so go "+dir+"."));
+      cur=nodes[cur][dir];
+      if(cur!=null) frames.push(F(snap({ptrs:one(cur,['cur'])}), INS,3, "Now at "+nodes[cur].val+"."));
+    }
+    var nid=mk(key); nodes[parent][dir]=nid;
+    frames.push(F(snap({cls:one(nid,'active'), edgeCls:one(parent+'>'+nid,'formed')}), INS,[8,(dir==='left'?10:11)], "The "+dir+" spot under "+nodes[parent].val+" is empty — attach "+key+" as a new leaf there."));
+    frames.push(F(snap({}), INS,12, key+" inserted. Insert walked one root-to-leaf path — O(h)."));
+    return {frames:frames};
+  }
+  function opSearch(key){
+    var frames=[];
+    if(root==null){ frames.push(F(snap({}), SRCH,6, "The tree is empty — "+key+" isn't here.")); return {frames:frames}; }
+    var cur=root;
+    frames.push(F(snap({ptrs:one(cur,['cur'])}), SRCH,[1,2], "Search "+key+". Start at the root, "+nodes[cur].val+"."));
+    while(cur!=null){
+      var v=nodes[cur].val;
+      if(key===v){ frames.push(F(snap({cls:one(cur,'found'),ptrs:one(cur,['cur'])}), SRCH,3, nodes[cur].val+" == "+key+" — found it.")); return {frames:frames}; }
+      var dir=(key<v)?'left':'right';
+      frames.push(F(snap({ptrs:one(cur,['cur'])}), SRCH,4, key+" "+(key<v?"<":">")+" "+v+", so go "+dir+"."));
+      cur=nodes[cur][dir];
+      if(cur!=null) frames.push(F(snap({ptrs:one(cur,['cur'])}), SRCH,2, "Now at "+nodes[cur].val+"."));
+    }
+    frames.push(F(snap({}), SRCH,6, key+" isn't in the tree — the walk fell off to NULL. Search is O(h)."));
+    return {frames:frames};
+  }
+  function opDelete(key){
+    var frames=[];
+    var cur=root, parent=null;
+    if(root==null){ frames.push(F(snap({}), DEL,6, "The tree is empty — nothing to delete.")); return {frames:frames}; }
+    frames.push(F(snap({ptrs:one(cur,['cur'])}), DEL,[1,2], "Delete "+key+". First find it, tracking parent."));
+    while(cur!=null && nodes[cur].val!==key){
+      parent=cur;
+      var dir=(key<nodes[cur].val)?'left':'right';
+      cur=nodes[cur][dir];
+      if(cur!=null) frames.push(F(snap({ptrs:one(cur,['cur'])}), DEL,[3,5], "Walk to "+nodes[cur].val+"."));
+    }
+    if(cur==null){ frames.push(F(snap({}), DEL,6, key+" isn't in the tree — nothing to delete.")); return {frames:frames}; }
+    // two children?
+    if(nodes[cur].left && nodes[cur].right){
+      frames.push(F(snap({cls:one(cur,'target'),ptrs:one(cur,['node'])}), DEL,[7,8], nodes[cur].val+" has two children — the tricky case. Find its in-order successor: the smallest key in the right subtree."));
+      var sp=cur, s=nodes[cur].right;
+      frames.push(F(snap({cls:one(cur,'target'),ptrs:{}}, {}), DEL,8, "Go right once, then keep going left."));
+      // manual ptrs merge:
+      frames[frames.length-1].ptrs={}; frames[frames.length-1].ptrs[cur]=['node']; frames[frames.length-1].ptrs[s]=['cur'];
+      while(nodes[s].left){ sp=s; s=nodes[s].left;
+        var fr=F(snap({cls:one(cur,'target')}), DEL,9, "Left to "+nodes[s].val+".");
+        fr.ptrs={}; fr.ptrs[cur]=['node']; fr.ptrs[s]=['cur']; frames.push(fr);
+      }
+      var frr=F(snap({cls:one(cur,'target')}), DEL,9, nodes[s].val+" is the successor (no left child).");
+      frr.ptrs={}; frr.ptrs[cur]=['node']; frr.ptrs[s]=['cur']; frames.push(frr);
+      var sval=nodes[s].val;
+      nodes[cur].val=sval;
+      var fc=F(snap({cls:one(cur,'active')}), DEL,[10,11], "Copy "+sval+" up into the node we're deleting, then delete the successor node instead (it has at most one child).");
+      fc.ptrs={}; fc.ptrs[s]=['cur']; frames.push(fc);
+      cur=s; parent=sp;
+    }
+    // splice cur (<=1 child)
+    var child = nodes[cur].left ? nodes[cur].left : nodes[cur].right;
+    if(parent==null){ root=child; }
+    else if(nodes[parent].left===cur){ nodes[parent].left=child; }
+    else { nodes[parent].right=child; }
+    var removed=cur; delete nodes[cur];
+    var fe=F(snap({}), DEL,[13,18], child!=null ? ("Splice the node out: its parent now points to its single child.") : "It's a leaf — just detach it from its parent.");
+    frames.push(fe);
+    frames.push(F(snap({}), DEL,19, key+" deleted. Like search, delete follows one path — O(h)."));
+    return {frames:frames};
+  }
+
+  /* ---- page-local player ---- */
+  var host=document.getElementById("treeHost"), svg=document.getElementById("treeSvg");
+  var narrEl=document.getElementById("narr"), codeHost=document.getElementById("codeHost");
+  var countEl=document.getElementById("aCount"), playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    TreeAnim.render(host, svg, f); narrEl.textContent=f.narr||"";
+    TreeAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1600);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function drawEmpty(){ P.frames=[F(snap({}),null,null, root==null?"The tree is empty. Insert a key to make the root.":"Current tree.")]; P.i=0; drawP(); }
+
+  var OPS={
+    insert:{ name:"Insert", desc:"Add a key. Walk down from the root — go left when the key is smaller, right when bigger — until you fall off the tree, and attach the new key there as a leaf." },
+    search:{ name:"Search", desc:"Find a key. Same walk as insert: at each node go left or right by comparing. Found it, or fell off to NULL. O(h)." },
+    del:{ name:"Delete", desc:"Remove a key. Easy if it's a leaf or has one child; if it has two, copy in its in-order successor (smallest key on the right) and delete that instead." },
+    reset:{ name:"Reset", desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"), opdescEl=document.getElementById("opdesc");
+  var valWrap=document.getElementById("valWrap"), valF=document.getElementById("valF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ nodes={}; root=null; nextId=0; stopP(); drawEmpty(); TreeAnim.renderCode(codeHost,null,null);
+      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Tree cleared. Insert a key to start."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    valWrap.hidden=false; panel.hidden=false; hint("");
+    valF.focus(); valF.select();
+  }
+  function runCurrent(){
+    if(!current) return;
+    var v=Number(valF.value), r;
+    if(!isFinite(v)) return hint("Enter an integer key.");
+    if(current==="insert") r=opInsert(v);
+    else if(current==="search") r=opSearch(v);
+    else if(current==="del") r=opDelete(v);
+    if(!r) return;
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+  valF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
+
+  drawEmpty();
 })();
 </script>
 </body>
