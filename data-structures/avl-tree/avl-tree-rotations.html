@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVL Tree · Rotations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .cases{font-family:"IBM Plex Mono",monospace;font-size:13px;line-height:1.9}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="avl-tree.html">&larr; AVL Tree overview</a>
+      <p class="eyebrow">Four Cases, Two Mechanics</p>
+      <h1>Rotations</h1>
+    </div>
+    <p class="note">A rotation re-hangs three pointers to lift a child above its parent — rebalancing the tree while keeping every key in sorted order.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="AVL pages">
+    <a href="avl-tree.html">Overview</a>
+    <a class="here" href="avl-tree-rotations.html">Rotations</a>
+    <a href="avl-tree-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The four cases</h2></div>
+    <div class="panel-body notes">
+      <p>When a node's balance factor hits ±2, <em>where</em> the offending insert happened decides which of four
+      shapes you're in — and each has a fixed fix:</p>
+      <p class="cases">
+        <b>LL</b> — left subtree's left is too tall → one <b>right</b> rotation.<br>
+        <b>RR</b> — right subtree's right is too tall → one <b>left</b> rotation.<br>
+        <b>LR</b> — left subtree's <em>right</em> is too tall → rotate the child <b>left</b>, then the node <b>right</b>.<br>
+        <b>RL</b> — right subtree's <em>left</em> is too tall → rotate the child <b>right</b>, then the node <b>left</b>.
+      </p>
+      <p>LL and RR are mirror images of each other, and so are LR and RL — so there are really just two mechanics
+      to learn: a <b>single</b> rotation, and a <b>double</b> rotation (which is just two singles).</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Single rotation (the RR case)</h2><span class="sub">one left rotation lifts the right child up</span></div>
+    <div class="panel-body notes">
+      <p>Here node 10 is right-heavy by 2, and the heaviness continues to the right (RR). A single left rotation
+      at 10 pulls its right child, 20, up to be the new subtree root; 10 drops to become 20's left child. The one
+      subtly is the <b>middle subtree</b> (15): it was on 20's left, but that spot now belongs to 10 — so 15
+      re-hangs as 10's right child. It still sits between 10 and 20, so the ordering is untouched.</p>
+      <div class="demo-wrap">
+        <div class="scroller"><div id="singleHost"></div><svg class="tree-svg" id="singleSvg"></svg></div>
+        <p class="narr" id="singleNarr" style="margin-top:10px">&nbsp;</p>
+      </div>
+      <div class="callout">
+        <b>Why it stays sorted.</b> A rotation only ever moves subtrees to positions the BST rule still allows —
+        it re-hangs three links (the pivot, its child, and one middle subtree) and nothing else. The keys' left
+        &lt; node &lt; right relationship holds before and after. <b>LL</b> is the exact mirror: a single
+        <em>right</em> rotation.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Double rotation (the LR case)</h2><span class="sub">a zig-zag needs two rotations</span></div>
+    <div class="panel-body notes">
+      <p>Node 30 is left-heavy by 2 — but its left child 10 leans the <em>other</em> way (to the right, toward
+      20). That "zig-zag" can't be fixed by one rotation; the tall part is in the middle. So you straighten it
+      first: rotate the child (10) left, turning the zig-zag into a straight left-left lean — and <em>then</em>
+      do the single right rotation on 30.</p>
+      <div class="demo-wrap">
+        <div class="scroller"><div id="doubleHost"></div><svg class="tree-svg" id="doubleSvg"></svg></div>
+        <p class="narr" id="doubleNarr" style="margin-top:10px">&nbsp;</p>
+      </div>
+      <p><b>RL</b> is this in a mirror: rotate the right child right to straighten, then rotate the node left.
+      That's all four cases — two of them just reflections of the other two.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="avl-tree-visualizer.html">Trigger rotations yourself in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    That's the whole trick behind self-balancing: after each change, check the balance factor and, if it's ±2,
+    apply the matching single or double rotation — O(1) work that keeps the tree O(log n) tall forever.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  function T(nodes,root,cls,ptrs){
+    var out={}; Object.keys(nodes).forEach(function(id){ if(id==='__')return; out[id]={val:nodes[id].val,left:nodes[id].left,right:nodes[id].right}; if(cls&&cls[id])out[id].cls=cls[id]; });
+    return {root:root, nodes:out, ptrs:ptrs};
+  }
+  function one(k,v){var o={};o[k]=v;return o;}
+  function F(nodes,root,cls,ptrs,narr){ var f=T(nodes,root,cls,ptrs); f.narr=narr; return f; }
+
+  // SINGLE (RR): 10 -> right 20{left 15, right 30}
+  var s0={'10':{val:10,right:'20'},'20':{val:20,left:'15',right:'30'},'15':{val:15},'30':{val:30}};
+  var s1={'20':{val:20,left:'10',right:'30'},'10':{val:10,right:'15'},'15':{val:15},'30':{val:30}};
+  TreeAnim.play({ host:document.getElementById("singleHost"), svg:document.getElementById("singleSvg"),
+    narrEl:document.getElementById("singleNarr"), ms:1900, frames:[
+      F(s0,'10',one('10','active'),one('10',['pivot']), "Node 10 is right-heavy by 2, and 20 leans right too — the RR case. Rotate 10 left."),
+      F(s1,'20',one('20','active'),null, "20 rises to the top; 10 drops to its left; the middle subtree 15 re-hangs as 10's right child. Balanced and still sorted: 10 < 15 < 20 < 30.")
+    ]});
+
+  // DOUBLE (LR): 30{left 10{right 20}}
+  var d0={'30':{val:30,left:'10'},'10':{val:10,right:'20'},'20':{val:20}};
+  var d1={'30':{val:30,left:'20'},'20':{val:20,left:'10'},'10':{val:10}};
+  var d2={'20':{val:20,left:'10',right:'30'},'10':{val:10},'30':{val:30}};
+  TreeAnim.play({ host:document.getElementById("doubleHost"), svg:document.getElementById("doubleSvg"),
+    narrEl:document.getElementById("doubleNarr"), ms:1900, frames:[
+      F(d0,'30',one('30','active'),one('30',['pivot']), "Node 30 is left-heavy by 2, but its left child 10 leans RIGHT (to 20) — a zig-zag. This is the LR case; one rotation won't do."),
+      F(d1,'30',one('20','active'),null, "Step 1: rotate the left child (10) LEFT. Now the heavy side is a straight left-left lean."),
+      F(d2,'20',one('20','active'),null, "Step 2: rotate 30 RIGHT. 20 is the root, 10 and 30 its children — balanced.")
+    ]});
+})();
+</script>
+</body>
+</html>

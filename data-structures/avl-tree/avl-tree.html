@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
@@ -15,177 +33,131 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Self-Balancing &middot; Never O(n)</p>
+      <p class="eyebrow">A BST That Rebalances Itself</p>
       <h1>AVL&nbsp;Tree</h1>
     </div>
-    <p class="note">A binary search tree that rebalances itself after every insert and delete, so it can never degrade into a straight line.</p>
+    <p class="note">A binary search tree that does a little rearranging on every change so it can never grow lopsided — keeping every operation O(log n).</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
-    <div class="panel-body notes">
-      <p>A plain <a href="../binary-search-tree/binary-search-tree.html">binary search tree</a> can degrade into something no
-      better than a linked list — insert values in sorted order and every new node just becomes the
-      previous one's only child. An AVL tree rules that out with one extra rule on top of the BST
-      invariant: for every node, the height of its left and right subtrees can differ by <b>at most 1</b>
-      — its <b>balance factor</b>.</p>
-      <p>After every insert or delete, the tree walks back up from the changed node to the root, checking
-      the balance factor at each ancestor. The moment one strays outside [-1, +1], a <b>rotation</b> fixes
-      it — one of four shapes, depending on which side is heavy and which side of <em>that</em> child is
-      heavy:</p>
-      <ul>
-        <li><b>Left-Left</b> — a single right rotation</li>
-        <li><b>Right-Right</b> — a single left rotation</li>
-        <li><b>Left-Right</b> — rotate the left child left, then rotate the node right</li>
-        <li><b>Right-Left</b> — rotate the right child right, then rotate the node left</li>
-      </ul>
+  <nav class="subnav" aria-label="AVL pages">
+    <a class="here" href="avl-tree.html">Overview</a>
+    <a href="avl-tree-rotations.html">Rotations</a>
+    <a href="avl-tree-visualizer.html">Playground</a>
+  </nav>
 
+  <section class="panel">
+    <div class="panel-head"><h2>The problem it fixes</h2></div>
+    <div class="panel-body notes">
+      <p>Read the <a href="../binary-search-tree/binary-search-tree.html">binary search tree</a> first. A BST is
+      fast <em>only when it's balanced</em> — its speed is its height. Insert keys in sorted order (10, 20, 30,
+      40 …) and every key goes right, so the tree degenerates into a straight line of height <code>n</code>, and
+      searches crawl at O(n). A plain BST has no defense against that.</p>
+
+      <p>An <b>AVL tree</b> (named after inventors Adelson-Velsky and Landis) is a BST that refuses to get
+      lopsided. After every insert or delete it checks whether any node has become too unbalanced and, if so,
+      performs a quick local rearrangement — a <b>rotation</b> — to fix it. The result: the height is
+      <em>guaranteed</em> to stay ≈ log n no matter what order keys arrive in, so search / insert / delete are
+      all O(log n), always.</p>
+
+      <div class="callout">
+        <b>The balance factor.</b> For each node, the balance factor is the height of its left subtree minus the
+        height of its right. AVL's rule: this must always be <b>-1, 0, or +1</b>. The moment an insert or delete
+        pushes some node to <b>+2</b> (too left-heavy) or <b>-2</b> (too right-heavy), a rotation snaps it back
+        into range.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>What a rotation looks like</h2><span class="sub">insert 10, 20, 30 — the third would make a line, so the tree pivots</span></div>
+    <div class="panel-body notes">
+      <p>Inserting 10, then 20, then 30 into a plain BST makes the chain 10 → 20 → 30. AVL spots that node 10 is
+      now right-heavy by 2 and rotates it left: 20 rises to become the root, 10 becomes its left child, 30 its
+      right. Same keys, same ordering, but height 2 instead of 3 — and it happens automatically:</p>
+
+      <div class="scroller"><div id="demoHost"></div><svg class="tree-svg" id="demoSvg"></svg></div>
+      <p class="narr" id="demoNarr" style="margin-top:12px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn it in depth</h2><span class="sub">the thought process, an animation, and the C</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="avl-tree-rotations.html">
+          <span class="num">01</span><h3>Rotations</h3>
+          <p>The four cases — LL, RR, LR, RL — and how a single or double rotation restores balance while keeping the tree sorted.</p>
+          <span class="go">Open rotations &rarr;</span>
+        </a>
+        <a class="dive-card" href="avl-tree-visualizer.html">
+          <span class="num">02</span><h3>Playground</h3>
+          <p>Insert keys in any order and watch the tree rotate itself balanced after each one.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">the cost of staying balanced</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Operation</th><th>Time (guaranteed)</th></tr>
-        <tr><td>Search</td><td><b>O(log n)</b></td></tr>
-        <tr><td>Insert</td><td><b>O(log n)</b></td></tr>
-        <tr><td>Delete</td><td><b>O(log n)</b></td></tr>
+        <tr><th>Operation</th><th>Plain BST (worst)</th><th>AVL (guaranteed)</th></tr>
+        <tr><td>Search</td><td>O(n)</td><td><b>O(log n)</b></td></tr>
+        <tr><td>Insert</td><td>O(n)</td><td><b>O(log n)</b></td></tr>
+        <tr><td>Delete</td><td>O(n)</td><td><b>O(log n)</b></td></tr>
       </table>
 
-      <p>The guarantee — never worse than O(log n), no matter the insertion order — is what makes AVL
-      trees (and relatives like red-black trees) the backbone of ordered sets/maps in standard libraries
-      and database indexes.</p>
+      <p>Insert and delete still walk one path down (O(log n)); the only extra work is, on the way back up,
+      checking each node's balance and doing <em>at most one</em> rotation, each of which is a constant number
+      of pointer swaps — O(1). So the guarantee is essentially free.</p>
 
-      <p><b>Implementation:</b> the code panel below writes insert and delete <em>recursively</em> — unlike
-      the plain BST's iterative walk, AVL needs the call stack: rebalancing happens on the way back <em>up</em>
-      from wherever the tree actually changed, one ancestor at a time, and recursion is what gives you that
-      unwind for free.</p>
-
-      <p><b>When it breaks:</b> update a node's height <em>before</em> its children have finished rebalancing
-      (or skip the update entirely) and every balance-factor check above it works from stale data — either
-      missing a real imbalance or rotating when nothing was actually wrong. The other classic mistake is
-      stopping at the first rotation instead of continuing the unwind: fixing the nearest unbalanced node
-      doesn't guarantee an ancestor further up is still within [-1, +1].</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; a sorted run of inserts that would break a plain BST</span></div>
-    <div class="panel-body">
-      <div class="scroller">
-        <div class="treewrap" id="demoWrap">
-          <svg class="links" id="demoLinks"></svg>
-          <div id="demoHost"></div>
-        </div>
-      </div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>AVL vs. red-black.</b> AVL trees keep balance <em>tighter</em> than red-black trees, so lookups are a
+      touch faster, but they rotate a little more often on inserts/deletes. Red-black trees relax the balance
+      rule slightly for fewer rotations — which is why libraries (Java <code>TreeMap</code>, C++
+      <code>std::map</code>, the Linux kernel) tend to use red-black. AVL is the cleaner one to <em>learn</em>
+      the self-balancing idea from, and the winner when reads vastly outnumber writes.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="avl-tree-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="avl-tree-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — insert 10, 20, 30 in order in the visualizer. A plain BST would lean hard to
-    the right; watch this one rotate to stay flat.
+    Next: read Rotations to see all four cases, then insert keys in sorted order in the playground — the tree
+    that would collapse into a line in a plain BST stays perfectly bushy here.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var INSERT_CODE=[
-    "Node* insert(Node *node, int val) {",
-    "  if (!node) return makeNode(val);",
-    "  if (val < node->val) node->left = insert(node->left, val);",
-    "  else if (val > node->val) node->right = insert(node->right, val);",
-    "  else return node;                              // no duplicates",
-    "",
-    "  node->height = 1 + max(height(node->left), height(node->right));",
-    "  int bf = balanceFactor(node);",
-    "",
-    "  if (bf > 1) {",
-    "    if (balanceFactor(node->left) >= 0) return rotateRight(node);          // Left-Left",
-    "    node->left = rotateLeft(node->left);                                    // Left-Right",
-    "    return rotateRight(node);",
-    "  }",
-    "  if (bf < -1) {",
-    "    if (balanceFactor(node->right) <= 0) return rotateLeft(node);          // Right-Right",
-    "    node->right = rotateRight(node->right);                                 // Right-Left",
-    "    return rotateLeft(node);",
-    "  }",
-    "  return node;",
-    "}"
-  ];
-
-  function h(n){ return n?n.height:0; }
-  function updateHeight(n){ n.height=1+Math.max(h(n.left),h(n.right)); }
-  function bfOf(n){ return h(n.left)-h(n.right); }
-  function rotateRight(y){ var x=y.left,t2=x.right; x.right=y; y.left=t2; updateHeight(y); updateHeight(x); return x; }
-  function rotateLeft(x){ var y=x.right,t2=y.left; y.left=x; x.right=t2; updateHeight(x); updateHeight(y); return y; }
-  function toTreeNode(n, activeId, activeRole){
-    if(!n) return null;
-    var bf=bfOf(n);
-    return { id:n.id, val:n.val, role:n.id===activeId?activeRole:"", label:(bf>0?"+":"")+bf,
-      left:toTreeNode(n.left,activeId,activeRole), right:toTreeNode(n.right,activeId,activeRole) };
+  function T(nodes,cls,ptrs){
+    var out={}; Object.keys(nodes).forEach(function(id){ out[id]={val:nodes[id].val,left:nodes[id].left,right:nodes[id].right}; if(cls&&cls[id])out[id].cls=cls[id]; });
+    return {root:(nodes.__root||'10'), nodes:out, ptrs:ptrs};
   }
-
-  function scriptFrames(){
-    var idBox={n:0}, root=null, frames=[];
-    function makeNode(v){ return {id:idBox.n++, val:v, left:null, right:null, height:1}; }
-    function push(activeId,activeRole,narr,codeLine){ frames.push({struct:{root:toTreeNode(root,activeId,activeRole)}, narr:narr, code:INSERT_CODE, codeLine:codeLine}); }
-    function rebalance(node, setter){
-      updateHeight(node);
-      var bf=bfOf(node), result=node;
-      if(bf>1){
-        if(bfOf(node.left)>=0){ push(node.id,"pivot","Left-left unbalanced at "+node.val+" — rotate right.",[9,13]); result=rotateRight(node); }
-        else { push(node.id,"pivot","Left-right unbalanced at "+node.val+" — rotate left then right.",[9,13]); node.left=rotateLeft(node.left); result=rotateRight(node); }
-        push(result.id,"sorted landed", result.val+" is the new subtree top.",[9,13]);
-      } else if(bf<-1){
-        if(bfOf(node.right)<=0){ push(node.id,"pivot","Right-right unbalanced at "+node.val+" — rotate left.",[14,18]); result=rotateLeft(node); }
-        else { push(node.id,"pivot","Right-left unbalanced at "+node.val+" — rotate right then left.",[14,18]); node.right=rotateRight(node.right); result=rotateLeft(node); }
-        push(result.id,"sorted landed", result.val+" is the new subtree top.",[14,18]);
-      }
-      setter(result);
-    }
-    function insert(v){
-      if(!root){ push(undefined,"","Insert "+v+" — becomes the root.",1); root=makeNode(v); push(root.id,"left head landed", v+" is the root.",1); return; }
-      push(root.id,"right","Insert "+v+".",[2,3]);
-      (function ins(node,setter){
-        if(!node){ var n=makeNode(v); push(n.id,"left head landed", v+" placed as a new leaf.",1); setter(n); return; }
-        push(node.id,"right", v<node.val ? (v+" < "+node.val+" — go left.") : (v+" > "+node.val+" — go right."), v<node.val?2:3);
-        if(v<node.val) ins(node.left, function(x){node.left=x;});
-        else ins(node.right, function(x){node.right=x;});
-        rebalance(node, setter);
-      })(root, function(n){ root=n; });
-    }
-    push(undefined,"","Create the tree: an empty root pointer.",1);
-    insert(10); insert(20); insert(30);
-    insert(40); insert(50);
-    insert(25);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 1050,
-    renderExtra: function(frame){
-      DSRender.tree(document.getElementById("demoHost"), document.getElementById("demoLinks"), frame.struct.root, {});
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  function one(k,v){var o={};o[k]=v;return o;}
+  function F(nodes,cls,ptrs,narr){ var f=T(nodes,cls,ptrs); f.narr=narr; return f; }
+  var justA={'10':{val:10}}; justA.__root='10';
+  var ab={'10':{val:10,right:'20'},'20':{val:20}}; ab.__root='10';
+  var chain={'10':{val:10,right:'20'},'20':{val:20,right:'30'},'30':{val:30}}; chain.__root='10';
+  var balanced={'20':{val:20,left:'10',right:'30'},'10':{val:10},'30':{val:30}}; balanced.__root='20';
+  TreeAnim.play({ host:document.getElementById("demoHost"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:1800, frames:[
+      F(justA, one('10','active'), null, "Insert 10 — it's the root. Balanced."),
+      F(ab, one('20','active'), null, "Insert 20 → right child of 10. Still fine (heights differ by 1)."),
+      F(chain, one('30','active'), null, "Insert 30 → right of 20. Now node 10 is right-heavy by 2 — a violation!"),
+      F(chain, one('10','active'), one('10',['pivot']), "Rotate node 10 to the left: pull 20 up, hand 10 down to its left."),
+      F(balanced, one('20','active'), null, "Balanced again: 20 is the root, 10 and 30 its children. Height 2, still sorted.")
+    ]});
 })();
 </script>
 </body>
