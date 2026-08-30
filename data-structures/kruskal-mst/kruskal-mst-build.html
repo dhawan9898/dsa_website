@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kruskal's MST · Building It</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .edgeline{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-soft);margin-top:8px}
+  .edgeline b{color:var(--seal)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="kruskal-mst.html">&larr; Kruskal's MST overview</a>
+      <p class="eyebrow">Sort Once, Take Or Skip</p>
+      <h1>Building the MST</h1>
+    </div>
+    <p class="note">Walk the sorted edge list once. Each edge is either a new connection to keep or a cycle to skip — and union-find tells you which.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Kruskal pages">
+    <a href="kruskal-mst.html">Overview</a>
+    <a class="here" href="kruskal-mst-build.html">Building the MST</a>
+    <a href="kruskal-mst-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The thought process</h2></div>
+    <div class="panel-body notes">
+      <p>Everything hinges on processing edges in the right order and using <a href="../union-find/union-find.html">union-find</a>
+      to keep the "already connected?" test cheap:</p>
+      <ol class="steps">
+        <li><b>Sort</b> all edges by weight, cheapest first.</li>
+        <li>Put every vertex in its own group (<code>makeset</code>).</li>
+        <li>For each edge in order: if its endpoints have <b>different</b> roots, <b>take</b> it and
+        <code>union</code> them; if the <b>same</b> root, <b>skip</b> it (a cycle).</li>
+        <li>Stop as soon as you've taken <b>V−1</b> edges — the tree is complete.</li>
+      </ol>
+      <div class="callout">
+        <b>Why cheapest-first is safe.</b> When you take an edge, it's the cheapest one that still joins two
+        separate pieces — and the cut property guarantees such an edge belongs to some MST. So no choice ever needs
+        to be undone; greedy is optimal here.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it run</h2><span class="sub">Kruskal on a 5-vertex graph — one C line at a time</span></div>
+    <div class="panel-body notes">
+      <p>Edges are considered in sorted order. Notice A-B(3) gets <em>skipped</em>: by the time it comes up, A and B
+      are already in one group, so it would only make a loop:</p>
+      <div class="demo-wrap">
+        <div class="graph-stage"><div id="kHost"></div><svg class="graph-svg" id="kSvg"></svg></div>
+        <p class="edgeline" id="kEdges">chosen: <b>—</b></p>
+        <p class="narr" id="kNarr" style="margin-top:6px">&nbsp;</p>
+        <div class="code-panel" id="kCode" style="margin-top:12px"></div>
+      </div>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> under consideration</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> chosen (MST edge)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--rule)"></i> rejected (cycle)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Reading the code</h2></div>
+    <div class="panel-body notes">
+      <p>The <code>sort</code> dominates the running time at O(E log E); everything after it is E iterations, each
+      doing two <code>find</code>s and maybe a <code>union</code> — effectively constant thanks to union-find's
+      α(V). So the whole algorithm is <b>O(E log E)</b>. If the edges arrive already sorted, it's essentially
+      linear.</p>
+      <p><code>if (ra == rb) continue;</code> is the entire cycle check — no graph search, just comparing two
+      roots. And <code>if (taken == V-1) break;</code> lets it stop early, the moment the tree spans every vertex,
+      rather than scanning the remaining (more expensive) edges.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="kruskal-mst-visualizer.html">Run it yourself in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Sort the edges, then take each one unless union-find says its endpoints are already joined. Four safe edges
+    later, every vertex is connected for the least total weight — the minimum spanning tree.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  var POS={ A:[60,70], B:[320,70], C:[190,175], D:[60,290], E:[320,290] };
+  var EDG=[["A","C",1],["B","C",2],["A","B",3],["D","E",4],["A","D",5],["C","E",6],["B","E",7]];
+  var IDS=["A","B","C","D","E"];
+  var CODE=[
+    "int kruskal(Edge e[], int m) {",
+    "  sort(e, m);                  // by weight, ascending",
+    "  for (int v = 0; v < V; v++) makeset(v);",
+    "  int total = 0, taken = 0;",
+    "  for (int i = 0; i < m; i++) {",
+    "    int ra = find(e[i].u), rb = find(e[i].v);",
+    "    if (ra == rb) continue;    // same group -> cycle",
+    "    unite(ra, rb);             // take the edge",
+    "    total += e[i].w;  taken++;",
+    "    if (taken == V - 1) break; // MST complete",
+    "  }",
+    "  return total;",
+    "}"];
+  function ek(a,b){ return a<b?a+"-"+b:b+"-"+a; }
+  function nodesFor(inMst,active){ var ns={}; IDS.forEach(function(id){ ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:(active&&active[id])?"active":(inMst[id]?"done":"")}; }); return ns; }
+  function edgesFor(estate){ return EDG.map(function(e){ var k=ek(e[0],e[1]); return {from:e[0],to:e[1],weight:e[2],cls:estate[k]||""}; }); }
+
+  function runKruskal(){
+    var parent={}; IDS.forEach(function(id){ parent[id]=id; });
+    function find(x){ while(parent[x]!==x) x=parent[x]; return x; }
+    var edges=EDG.slice().sort(function(a,b){ return a[2]-b[2]; });
+    var frames=[], estate={}, inMst={}, chosen=[], total=0, taken=0;
+    function snap(line,active,narr){ frames.push({nodes:nodesFor(inMst,active), edges:edgesFor(estate), code:line, codeLines:CODE, narr:narr, _chosen:chosen.slice(), _total:total}); }
+    snap([1,3],null,"Sort edges cheapest-first and put every vertex in its own group. total = 0, taken = 0.");
+    for(var i=0;i<edges.length && taken<IDS.length-1;i++){
+      var u=edges[i][0], v=edges[i][1], w=edges[i][2], k=ek(u,v);
+      estate[k]="active"; var act={}; act[u]=1; act[v]=1;
+      snap(5,act,"Edge "+u+"-"+v+" ("+w+"): find("+u+") = "+find(u)+", find("+v+") = "+find(v)+".");
+      if(find(u)===find(v)){
+        estate[k]="dim"; snap(6,act,u+" and "+v+" share a root — taking "+u+"-"+v+" would make a cycle. Skip it.");
+      } else {
+        parent[find(u)]=find(v); estate[k]="tree"; inMst[u]=1; inMst[v]=1; total+=w; taken++; chosen.push(u+"-"+v);
+        snap([7,8],act,"Different groups — take "+u+"-"+v+". Union them; total = "+total+", taken = "+taken+".");
+        if(taken===IDS.length-1){ snap(9,null,"taken = V−1 = "+(IDS.length-1)+" — the tree spans every vertex. Stop early."); break; }
+        else snap(4,null,u+"-"+v+" added. On to the next edge.");
+      }
+    }
+    snap([11,12],null,"MST complete: "+chosen.join(", ")+", total weight "+total+".");
+    return frames;
+  }
+
+  var host=document.getElementById("kHost"), nEl=document.getElementById("kNarr"), eEl=document.getElementById("kEdges");
+  var frames=runKruskal();
+  GraphAnim.play({ host:host, svg:document.getElementById("kSvg"), narrEl:nEl, codeHost:document.getElementById("kCode"), ms:1900, frames:frames });
+  var mo=new MutationObserver(function(){ for(var k=0;k<frames.length;k++){ if(frames[k].narr===nEl.textContent){ eEl.innerHTML="chosen: <b>"+(frames[k]._chosen.length?frames[k]._chosen.join(", "):"—")+"</b>  (total "+frames[k]._total+")"; break; } } });
+  mo.observe(nEl,{childList:true,characterData:true,subtree:true});
+})();
+</script>
+</body>
+</html>
