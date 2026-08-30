@@ -8,145 +8,143 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Take &middot; Walk Left &middot; Insert</p>
       <h1>Insertion&nbsp;Sort</h1>
     </div>
-    <p class="note">Builds a sorted prefix one element at a time. Each new value walks left past everything bigger than it until it finds its place.</p>
+    <p class="note">Exactly how you sort a hand of playing cards: pick up the next card and slide it back into its right place among the ones you've already sorted.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Insertion Sort pages">
+    <a class="here" href="insertion-sort.html">Overview</a>
+    <a href="insertion-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Insertion sort grows a sorted prefix on the left, one element at a time — the way most people
-      actually sort a hand of playing cards. Each new value, the <b>key</b>, is compared against the sorted
-      prefix from right to left; every value larger than the key shifts one step right, and the key drops
-      into the gap that opens up. After <code>i</code> passes, indices <code>0..i</code> are guaranteed
-      sorted, even though the rest of the array hasn't been touched yet.</p>
+      <p>Hold a few sorted cards in your left hand. Pick up the next card with your right. Slide it leftwards past
+      every card that's bigger, and drop it into the gap. Your left hand is still sorted — just one card bigger.
+      Repeat until there are no cards left to pick up.</p>
+      <p><b>Insertion sort</b> is that, on an array. It grows a sorted region on the left. Each step takes the first
+      <em>unsorted</em> value (the "key"), walks it left past everything larger — shifting those up to make room —
+      and drops it into place.</p>
 
+      <div class="callout">
+        <b>It shifts, it doesn't swap.</b> Rather than swapping pairs, it copies bigger values one slot to the right
+        to open a gap, then sets the gap to the key once. And it stops walking the moment it meets something not
+        bigger — so on <em>nearly-sorted</em> data each key barely moves, giving near-O(n) speed.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">the key floats left until it finds its slot</span></div>
+    <div class="panel-body notes">
+      <p>The lifted key is shown in gold; bigger values shift right to open a gap; then the key drops in. The green
+      sorted region on the left grows by one each pass:</p>
+      <div class="bars-stage"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:#B07A17;border-color:#B07A17"></i> the key being inserted</span>
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> a value being compared / shifted</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> sorted</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it &amp; read the code</h2><span class="sub">line-by-line on your own numbers</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="insertion-sort-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Type or randomize an array and watch each key lift out, shift bigger values right, and drop into place.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost and character</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Comparisons</th><th>Time</th></tr>
-        <tr><td>Worst (reverse sorted)</td><td>~n&sup2;/2</td><td><b>O(n&sup2;)</b></td></tr>
-        <tr><td>Best (already sorted)</td><td>n&minus;1</td><td><b>O(n)</b></td></tr>
-        <tr><td>Space</td><td colspan="2"><b>O(1)</b> &mdash; sorts in place</td></tr>
+        <tr><th>Case</th><th>When</th><th>Time</th></tr>
+        <tr><td>Best</td><td>Already (nearly) sorted</td><td><b>O(n)</b></td></tr>
+        <tr><td>Average / Worst</td><td>Random / reversed</td><td><b>O(n²)</b></td></tr>
+        <tr><td>Space</td><td>In place</td><td>O(1)</td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel below implements the shift as a <code>while</code> loop that
-      stops the instant it finds a value not greater than the key — that early stop is what makes the best
-      case O(n): on an already-sorted array, every key immediately fails its very first comparison and never
-      shifts at all. This is also why insertion sort is the standard choice for finishing off small
-      partitions inside faster sorts like quicksort: on nearly-sorted data it's close to linear, and its
-      overhead per element is tiny.</p>
-
-      <p><b>Common mistake:</b> save the key's value (<code>arr[i]</code>) into a local variable
-      <em>before</em> starting the shift loop. Skip that and the first shift overwrites <code>arr[i]</code>
-      with its neighbour before the key's original value has been read anywhere else — it's silently gone,
-      and the final placement writes back a duplicate instead of the real key.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; six values, start to finish</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertionSort()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>The useful simple sort.</b> It's stable, in-place, and genuinely fast when the data is almost sorted or
+      small — which is why real libraries switch to insertion sort for tiny subarrays inside
+      <a href="../quick-sort/quick-sort.html">quick sort</a> and <a href="../merge-sort/merge-sort.html">merge
+      sort</a>. Its gap-based generalization is <a href="../shell-sort/shell-sort.html">shell sort</a>. For large
+      random data, though, the O(n²) shifts still make an O(n log n) sort the better default.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="insertion-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="insertion-sort-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: load a nearly-sorted array in the visualizer and compare how few shifts it takes against a
-    reverse-sorted one.
+    Insertion sort grows a sorted prefix: lift the next value, shift bigger ones right to open a gap, drop it in.
+    O(n) on nearly-sorted data, O(n²) in general — and the practical choice for small arrays.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "void insertionSort(int arr[], int n) {",
-    "  for (int i = 1; i < n; i++) {",
-    "    int key = arr[i];",
-    "    int j = i - 1;",
-    "    while (j >= 0 && arr[j] > key) {",
-    "      arr[j + 1] = arr[j];   // shift right",
-    "      j--;",
-    "    }",
-    "    arr[j + 1] = key;        // key found its spot",
-    "  }",
-    "}"
+  function bars(arr, cls, ptrs){ return arr.map(function(v,i){ return {val:v, cls:(cls&&cls[i])||"", ptrs:(ptrs&&ptrs[i])||[]}; }); }
+  function F(arr,cls,ptrs,narr){ return {bars:bars(arr,cls,ptrs), narr:narr}; }
+  function st(k,extra){ var c={}; for(var i=0;i<k;i++)c[i]='sorted'; if(extra)Object.keys(extra).forEach(function(x){c[x]=extra[x];}); return c; }
+  var frames=[
+    F([5,2,4,1],st(1),{},"[5, 2, 4, 1]. Treat a[0] = 5 as a sorted prefix of one."),
+    F([5,2,4,1],st(1,{1:'pivot'}),{1:['key']},"Lift the key = a[1] = 2. Compare it left."),
+    F([5,5,4,1],st(1,{0:'a',1:'pivot'}),{1:['key']},"5 > 2 — shift 5 right into the gap."),
+    F([2,5,4,1],st(2),{},"Drop 2 at index 0. Sorted prefix: [2, 5]."),
+    F([2,5,4,1],st(2,{2:'pivot'}),{2:['key']},"Lift key = a[2] = 4."),
+    F([2,5,5,1],st(2,{1:'a',2:'pivot'}),{2:['key']},"5 > 4 — shift 5 right."),
+    F([2,4,5,1],st(3),{},"2 ≤ 4 — stop. Drop 4 at index 1. Sorted: [2, 4, 5]."),
+    F([2,4,5,1],st(3,{3:'pivot'}),{3:['key']},"Lift key = a[3] = 1."),
+    F([2,4,5,5],st(3,{2:'a',3:'pivot'}),{3:['key']},"5 > 1 — shift."),
+    F([2,4,4,5],st(2,{1:'a'}),{2:['key']},"4 > 1 — shift."),
+    F([2,2,4,5],st(1,{0:'a'}),{1:['key']},"2 > 1 — shift."),
+    F([1,2,4,5],st(4),{},"Reached the front. Drop 1 at index 0. Sorted: [1, 2, 4, 5].")
   ];
-
-  function scriptFrames(){
-    var a=[5,2,4,6,1,3], n=a.length, frames=[];
-    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
-    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
-
-    var r0=new Array(n).fill(""); r0[0]="sorted";
-    push(r0,"A single element is trivially a sorted run of length one.",0);
-
-    for(var i=1;i<n;i++){
-      var rk=new Array(n).fill("");
-      for(var k=0;k<i;k++) rk[k]="sorted";
-      rk[i]="left head";
-      push(rk,"Take "+a[i]+" as the key to insert into the sorted prefix on its left.",[2,3]);
-
-      var j=i;
-      while(j>0){
-        var r=new Array(n).fill("");
-        for(var k2=0;k2<i;k2++) r[k2]="sorted";
-        r[j-1]="right head"; r[j]="left head";
-        var willShift=a[j-1]>a[j];
-        push(r,"Compare the key "+a[j]+" with "+a[j-1]+" to its left. "+(willShift?"Larger — shift right and keep walking.":"Not larger — the key has found its spot."),4);
-        if(!willShift) break;
-        var tmp=a[j-1]; a[j-1]=a[j]; a[j]=tmp;
-        var r2=new Array(n).fill("");
-        for(var k3=0;k3<i;k3++) r2[k3]="sorted";
-        r2[j-1]="left head landed";
-        push(r2,"Shifted: "+a[j-1]+" moves one step left.",[5,6]);
-        j--;
-      }
-      var rEnd=new Array(n).fill("");
-      for(var k4=0;k4<=i;k4++) rEnd[k4]="sorted";
-      push(rEnd,"The key has settled at index "+j+".",8);
-    }
-    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",9);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  BarsAnim.play({ host:document.getElementById("demoHost"), narrEl:document.getElementById("demoNarr"), ms:1450, frames:frames });
 })();
 </script>
 </body>

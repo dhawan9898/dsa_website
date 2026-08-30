@@ -8,148 +8,138 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Scan &middot; Find Minimum &middot; Swap</p>
       <h1>Selection&nbsp;Sort</h1>
     </div>
-    <p class="note">Each pass scans the unsorted remainder for its smallest value, then swaps that value into place at the front of the remainder.</p>
+    <p class="note">Find the smallest value, put it first; find the next smallest, put it second; and so on — one exact placement per pass.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Selection Sort pages">
+    <a class="here" href="selection-sort.html">Overview</a>
+    <a href="selection-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Selection sort keeps a growing sorted prefix at the front of the array. Each pass scans the entire
-      unsorted remainder to find its smallest value, then swaps that value into the next open slot —
-      index <code>i</code> on pass <code>i</code>. Unlike bubble sort, which can perform many swaps in a
-      single pass, selection sort performs <b>at most one swap per pass</b>: it only ever writes once it
-      already knows exactly which value belongs at that slot.</p>
+      <p>Sorting a hand of cards, you might scan for the smallest, pull it to the front, then scan the rest for the
+      next smallest, and repeat. <b>Selection sort</b> is exactly that: each pass <em>selects</em> the minimum of the
+      unsorted part and swaps it into the next sorted slot. After pass <em>k</em>, the first <em>k</em> positions
+      hold the <em>k</em> smallest values, in order — and they never move again.</p>
 
+      <div class="callout">
+        <b>One swap per pass.</b> Unlike bubble sort, which may swap many times per pass, selection sort scans to
+        find the minimum and then makes a <em>single</em> swap. That's its one edge: it does the fewest writes of
+        any simple sort — handy when writing to memory is expensive.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">the minimum of the rest is found, then swapped to the front</span></div>
+    <div class="panel-body notes">
+      <p>The running minimum is tracked (green pointer). At the end of each scan it's swapped into place, and the
+      sorted region grows from the <em>left</em>:</p>
+      <div class="bars-stage"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> current scan position</span>
+        <span class="key">min marks the smallest found so far</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> locked (sorted)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it &amp; read the code</h2><span class="sub">line-by-line on your own numbers</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="selection-sort-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Type or randomize an array and watch each pass scan for the minimum, then swap it into the next slot.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost and character</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Comparisons</th><th>Swaps</th></tr>
-        <tr><td>Every case</td><td><b>O(n&sup2;)</b></td><td><b>O(n)</b> at most</td></tr>
-        <tr><td>Space</td><td colspan="2"><b>O(1)</b> &mdash; sorts in place</td></tr>
+        <tr><th>Case</th><th>When</th><th>Time</th></tr>
+        <tr><td>Every case</td><td>It always fully scans the rest</td><td><b>O(n²)</b></td></tr>
+        <tr><td>Swaps</td><td>One per pass</td><td>O(n)</td></tr>
+        <tr><td>Space</td><td>In place</td><td>O(1)</td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel below tracks a single index, <code>minIdx</code>, through the
-      whole inner scan — it's updated in memory every time a smaller candidate turns up, but nothing in the
-      array itself moves until the scan finishes. That's the trade selection sort makes against bubble sort:
-      the comparison count is identical (it still has to look at every remaining element every pass), but the
-      write count drops from potentially O(n&sup2;) down to a hard O(n) ceiling, which matters when writes are
-      expensive relative to reads.</p>
-
-      <p><b>Common mistake:</b> because the swap only happens once per pass, it's tempting to swap
-      immediately the moment a smaller value is found mid-scan — but that swaps the wrong value into place
-      early and corrupts the rest of the scan. The candidate index has to be tracked and only swapped in
-      <em>after</em> the full remainder has been checked.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; five values, start to finish</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; selectionSort()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>No early exit.</b> Selection sort always scans the entire unsorted region to be sure it found the
+      minimum, so it's O(n²) even on already-sorted input — no best-case shortcut like bubble or
+      <a href="../insertion-sort/insertion-sort.html">insertion</a> sort. It's also <em>not stable</em> by default
+      (a swap can leapfrog equal values). Its selling point is minimal writes; for speed on real data, use
+      <a href="../quick-sort/quick-sort.html">quick</a> or <a href="../merge-sort/merge-sort.html">merge sort</a>.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="selection-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="selection-sort-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: load your own array in the visualizer and watch how few swaps it actually takes — often far fewer
-    than the number of comparisons.
+    Selection sort: each pass finds the smallest of what's left and swaps it into place. Always O(n²) comparisons,
+    but only O(n) swaps — the fewest writes of any simple sort.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "void selectionSort(int arr[], int n) {",
-    "  for (int i = 0; i < n - 1; i++) {",
-    "    int minIdx = i;",
-    "    for (int j = i + 1; j < n; j++) {",
-    "      if (arr[j] < arr[minIdx]) minIdx = j;",
-    "    }",
-    "    if (minIdx != i) {",
-    "      int tmp = arr[i];",
-    "      arr[i] = arr[minIdx];",
-    "      arr[minIdx] = tmp;",
-    "    }",
-    "  }",
-    "}"
-  ];
-
-  function scriptFrames(){
-    var a=[29,10,14,37,13], n=a.length, frames=[];
-    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
-    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
-
-    push(new Array(n).fill(""),"Selection sort finds the smallest value in the unsorted remainder and swaps it into the next open slot.",1);
-
-    for(var i=0;i<n-1;i++){
-      var minIdx=i;
-      for(var j=i+1;j<n;j++){
-        var r=new Array(n).fill("");
-        for(var k=0;k<i;k++) r[k]="sorted";
-        r[minIdx]="left head"; r[j]="right head";
-        var better=a[j]<a[minIdx];
-        push(r,"Compare candidate minimum "+a[minIdx]+" with "+a[j]+". "+(better?"New minimum found.":"Current minimum stays."),4);
-        if(better){
-          minIdx=j;
-          var r2=new Array(n).fill("");
-          for(var k2=0;k2<i;k2++) r2[k2]="sorted";
-          r2[minIdx]="left head";
-          push(r2,"Index "+minIdx+" ("+a[minIdx]+") is now the smallest seen this pass.",4);
-        }
-      }
-      if(minIdx!==i){
-        var tmp=a[i]; a[i]=a[minIdx]; a[minIdx]=tmp;
-        var r3=new Array(n).fill("");
-        for(var k4=0;k4<i;k4++) r3[k4]="sorted";
-        r3[i]="sorted landed";
-        push(r3,"Swap the minimum into index "+i+": ["+a.join(", ")+"].",[7,9]);
-      } else {
-        var r4=new Array(n).fill("");
-        for(var k5=0;k5<=i;k5++) r4[k5]="sorted";
-        push(r4,"Index "+i+" already holds the smallest remaining value.",6);
-      }
-    }
-    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",12);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  function bars(arr, cls, ptrs){ return arr.map(function(v,i){ return {val:v, cls:(cls&&cls[i])||"", ptrs:(ptrs&&ptrs[i])||[]}; }); }
+  function F(arr,cls,ptrs,narr){ return {bars:bars(arr,cls,ptrs), narr:narr}; }
+  var frames=[];
+  function sortedTo(k,extra){ var c={}; for(var i=0;i<k;i++)c[i]='sorted'; if(extra)Object.keys(extra).forEach(function(x){c[x]=extra[x];}); return c; }
+  frames.push(F([5,3,8,1],{},{},"Start: [5, 3, 8, 1]. Find the smallest and put it first."));
+  frames.push(F([5,3,8,1],{0:'a'},{0:['min'],0:['min']},"Scan from index 0. min = 5 so far."));
+  frames.push(F([5,3,8,1],{1:'a',0:'active'},{1:['min']},"3 < 5 — new minimum is 3."));
+  frames.push(F([5,3,8,1],{3:'a',1:'active'},{3:['min']},"1 < 3 — new minimum is 1 (index 3)."));
+  frames.push(F([1,3,8,5],sortedTo(1),{},"Swap 1 into index 0. It's locked."));
+  frames.push(F([1,3,8,5],sortedTo(1,{1:'a'}),{1:['min']},"Scan the rest. min = 3."));
+  frames.push(F([1,3,8,5],sortedTo(2),{},"3 is already smallest of the rest — swap with itself. Locked."));
+  frames.push(F([1,3,8,5],sortedTo(2,{3:'a'}),{3:['min']},"Scan {8, 5}: min = 5 at index 3."));
+  frames.push(F([1,3,5,8],sortedTo(3),{},"Swap 5 into index 2. Locked."));
+  frames.push(F([1,3,5,8],sortedTo(4),{},"Last element is automatically in place. Sorted: [1, 3, 5, 8]."));
+  BarsAnim.play({ host:document.getElementById("demoHost"), narrEl:document.getElementById("demoNarr"), ms:1500, frames:frames });
 })();
 </script>
 </body>
