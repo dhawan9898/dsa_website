@@ -8,142 +8,138 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Shrink the Gap &middot; Insert &middot; Repeat</p>
       <h1>Shell&nbsp;Sort</h1>
     </div>
-    <p class="note">Insertion sort with a twist: compares elements far apart first, then shrinks that gap every pass until it reaches 1.</p>
+    <p class="note">Insertion sort's problem is that values only move one step at a time. Shell sort fixes that: compare far-apart elements first, then close the gap.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Shell Sort pages">
+    <a class="here" href="shell-sort.html">Overview</a>
+    <a href="shell-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Plain insertion sort is fast on nearly-sorted data but slow whenever a small value starts out far
-      from where it belongs — it has to shift past every value in between, one slot at a time. Shell sort's
-      fix: run insertion sort on far-apart elements first. With a <b>gap</b> of <code>g</code>, it insertion-
-      sorts every <code>g</code>-th element as its own interleaved sequence, moving badly-placed values a
-      long way in a single swap. The gap then shrinks — typically halved — each pass, until it reaches 1,
-      which is just an ordinary insertion sort pass, but over data that's now already close to sorted.</p>
+      <p><a href="../insertion-sort/insertion-sort.html">Insertion sort</a> is slow on shuffled data because a
+      value far from home has to shuffle left one slot at a time. <b>Shell sort</b> gives it a head start: first it
+      runs insertion sort on elements that are a big <b>gap</b> apart, so a small value near the end can leap most of
+      the way to the front in a single move. Then it shrinks the gap and repeats, and repeats, until the gap is 1 —
+      an ordinary insertion sort, but now on data that's <em>almost</em> sorted, which insertion sort races through.</p>
 
+      <div class="callout">
+        <b>It's insertion sort, gap-strided.</b> With gap = 4, it independently insertion-sorts the sub-sequences
+        {a[0], a[4], a[8]…}, {a[1], a[5]…}, and so on. Each pass makes the array "more sorted" cheaply, so the final
+        gap-1 pass has very little left to do.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">big gaps first, moving values a long way, then gap 1</span></div>
+    <div class="panel-body notes">
+      <p>Elements a gap apart are compared (red) and the gold key hops <em>gap</em> slots at a time. The gap halves
+      each round:</p>
+      <div class="bars-stage"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:#B07A17;border-color:#B07A17"></i> the key</span>
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> the gap-apart value it's compared with</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it &amp; read the code</h2><span class="sub">line-by-line on your own numbers</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="shell-sort-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Type or randomize an array and watch each gap do a strided insertion sort, then the gap shrink to 1.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost depends on the gap sequence</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Time</th></tr>
-        <tr><td>Depends on gap sequence</td><td>roughly <b>O(n&sup1;&middot;&sup3;&#8776;)</b> for the halving sequence used here</td></tr>
-        <tr><td>Space</td><td><b>O(1)</b> &mdash; sorts in place</td></tr>
+        <tr><th>Case</th><th>When</th><th>Time</th></tr>
+        <tr><td>Best</td><td>Nearly sorted</td><td><b>O(n log n)</b></td></tr>
+        <tr><td>Average</td><td>Depends on the gap sequence</td><td>≈ O(n<sup>1.25</sup>)</td></tr>
+        <tr><td>Worst</td><td>Halving gaps</td><td>O(n²)</td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel below is exactly insertion sort with every <code>1</code>
-      replaced by <code>gap</code> — the inner comparison, the shift, and the step all move by
-      <code>gap</code> positions instead of one. That's the whole trick: no new mechanism, just insertion
-      sort's existing shift logic running across a wider stride, shrunk pass by pass until the stride is 1
-      again.</p>
-
-      <p><b>Common mistake:</b> forgetting that the final pass <em>must</em> bring the gap down to exactly 1
-      — skip it (say, by stopping once the gap rounds down to 0 one step early) and the array ends up only
-      "mostly" sorted, since elements that were never compared within one gap of each other can still be out
-      of order relative to one another.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; eight values, start to finish</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; shellSort()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>The gap sequence matters.</b> The simple "halve the gap each time" (shown here) is easy to grasp but not
+      optimal; carefully chosen sequences (Hibbard, Sedgewick, Knuth) push the average toward O(n<sup>4/3</sup>) or
+      better. Shell sort is <em>adaptive</em>, in place, and simple — a solid choice for medium-sized arrays and
+      embedded code where you want better-than-O(n²) without the overhead of
+      <a href="../quick-sort/quick-sort.html">quick</a> or <a href="../merge-sort/merge-sort.html">merge sort</a>.
+      It is not stable.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="shell-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="shell-sort-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: open the visualizer and compare the very first gap-4 pass against a plain insertion sort on the
-    same array — see how far values jump in a single swap.
+    Shell sort is gap-strided insertion sort: large gaps move values a long way cheaply, then shrinking gaps finish
+    on nearly-sorted data. Better than O(n²) with a good gap sequence, in place, and simple.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "void shellSort(int arr[], int n) {",
-    "  for (int gap = n / 2; gap >= 1; gap /= 2) {",
-    "    for (int i = gap; i < n; i++) {",
-    "      int j = i;",
-    "      while (j >= gap && arr[j - gap] > arr[j]) {",
-    "        int tmp = arr[j - gap];",
-    "        arr[j - gap] = arr[j];",
-    "        arr[j] = tmp;",
-    "        j -= gap;",
-    "      }",
-    "    }",
-    "  }",
-    "}"
+  function barsFor(a, key, cmp){ return a.map(function(v,k){
+    var c=""; if(k===key) c="pivot"; else if(k===cmp) c="a";
+    var p=[]; if(k===key)p.push('key'); return {val:v, cls:c, ptrs:p}; }); }
+  function F(a,key,cmp,narr){ return {bars:barsFor(a.slice(),key,cmp), narr:narr}; }
+  // demo on [8,5,3,7,2,6] gaps 3,1
+  var frames=[
+    F([8,5,3,7,2,6],-1,-1,"[8, 5, 3, 7, 2, 6]. Start with gap = 3."),
+    F([8,5,3,7,2,6],3,0,"Gap 3: compare a[3] = 7 with a[0] = 8. 8 > 7 — the key 7 jumps 3 slots left."),
+    F([7,5,3,8,2,6],4,1,"Compare a[4] = 2 with a[1] = 5. 5 > 2 — key 2 hops left."),
+    F([7,2,3,8,5,6],5,2,"Compare a[5] = 6 with a[2] = 3. 3 < 6 — stays. Gap-3 pass done."),
+    F([7,2,3,8,5,6],-1,-1,"Shrink gap to 1: a normal insertion sort, but the array is already close."),
+    F([2,3,5,6,7,8],-1,-1,"After the gap-1 pass: sorted [2, 3, 5, 6, 7, 8].")
   ];
-
-  function scriptFrames(){
-    var a=[9,8,3,7,5,6,4,1], n=a.length, frames=[];
-    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
-    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
-
-    var gap=Math.floor(n/2);
-    push(new Array(n).fill(""),"Start with gap = "+gap+": compare and shift elements that are "+gap+" apart.",1);
-
-    while(gap>=1){
-      for(var i=gap;i<n;i++){
-        var j=i;
-        while(j>=gap){
-          var r=new Array(n).fill("");
-          r[j-gap]="right head"; r[j]="left head";
-          var willSwap=a[j-gap]>a[j];
-          push(r,"Compare "+a[j-gap]+" and "+a[j]+", "+gap+" apart. "+(willSwap?"Out of order — swap.":"Already in order."),4);
-          if(!willSwap) break;
-          var tmp=a[j-gap]; a[j-gap]=a[j]; a[j]=tmp;
-          var r2=new Array(n).fill(""); r2[j-gap]="left head landed";
-          push(r2,"Swapped across the gap: "+a[j-gap]+" moves "+gap+" steps left.",[5,7]);
-          j-=gap;
-        }
-      }
-      gap=Math.floor(gap/2);
-      if(gap>=1){
-        var rg=new Array(n).fill("");
-        push(rg,"Gap shrinks to "+gap+".",1);
-      }
-    }
-    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",11);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  BarsAnim.play({ host:document.getElementById("demoHost"), narrEl:document.getElementById("demoNarr"), ms:1650, frames:frames });
 })();
 </script>
 </body>

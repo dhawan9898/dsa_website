@@ -3,148 +3,160 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shell Sort — step by step</title>
+<title>Shell Sort Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .ctl-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .statline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .statline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="shell-sort.html">&larr; Shell Sort notes</a>
       <p class="eyebrow">Shrink the Gap &middot; Insert &middot; Repeat</p>
-      <h1>Shell&nbsp;Sort</h1>
+      <h1>Shell&nbsp;Sort&nbsp;Playground</h1>
     </div>
-    <p class="note">Insertion sort with a twist: compares elements far apart first, then shrinks that gap every pass until it reaches 1.</p>
+    <p class="note">Type your own numbers or randomize, then watch each gap do a strided insertion sort before shrinking to 1 — one C line at a time.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Shell Sort pages">
+    <a href="shell-sort.html">Overview</a>
+    <a class="here" href="shell-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Set the array</h2><span class="sub">2 &ndash; 16 numbers</span></div>
+    <div class="panel-head"><h2>Your array</h2><span class="sub">up to 9 numbers · gaps n/2, n/4, … 1</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld">
-          <span>Numbers, separated by commas</span>
-          <input type="text" id="input" value="38, 27, 43, 3, 9, 82, 10" autocomplete="off" spellcheck="false">
-        </label>
-        <button id="load">Use this array</button>
-        <button id="rand">Random</button>
+      <div class="ctl-row">
+        <label class="fld"><span>Numbers (comma-separated)</span><input type="text" id="arrF" value="8, 5, 3, 7, 2, 6, 1"></label>
+        <button class="opbtn" id="randBtn" style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;padding:10px 18px;border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer">Random</button>
+        <button class="primary" id="sortBtn">Sort it</button>
       </div>
-      <p class="hint" id="hint">Press Play to watch the sort, or step through one comparison at a time.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">Enter numbers and press <b>Sort it</b>. Then use ◀ Back / Step ▶ to move one line at a time.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Working array</h2><span class="sub">compares elements one gap apart</span></div>
+    <div class="panel-head"><h2>The array</h2><span class="sub">gold = the key; red = the value one gap to its left</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> element being moved</span>
-        <span class="key"><i class="swatch right"></i> element it's compared against, one gap away</span>
+      <div class="bars-stage"><div id="barsHost"></div></div>
+      <div class="bars-ctrls" id="playbar">
+        <button class="bars-cbtn" id="aBack">◀ Back</button>
+        <button class="bars-cbtn" id="aPlay">Play</button>
+        <button class="bars-cbtn" id="aStep">Step ▶</button>
+        <span class="bars-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="statline" id="statLine">&nbsp;</p>
+      <p class="narr" id="narr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:#B07A17;border-color:#B07A17"></i> key</span>
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> gap-apart value</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; shellSort()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">line highlighted as it runs</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Load an array to begin.</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Comparing across a wide gap first moves badly-placed values a long way in a single swap, so by the time
-    the gap shrinks to 1 the array is already close to sorted — that final pass is a plain insertion sort,
-    but a very cheap one.
+    Big gaps let a value cross most of the array in one move; by the time the gap is 1, the array is nearly sorted,
+    so the final insertion-sort pass is cheap.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
   var CODE=[
-    "void shellSort(int arr[], int n) {",
-    "  for (int gap = n / 2; gap >= 1; gap /= 2) {",
+    "void shellSort(int a[], int n) {",
+    "  for (int gap = n/2; gap > 0; gap /= 2) {",
     "    for (int i = gap; i < n; i++) {",
-    "      int j = i;",
-    "      while (j >= gap && arr[j - gap] > arr[j]) {",
-    "        int tmp = arr[j - gap];",
-    "        arr[j - gap] = arr[j];",
-    "        arr[j] = tmp;",
+    "      int key = a[i], j = i;",
+    "      while (j >= gap && a[j-gap] > key) {",
+    "        a[j] = a[j-gap];      // shift gap-apart value up",
     "        j -= gap;",
     "      }",
+    "      a[j] = key;             // drop the key in",
     "    }",
     "  }",
-    "}"
-  ];
-
-  function build(input){
-    var a=input.slice(), n=a.length, frames=[], cmp=0, swp=0;
-    function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr,gap,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,swp:swp,gap:gap,code:CODE,codeLine:codeLine,moves:moves}); }
-
-    var gap=Math.floor(n/2);
-    push(roles(),"start","Shell sort is insertion sort with a twist: it first compares elements far apart (a large gap), then shrinks the gap each pass until it reaches 1 — a final ordinary insertion sort pass.",gap,1);
-
-    while(gap>=1){
-      push(roles(),"gap-start","New gap = "+gap+". Compare and shift elements that are "+gap+" apart.",gap,1);
+    "}"];
+  function runShell(a){
+    a=a.slice(); var n=a.length, frames=[], comps=0, shifts=0;
+    // d display array with hole showing key value in gold
+    function barsFor(d, holePos, key, cmp){ return d.map(function(v,k){
+      var c=""; if(k===holePos){ c="pivot"; v=key; } else if(k===cmp) c="a";
+      var p=[]; if(k===holePos)p.push('key'); return {val:v, cls:c, ptrs:p}; }); }
+    function snap(line,holePos,key,cmp,narr){ frames.push({bars:barsFor(a.slice(),holePos,key,cmp), code:line, codeLines:CODE, narr:narr, _c:comps, _s:shifts}); }
+    snap(0,-1,0,-1,"Start. gap = "+Math.floor(n/2)+" (half the length).");
+    for(var gap=Math.floor(n/2); gap>0; gap=Math.floor(gap/2)){
+      snap(1,-1,0,-1,"Gap = "+gap+": insertion-sort elements "+gap+" apart.");
       for(var i=gap;i<n;i++){
-        var j=i;
-        while(j>=gap){
-          var r=roles();
-          r[j-gap]="right head"; r[j]="left head";
-          cmp++;
-          var willSwap=a[j-gap]>a[j];
-          push(r,"compare","Compare "+a[j-gap]+" (index "+(j-gap)+") with "+a[j]+" (index "+j+"), "+gap+" apart. "+
-            (willSwap ? "Out of order, so swap them." : "Already in order, so leave them."),gap,4);
-          if(!willSwap) break;
-          var tmp=a[j-gap]; a[j-gap]=a[j]; a[j]=tmp; swp++;
-          var r2=roles();
-          r2[j-gap]="left head landed";
-          push(r2,"swap","Swapped across the gap: "+a[j-gap]+" moves "+gap+" steps left, past "+a[j]+".",gap,[5,7],
-            [{from:j-gap,to:j},{from:j,to:j-gap}]);
-          j-=gap;
+        var key=a[i], j=i;
+        snap([2,3],i,key,-1,"Take key = a["+i+"] = "+key+". Compare with the value "+gap+" slots to its left.");
+        while(j>=gap && a[j-gap]>key){
+          comps++;
+          snap(4,j,key,j-gap,"a["+(j-gap)+"] = "+a[j-gap]+" > key = "+key+" — shift it right by "+gap+".");
+          a[j]=a[j-gap]; shifts++; j-=gap;
         }
+        if(j>=gap){ comps++; snap(4,j,key,j-gap,"a["+(j-gap)+"] = "+a[j-gap]+" ≤ key = "+key+" — stop."); }
+        a[j]=key;
+        snap(8,-1,0,-1,"Drop key "+key+" into index "+j+".");
       }
-      gap=Math.floor(gap/2);
     }
-    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+swp+" swaps for "+n+" numbers.",0,12);
+    var frames0=frames; snap(10,-1,0,-1,"Sorted: ["+a.join(", ")+"]. "+comps+" comparisons, "+shifts+" shifts.");
     return frames;
   }
 
-  Viz.init({
-    defaultInput: "38, 27, 43, 3, 9, 82, 10",
-    minN:2, maxN:16,
-    build: build,
-    statLabels: [{key:"cmp",label:"Comparisons"},{key:"swp",label:"Swaps"},{key:"gap",label:"Gap"}]
-  });
+  var host=document.getElementById("barsHost"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount"), statEl=document.getElementById("statLine");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    BarsAnim.render(host, f); narrEl.textContent=f.narr||"";
+    statEl.innerHTML="comparisons: <b>"+(f._c||0)+"</b> &nbsp; shifts: <b>"+(f._s||0)+"</b>";
+    BarsAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1100);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function parseArr(){ return document.getElementById("arrF").value.split(/[,\s]+/).map(function(s){return parseInt(s,10);}).filter(function(x){return !isNaN(x);}).slice(0,9); }
+  function showArray(a){ var f={bars:a.map(function(v){return {val:v,cls:"",ptrs:[]};}), narr:a.length?"Ready to sort ["+a.join(", ")+"].":"Enter some numbers."}; P.frames=[f]; P.i=0; BarsAnim.render(host,f); narrEl.textContent=f.narr; statEl.innerHTML="&nbsp;"; BarsAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; }
+
+  document.getElementById("sortBtn").onclick=function(){ var a=parseArr(); if(a.length<2){ hint("Enter at least two numbers."); return; } hint("Use ◀ Back / Step ▶ to walk line by line, or let it play."); loadFrames(runShell(a)); };
+  document.getElementById("randBtn").onclick=function(){ var n=6+Math.floor(Math.random()*3), a=[]; for(var i=0;i<n;i++) a.push(1+Math.floor(Math.random()*20)); document.getElementById("arrF").value=a.join(", "); stopP(); showArray(a); hint("Random array loaded. Press Sort it."); };
+  document.getElementById("arrF").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("sortBtn").click(); });
+
+  showArray(parseArr());
 })();
 </script>
 </body>

@@ -8,152 +8,157 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+  .cs-block{margin:6px 0}
+  .cs-label{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:var(--ink-soft);margin:8px 0 4px}
+  .cs-row{display:flex;gap:6px;flex-wrap:wrap}
+  .cs-col{display:flex;flex-direction:column;align-items:center}
+  .cs-cell{width:34px;height:34px;border:2px solid var(--ink);border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px;background:#fff;color:var(--ink);
+    transition:border-color .3s var(--ease),background .3s var(--ease),color .3s var(--ease)}
+  .cs-cell.empty{border-style:dashed;color:transparent}
+  .cs-cell.a{border-color:var(--stamp);color:var(--stamp);background:rgba(190,58,29,.08)}
+  .cs-cell.b{border-color:var(--plot);color:var(--plot);background:rgba(31,78,121,.08)}
+  .cs-cell.done{border-color:var(--seal);color:var(--seal);background:rgba(46,107,79,.12)}
+  .cs-idx{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--ink-soft);margin-top:2px}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Count &middot; Accumulate &middot; Place</p>
       <h1>Counting&nbsp;Sort</h1>
     </div>
-    <p class="note">No comparisons at all: count how often each value appears, turn those counts into output positions, then place every value directly where it belongs.</p>
+    <p class="note">No comparisons at all: tally how many of each value there are, and use those tallies to place everything directly.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Counting Sort pages">
+    <a class="here" href="counting-sort.html">Overview</a>
+    <a href="counting-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Every sort covered so far is <b>comparison-based</b> — it decides order by asking "is this bigger
-      than that?" — and every comparison-based sort is provably at best O(n log n). Counting sort sidesteps
-      the question entirely: if every value is a non-negative integer within some known range, you can count
-      how many times each one appears, turn those counts into exact output positions with a running total,
-      then place every value straight into its slot. No comparisons, no swaps — the trade is needing to know
-      the value range up front, and paying for an array sized to it.</p>
+      <p>Every sort so far <em>compares</em> pairs of values. Counting sort doesn't compare anything. If your values
+      are small whole numbers, you can just <b>count</b> how many times each one appears, and then read the counts
+      back out in order. Sorting exam scores 0–100? Tally how many students got each score, then list score 0's,
+      then score 1's, and so on. The tally <em>is</em> the sorted order.</p>
 
+      <div class="callout">
+        <b>Beating O(n log n).</b> Comparison sorts can't do better than O(n log n) — that's a proven limit.
+        Counting sort sidesteps it by not comparing: it runs in <b>O(n + k)</b>, where k is the range of values.
+        When k is small (scores, ages, bytes), that's effectively linear — faster than any comparison sort.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">tally each value, turn tallies into positions, then place</span></div>
+    <div class="panel-body notes">
+      <p>First tally each value into <code>count[]</code>. Then add up the counts left-to-right so each entry becomes
+      "how many values are ≤ this" — i.e. where this value ends. Then place each input into its slot:</p>
+      <div class="cs-block"><div class="cs-label">input</div><div class="cs-row" id="inHost"></div></div>
+      <div class="cs-block"><div class="cs-label">count[value]</div><div class="cs-row" id="cntHost"></div></div>
+      <div class="cs-block"><div class="cs-label">output</div><div class="cs-row" id="outHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it &amp; read the code</h2><span class="sub">line-by-line on your own numbers</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="counting-sort-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Enter small numbers (0–9) and watch the tally, the prefix sums, and the stable placement pass build the output.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost, stability, and limits</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Time</th></tr>
-        <tr><td>Every case</td><td><b>O(n + k)</b>, where k is the value range</td></tr>
-        <tr><td>Space</td><td><b>O(n + k)</b> &mdash; the count array plus the output array</td></tr>
+        <tr><th>Step</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Tally</td><td>One pass over the input</td><td>O(n)</td></tr>
+        <tr><td>Prefix sums</td><td>One pass over the counts</td><td>O(k)</td></tr>
+        <tr><td>Place</td><td>One pass placing each value</td><td>O(n)</td></tr>
+        <tr><td>Total</td><td>Non-comparison</td><td><b>O(n + k)</b></td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel's middle loop — <code>count[v] += count[v - 1]</code> — turns
-      raw occurrence counts into a running total, so <code>count[v]</code> ends up meaning "how many values
-      are &le; v", which is exactly the one-past-the-end output index for the last copy of v. The final loop
-      walks the <em>input</em> backwards specifically so that when two equal values are placed, the one that
-      appeared earlier in the input still lands in the earlier output slot — that's what makes counting sort
-      <b>stable</b>.</p>
-
-      <p><b>Common mistake:</b> walking the placement loop forwards instead of backwards still produces a
-      correctly <em>sorted</em> array — every value lands in a valid slot for its size — but silently breaks
-      stability, since equal values now land in reversed relative order. It's the same trap merge sort's
-      tie-handling has, from the opposite direction.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; seven values, start to finish</span></div>
-    <div class="panel-body">
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 4px">Input</p>
-      <div class="scroller"><div class="array-row" id="demoInput"></div></div>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Counts, by value</p>
-      <div class="scroller"><div class="array-row" id="demoCounts"></div></div>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Output</p>
-      <div class="scroller"><div class="array-row" id="demoOutput"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; countingSort()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>When it wins — and when it doesn't.</b> Counting sort is brilliant when values are integers in a small
+      range. But if k is huge (say 32-bit values), <code>count[]</code> would need billions of slots — so it only
+      makes sense when k is comparable to n. It needs O(n + k) extra space, and it's <b>stable</b> if you place from
+      right to left using the prefix sums (equal values keep their order), which is exactly what makes it the engine
+      inside <b>radix sort</b> — counting sort applied one digit at a time to handle large numbers.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="counting-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="counting-sort-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try a range that's much larger than the count of numbers in the visualizer — watch the count array
-    balloon even though almost every bucket stays empty.
+    Counting sort tallies each value, turns the tallies into end positions with a running sum, then places each
+    input directly — no comparisons, O(n + k), and stable when you place right-to-left.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "void countingSort(int arr[], int n, int output[]) {",
-    "  int max = 0;",
-    "  for (int i = 0; i < n; i++) if (arr[i] > max) max = arr[i];",
-    "  int count[MAXV] = {0};",
-    "  for (int i = 0; i < n; i++) count[arr[i]]++;              // count occurrences",
-    "  for (int v = 1; v <= max; v++) count[v] += count[v - 1];  // running total -> positions",
-    "  for (int i = n - 1; i >= 0; i--) {                         // stable: walk backwards",
-    "    int pos = --count[arr[i]];",
-    "    output[pos] = arr[i];",
-    "  }",
-    "}"
-  ];
-
-  function scriptFrames(){
-    var a=[4,2,2,8,3,3,1], n=a.length, frames=[];
-    var max=0; for(var i=0;i<n;i++) if(a[i]>max) max=a[i];
-    var counts=new Array(max+1).fill(0);
-    var output=new Array(n).fill(null);
-
-    function cellsOf(vals,roles){ return vals.map(function(v,i){ return {val:(v===null?"·":v), role:(roles&&roles[i])||""}; }); }
-    function push(narr,codeLine,inR,cR,outR){
-      frames.push({struct:{input:cellsOf(a,inR), counts:cellsOf(counts,cR), output:cellsOf(output,outR)}, narr:narr, code:CODE, codeLine:codeLine});
-    }
-
-    push("Count how often each value from 0 to "+max+" appears.",[1,3]);
-    for(var i2=0;i2<n;i2++){
-      counts[a[i2]]++;
-      var inR=new Array(n).fill(""); inR[i2]="left head";
-      var cR=new Array(max+1).fill(""); cR[a[i2]]="left head landed";
-      push("Read "+a[i2]+" and increment count["+a[i2]+"] to "+counts[a[i2]]+".",4,inR,cR);
-    }
-    push("Turn counts into positions with a running total.",5);
-    for(var v=1; v<=max; v++){
-      counts[v]+=counts[v-1];
-      var cR2=new Array(max+1).fill(""); cR2[v]="left head landed"; cR2[v-1]="right head";
-      push("count["+v+"] += count["+(v-1)+"] = "+counts[v]+".",5,null,cR2);
-    }
-    for(var j=n-1;j>=0;j--){
-      var val=a[j];
-      counts[val]--;
-      output[counts[val]]=val;
-      var inR2=new Array(n).fill(""); inR2[j]="left head";
-      var cR3=new Array(max+1).fill(""); cR3[val]="right head landed";
-      var outR=new Array(n).fill(""); outR[counts[val]]="sorted landed";
-      push("Place "+val+" into output index "+counts[val]+".",8,inR2,cR3,outR);
-    }
-    push("Sorted: ["+output.join(", ")+"].",9);
-    return frames;
+  var inHost=document.getElementById("inHost"), cntHost=document.getElementById("cntHost"), outHost=document.getElementById("outHost"), narrEl=document.getElementById("demoNarr");
+  function cell(v, cls, idx){
+    var col=document.createElement("div"); col.className="cs-col";
+    var box=document.createElement("div"); box.className="cs-cell"+(v===null?" empty":"")+(cls?(" "+cls):""); box.textContent=(v===null?"":v);
+    col.appendChild(box);
+    if(idx!==undefined){ var l=document.createElement("div"); l.className="cs-idx"; l.textContent=idx; col.appendChild(l); }
+    return col;
   }
+  function renderRow(host, arr, clsArr, withIdx){ host.innerHTML=""; arr.forEach(function(v,i){ host.appendChild(cell(v,(clsArr&&clsArr[i])||"", withIdx?i:undefined)); }); }
+  function render(f){ renderRow(inHost, f.input, f.inCls); renderRow(cntHost, f.count, f.cntCls, true); renderRow(outHost, f.output, f.outCls); narrEl.textContent=f.narr||""; }
 
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoInput"), frame.struct.input);
-      DSRender.slots(document.getElementById("demoCounts"), frame.struct.counts);
-      DSRender.slots(document.getElementById("demoOutput"), frame.struct.output);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  // scripted demo on [2,0,2,1]
+  var frames=[
+    {input:[2,0,2,1], count:[0,0,0], output:[null,null,null,null], narr:"Input [2, 0, 2, 1], values 0–2. Start with all counts 0."},
+    {input:[2,0,2,1], inCls:{0:'a'}, count:[0,0,1], cntCls:{2:'a'}, output:[null,null,null,null], narr:"Tally: see a 2 → count[2] = 1."},
+    {input:[2,0,2,1], inCls:{1:'a'}, count:[1,0,1], cntCls:{0:'a'}, output:[null,null,null,null], narr:"See a 0 → count[0] = 1."},
+    {input:[2,0,2,1], inCls:{2:'a'}, count:[1,0,2], cntCls:{2:'a'}, output:[null,null,null,null], narr:"Another 2 → count[2] = 2."},
+    {input:[2,0,2,1], inCls:{3:'a'}, count:[1,1,2], cntCls:{1:'a'}, output:[null,null,null,null], narr:"A 1 → count[1] = 1. Tally done: [1, 1, 2]."},
+    {input:[2,0,2,1], count:[1,2,4], cntCls:{1:'b',2:'b'}, output:[null,null,null,null], narr:"Prefix sums: add left-to-right → [1, 2, 4]. Now count[v] = last position for value v."},
+    {input:[2,0,2,1], inCls:{3:'a'}, count:[1,1,4], cntCls:{1:'b'}, output:[null,1,null,null], outCls:{1:'done'}, narr:"Place right-to-left. Last input is 1 → slot count[1]−1 = 1. Decrement count[1] to 1."},
+    {input:[2,0,2,1], inCls:{2:'a'}, count:[1,1,3], cntCls:{2:'b'}, output:[null,1,null,2], outCls:{1:'done',3:'done'}, narr:"Next 2 → slot count[2]−1 = 3. count[2] → 3."},
+    {input:[2,0,2,1], inCls:{1:'a'}, count:[0,1,3], cntCls:{0:'b'}, output:[0,1,null,2], outCls:{0:'done',1:'done',3:'done'}, narr:"Next 0 → slot 0. count[0] → 0."},
+    {input:[2,0,2,1], inCls:{0:'a'}, count:[0,1,2], cntCls:{2:'b'}, output:[0,1,2,2], outCls:{0:'done',1:'done',2:'done',3:'done'}, narr:"First 2 → slot 2. Output complete: [0, 1, 2, 2] — sorted, no comparisons."}
+  ];
+  var i=0; function tick(){ render(frames[i]); i=(i+1)%frames.length; } tick(); setInterval(tick, 1900);
 })();
 </script>
 </body>
