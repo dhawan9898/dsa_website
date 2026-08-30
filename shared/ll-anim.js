@@ -40,7 +40,7 @@
 
   var NW=88, NH=48, COLW=140, ROWH=120, PADX=58, PADY=52;
 
-  var PTR_COLOR={ HEAD:"var(--stamp)", cur:"var(--plot)", prev:"var(--seal)",
+  var PTR_COLOR={ HEAD:"var(--stamp)", TAIL:"var(--plot)", cur:"var(--plot)", prev:"var(--seal)",
                   target:"var(--stamp)", tail:"var(--plot)", "n":"var(--seal)" };
 
   function slotX(col){ return PADX + col*COLW; }
@@ -61,6 +61,12 @@
       ".ll-node .ll-val.fill{animation:llfill .5s var(--ease,ease)}",
       ".ll-node .ll-nextcell{flex:0 0 26px;display:flex;align-items:center;justify-content:center;background:#F4F7EE;border:2px solid var(--ink,#1C2B24);border-radius:0 6px 6px 0}",
       ".ll-node .ll-dot{width:9px;height:9px;border-radius:50%;background:var(--ink,#1C2B24)}",
+      ".ll-node.dbl .ll-val{flex:1 1 auto;border-left:none;border-right:none;border-radius:0}",
+      ".ll-node.dbl .ll-prevcell{flex:0 0 22px;display:flex;align-items:center;justify-content:center;background:#F4F7EE;border:2px solid var(--ink,#1C2B24);border-right:none;border-radius:6px 0 0 6px}",
+      ".ll-node.dbl .ll-nextcell{flex:0 0 22px}",
+      ".ll-node.dbl.active .ll-prevcell{border-color:var(--stamp,#BE3A1D)}",
+      ".ll-node.dbl.target .ll-prevcell{border-color:var(--plot,#1F4E79)}",
+      ".ll-node.dbl.found .ll-prevcell{border-color:var(--seal,#2E6B4F)}",
       ".ll-node.pop{animation:llpop .45s var(--ease,ease)}",
       ".ll-node.gone{opacity:0;transform:translateY(14px) scale(.9)}",
       ".ll-node.active .ll-val,.ll-node.active .ll-nextcell{border-color:var(--stamp,#BE3A1D)}",
@@ -142,22 +148,24 @@
       var box=nodes[n.id];
       if(!box){
         box=document.createElement("div");
-        box.className="ll-node";
-        box.innerHTML='<div class="ll-val"></div><div class="ll-nextcell"><span class="ll-dot"></span></div>';
+        box.className="ll-node"+(frame.double?" dbl":"");
+        box.innerHTML = frame.double
+          ? '<div class="ll-prevcell"><span class="ll-dot"></span></div><div class="ll-val"></div><div class="ll-nextcell"><span class="ll-dot"></span></div>'
+          : '<div class="ll-val"></div><div class="ll-nextcell"><span class="ll-dot"></span></div>';
         box.style.left=x+"px"; box.style.top=y+"px";
         host.appendChild(box);
         box._pop=true;               // entrance animation on first show
         nodes[n.id]=box;
       }
       box.style.left=x+"px"; box.style.top=y+"px";
-      var valEl=box.firstChild;
+      var valEl=box.querySelector(".ll-val");
       var newVal=(n.val==null||n.val==="")?"":String(n.val);
       if(valEl.textContent!==newVal){
         valEl.textContent=newVal;
         if(newVal!==""){ valEl.classList.remove("fill"); void valEl.offsetWidth; valEl.classList.add("fill"); }
       }
       valEl.classList.toggle("empty", newVal==="");
-      var cls="ll-node"+(n.cls?(" "+n.cls):"");
+      var cls="ll-node"+(frame.double?" dbl":"")+(n.cls?(" "+n.cls):"");
       if(box._pop){ cls+=" pop"; box._pop=false; }
       box.className=cls;
     });
@@ -175,7 +183,7 @@
     /* pointer tags (persistent per label so they glide when they move) */
     var byId={}; frame.nodes.forEach(function(n){ byId[n.id]=n; });
     frame.nodes.forEach(function(n){
-      (n.ptrs||[]).forEach(function(lbl){
+      (n.ptrs||[]).forEach(function(lbl,k){
         seenPtr[lbl]=true;
         var tag=ptrs[lbl];
         if(!tag){
@@ -188,7 +196,7 @@
         tag.style.setProperty("--pc", col);
         var x=slotX(n.col), y=slotY(n.row);
         tag.style.left=(x+NW/2)+"px";
-        tag.style.top=(y-30)+"px";
+        tag.style.top=(y-30-k*22)+"px";   // stack multiple tags on one node
       });
     });
     Object.keys(ptrs).forEach(function(lbl){
@@ -198,18 +206,23 @@
     /* arrows (redraw every frame) */
     while(svg.firstChild) svg.removeChild(svg.firstChild);
     ensureDefs(svg);
+    var dbl=frame.double;
     frame.nodes.forEach(function(n){
-      if(n.next===undefined) return;
       var x=slotX(n.col), y=slotY(n.row);
-      var sx=x+NW-14, sy=y+NH/2;                 // start: the next-cell dot
-      var ex, ey, targetNull=(n.next==="null");
-      if(targetNull){ ex=x+NW+30; ey=sy; }
-      else{
-        var t=byId[n.next]; if(!t) return;
-        var tx=slotX(t.col), ty=slotY(t.row);
-        ex=tx-4; ey=ty+NH/2;
+      // next arrow — points right (upper band in double mode, middle otherwise)
+      if(n.next!==undefined){
+        var sy=dbl?(y+14):(y+NH/2), sx=x+NW-14, ex, ey, targetNull=(n.next==="null");
+        if(targetNull){ ex=x+NW+30; ey=sy; }
+        else{ var t=byId[n.next]; if(t){ ex=slotX(t.col)-4; ey=dbl?(slotY(t.row)+14):(slotY(t.row)+NH/2); } else ex=null; }
+        if(ex!==null) drawArrow(svg, sx, sy, ex, ey, n.nextCls, targetNull);
       }
-      drawArrow(svg, sx, sy, ex, ey, n.nextCls, targetNull);
+      // prev arrow — points left (lower band); double mode only
+      if(dbl && n.prev!==undefined){
+        var syB=y+NH-14, sxB=x+14, exB, eyB, prevNull=(n.prev==="null");
+        if(prevNull){ exB=x-30; eyB=syB; }
+        else{ var tp=byId[n.prev]; if(tp){ exB=slotX(tp.col)+NW+4; eyB=slotY(tp.row)+NH-14; } else exB=null; }
+        if(exB!==null) drawArrow(svg, sxB, syB, exB, eyB, n.prevCls, prevNull);
+      }
     });
   }
 

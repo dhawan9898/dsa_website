@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doubly Linked List · Insertion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="doubly-linked-list.html">&larr; Doubly Linked List overview</a>
+      <p class="eyebrow">Wire Two Pointers, Not One</p>
+      <h1>Insertion</h1>
+    </div>
+    <p class="note">Every insert is the singly-list move plus one more link — the new node and its neighbour must agree in both directions.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Doubly Linked List pages">
+    <a href="doubly-linked-list.html">Overview</a>
+    <a class="here" href="doubly-linked-list-insertion.html">Insertion</a>
+    <a href="doubly-linked-list-deletion.html">Deletion</a>
+    <a href="doubly-linked-list-traversal.html">Traversal</a>
+    <a href="doubly-linked-list-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The one rule</h2></div>
+    <div class="panel-body notes">
+      <p>In a singly list, inserting means fixing one <code>next</code> pointer. In a doubly list, every place a
+      <code>next</code> points forward, a <code>prev</code> must point back the other way. So the golden rule
+      grows a clause: <b>link the new node to its neighbours (both next and prev), then make both neighbours
+      point back at it.</b> Four pointer writes for a middle insert; fewer at the ends because one side is
+      <code>NULL</code>.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Insert at the head</h2><span class="sub">O(1)</span></div>
+    <div class="panel-body notes">
+      <ol class="steps">
+        <li>Make the new node; its <code>prev</code> is <code>NULL</code> (it'll be first).</li>
+        <li>Its <code>next</code> points at the old head.</li>
+        <li>The old head's <code>prev</code> points back at the new node.</li>
+        <li>Move <code>head</code> to the new node.</li>
+      </ol>
+      <div class="demo-wrap">
+        <div class="scroller"><div id="headStage" class="ll-host"></div><svg class="ll-svg" id="headSvg"></svg></div>
+        <p class="narr" id="headNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="headCode" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Insert in the middle</h2><span class="sub">O(n) to walk, O(1) to splice — four pointers</span></div>
+    <div class="panel-body notes">
+      <p>Walk to the node currently at the target index (call it <code>cur</code>); its predecessor is
+      <code>p = cur-&gt;prev</code>, handed to you for free. Then wire all four links:</p>
+      <ol class="steps">
+        <li>New node's <code>next</code> → <code>cur</code>, and its <code>prev</code> → <code>p</code>.</li>
+        <li><code>p</code>'s <code>next</code> → the new node, and <code>cur</code>'s <code>prev</code> → the new node.</li>
+      </ol>
+      <div class="demo-wrap">
+        <div class="scroller"><div id="midStage" class="ll-host"></div><svg class="ll-svg" id="midSvg"></svg></div>
+        <p class="narr" id="midNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="midCode" style="margin-top:12px"></div>
+      </div>
+      <div class="callout">
+        <b>And the tail?</b> Insert-at-tail is the head case mirrored, and because a DLL stores a
+        <code>tail</code> pointer it needs <em>no walk</em> — it's O(1), unlike a singly list. Try it in the
+        <a href="doubly-linked-list-visualizer.html">playground</a>.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="doubly-linked-list-visualizer.html">Try every insertion in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Next: <a href="doubly-linked-list-deletion.html">Deletion</a> — where the stored prev pointer really pays off.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ll-anim.js?v=3"></script>
+<script>
+(function(){
+  "use strict";
+  var HEAD_CODE=[
+    "void insertHead(DList *l, int val) {",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val; n->prev = NULL;",
+    "  n->next = l->head;               // forward link",
+    "  if (l->head) l->head->prev = n;  // back link",
+    "  l->head = n;",
+    "}"];
+  var MID_CODE=[
+    "  Node *p = cur->prev;             // predecessor",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->val = val;",
+    "  n->next = cur; n->prev = p;      // link new node both ways",
+    "  p->next = n; cur->prev = n;      // neighbors point to it"];
+  function dn(id,val,row,col,next,prev,cls,o){o=o||{}; return {id:id,val:val,row:row,col:col,next:next,prev:prev,cls:cls,nextCls:o.next,prevCls:o.prev,ptrs:o.ptrs};}
+  function one(k,v){var o={};o[k]=v;return o;}
+  function base(list,o){o=o||{};
+    var headId=o.headId!==undefined?o.headId:(list[0]&&list[0].id);
+    var tailId=o.tailId!==undefined?o.tailId:(list[list.length-1]&&list[list.length-1].id);
+    return list.map(function(n,i){
+      var node={id:n.id,val:n.val,row:0,col:i};
+      node.next=(o.link&&o.link[n.id]!==undefined)?o.link[n.id]:(i<list.length-1?list[i+1].id:"null");
+      node.prev=(o.plink&&o.plink[n.id]!==undefined)?o.plink[n.id]:(i>0?list[i-1].id:"null");
+      if(o.linkCls&&o.linkCls[n.id])node.nextCls=o.linkCls[n.id];
+      if(o.plinkCls&&o.plinkCls[n.id])node.prevCls=o.plinkCls[n.id];
+      var p=[]; if(n.id===headId)p.push("HEAD"); if(n.id===tailId)p.push("TAIL");
+      if(o.ptrs&&o.ptrs[n.id])p=p.concat(o.ptrs[n.id]);
+      if(p.length)node.ptrs=p;
+      if(o.active===n.id)node.cls=o.activeCls||"active"; else if(o.clsMap&&o.clsMap[n.id])node.cls=o.clsMap[n.id];
+      return node;
+    });
+  }
+  function F(nodeArr,code,line,narr){return {double:true,nodes:nodeArr,codeLines:code,code:line,narr:narr};}
+
+  // head demo: insert 5 into [10,20]
+  var L=[{id:'a',val:10},{id:'b',val:20}];
+  LLAnim.play({host:document.getElementById("headStage"),svg:document.getElementById("headSvg"),
+    narrEl:document.getElementById("headNarr"),codeHost:document.getElementById("headCode"),ms:1800,frames:[
+      F(base(L,{}), HEAD_CODE,0,"Insert 5 at the head of 10 ⇄ 20."),
+      F(base(L,{}).concat([dn('x',5,1,0,undefined,'null','active')]), HEAD_CODE,2,"New node, value 5, prev = NULL."),
+      F(base(L,{}).concat([dn('x',5,1,0,'a','null','active',{next:'formed'})]), HEAD_CODE,3,"Its next points forward at the old head, 10."),
+      F(base(L,{plink:one('a','x'),plinkCls:one('a','formed')}).concat([dn('x',5,1,0,'a','null','active',{next:'formed'})]), HEAD_CODE,4,"The old head's prev points BACK at the new node — both links agree."),
+      F(base([{id:'x',val:5}].concat(L),{active:'x'}), HEAD_CODE,5,"Move head to the new node. 5 is first. O(1).")
+    ]});
+
+  // middle demo: insert 15 at index 1 of [10,20,30]
+  var M=[{id:'a',val:10},{id:'b',val:20},{id:'c',val:30}];
+  LLAnim.play({host:document.getElementById("midStage"),svg:document.getElementById("midSvg"),
+    narrEl:document.getElementById("midNarr"),codeHost:document.getElementById("midCode"),ms:1900,frames:[
+      F(base(M,{ptrs:one('b',['cur'])}), MID_CODE,0,"cur is at index 1 (20); its predecessor p = cur->prev is 10."),
+      F(base(M,{ptrs:one('b',['cur']),clsMap:one('a','target')}).concat([dn('x',15,1,0.5,undefined,undefined,'active')]), MID_CODE,[1,2],"malloc a new node, value 15."),
+      F(base(M,{ptrs:one('b',['cur']),clsMap:one('a','target')}).concat([dn('x',15,1,0.5,'b','a','active',{next:'formed',prev:'formed'})]), MID_CODE,3,"Link it BOTH ways: next → 20 (cur), prev → 10 (p)."),
+      F(base(M,{ptrs:one('b',['cur']),clsMap:one('a','target'),link:one('a','x'),plink:one('b','x'),linkCls:one('a','active'),plinkCls:one('b','active')}).concat([dn('x',15,1,0.5,'b','a','active',{next:'formed',prev:'formed'})]), MID_CODE,4,"Now the neighbours point at it: 10's next and 20's prev both → 15."),
+      F(base([{id:'a',val:10},{id:'x',val:15},{id:'b',val:20},{id:'c',val:30}],{active:'x'}), MID_CODE,4,"15 is spliced in at index 1 — four pointers wired.")
+    ]});
+})();
+</script>
+</body>
+</html>
