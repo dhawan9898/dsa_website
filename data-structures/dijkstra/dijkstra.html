@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
@@ -15,158 +33,157 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Shortest Paths &middot; Weighted &middot; Directed</p>
+      <p class="eyebrow">Cheapest Route, One Sure Step At A Time</p>
       <h1>Dijkstra&#8217;s&nbsp;Algorithm</h1>
     </div>
-    <p class="note">Finds the shortest distance from one starting vertex to every other vertex in a weighted graph with no negative edges.</p>
+    <p class="note">Shortest paths on a weighted graph — where edges have costs and you want the cheapest way from a start to everywhere else.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Dijkstra pages">
+    <a class="here" href="dijkstra.html">Overview</a>
+    <a href="dijkstra-shortest-path.html">Shortest Path</a>
+    <a href="dijkstra-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Dijkstra's algorithm finds the shortest path from a single source to every other vertex in a
-      weighted graph. It's greedy: keep a running "best known distance" for every vertex (0 for the source,
-      infinity for everyone else), and repeatedly <b>settle</b> the closest unvisited vertex — once a vertex
-      is settled, its distance is final and never changes again. Settling a vertex <b>relaxes</b> every edge
-      leaving it: if going through the just-settled vertex would beat a neighbor's current best distance,
-      that neighbor's distance improves.</p>
+      <p>Plain <a href="../graph/graph.html">BFS</a> finds the route with the fewest <em>edges</em> — but that
+      isn't always the cheapest. A two-hop road of 1 + 1 kilometres beats a one-hop highway of 5. When edges carry
+      a <b>weight</b> (a distance, a price, a time), you want the path with the smallest <em>total</em> — and that's
+      what <b>Dijkstra's algorithm</b> computes: the cheapest cost from one start vertex to every other.</p>
 
-      <table class="notes-table">
-        <tr><th>Version</th><th>Time</th></tr>
-        <tr><td>Linear scan for the minimum (shown here)</td><td><b>O(V&sup2;)</b></td></tr>
-        <tr><td>Binary heap priority queue</td><td><b>O((V + E) log V)</b></td></tr>
-      </table>
+      <p>The strategy is <b>greedy</b>. Keep a tentative "best cost so far" for every vertex (starting at 0 for the
+      source and ∞ for the rest). Then repeatedly do the one thing you can be <em>certain</em> about: among all
+      vertices you haven't finalized, the one with the smallest tentative cost can't possibly be improved later — so
+      lock it in, and use it to <b>relax</b> its neighbours.</p>
 
-      <p><b>Implementation:</b> the code panel below picks the next vertex to settle with a plain linear
-      scan over every unvisited vertex — simple, and fine for the small graphs here, but it's the O(V&sup2;)
-      part. Swapping that scan for a <a href="../priority-queue/priority-queue.html">binary heap</a> (always
-      pull the minimum-distance vertex in O(log V) instead of scanning for it) is the standard optimization,
-      and it's the exact same heap already covered on this site — Dijkstra is one of the two textbook
-      reasons a priority queue exists in the first place.</p>
-
-      <p><b>Common mistake:</b> Dijkstra's greedy guarantee — once settled, a distance is final — only holds
-      because edge weights are non-negative. With a negative edge, a path discovered <em>after</em> a vertex
-      is settled could still be shorter, but the algorithm never looks back to check. Running it unmodified
-      on a graph with negative weights doesn't crash — it just silently returns wrong distances. (Bellman-Ford
-      is the standard fix when negative edges are possible.)</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; shortest paths from A</span></div>
-    <div class="panel-body">
-      <div class="graphwrap" id="demoWrap">
-        <svg class="links" id="demoLinks"></svg>
-        <div id="demoNodes"></div>
+      <div class="callout">
+        <b>"Relax" an edge.</b> To relax the edge from <em>u</em> to a neighbour <em>v</em> means: check whether
+        going through <em>u</em> is cheaper than <em>v</em>'s current best — <code>dist[u] + weight &lt; dist[v]</code>.
+        If so, update <code>dist[v]</code>. Every improvement to a path is just one relaxation.
       </div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; dijkstra()</span></div>
+    <div class="panel-head"><h2>Why "smallest tentative cost is final"</h2><span class="sub">the one insight the whole algorithm rests on</span></div>
+    <div class="panel-body notes">
+      <p>Here's the leap. Say the un-finalized vertex with the smallest tentative cost is <em>v</em>, at cost
+      <em>d</em>. Could some other route reach <em>v</em> more cheaply? That route would have to pass through some
+      other un-finalized vertex first — but every un-finalized vertex already costs <em>at least</em> <em>d</em> to
+      reach (that's why <em>v</em> was the smallest). And since weights are never negative, adding more edges only
+      makes it costlier. So no cheaper route exists: <em>d</em> is final. That guarantee is exactly why Dijkstra can
+      commit to one vertex per round and never look back.</p>
+      <p>Watch it settle this weighted graph from <b>A</b>. The number under each vertex is its best-known cost; a
+      vertex turns green the moment it's locked in:</p>
+      <div class="graph-stage"><div id="demoHost"></div><svg class="graph-svg" id="demoSvg"></svg></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> settling now (smallest tentative)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> reached, cost still tentative</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> finalized</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn the algorithm</h2><span class="sub">the thought process, an animation, and the C</span></div>
     <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <div class="dive-grid">
+        <a class="dive-card" href="dijkstra-shortest-path.html">
+          <span class="num">01</span><h3>Shortest Path</h3>
+          <p>Extract-min, relax, repeat — line by line, with the tentative-cost table changing as each edge is relaxed.</p>
+          <span class="go">Open the walkthrough &rarr;</span>
+        </a>
+        <a class="dive-card" href="dijkstra-visualizer.html">
+          <span class="num">02</span><h3>Playground</h3>
+          <p>Pick a start vertex and watch Dijkstra settle the whole graph, one relaxation at a time.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs, caveats, and where it's used</span></div>
+    <div class="panel-body notes">
+      <table class="notes-table">
+        <tr><th>Step</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Extract-min</td><td>Take the cheapest un-finalized vertex (a heap)</td><td>O(log V)</td></tr>
+        <tr><td>Relax an edge</td><td>Maybe lower a neighbour's cost, update the heap</td><td>O(log V)</td></tr>
+        <tr><td>Whole run</td><td>Every vertex extracted, every edge relaxed once</td><td><b>O((V + E) log V)</b></td></tr>
+      </table>
+      <p>The engine underneath is a <a href="../priority-queue/priority-queue.html">priority queue (min-heap)</a>:
+      it hands you the smallest-cost vertex each round in O(log V), which is the whole reason Dijkstra is efficient
+      rather than O(V²).</p>
+
+      <div class="callout">
+        <b>Negative weights break it.</b> The "smallest tentative is final" guarantee assumes extra edges only add
+        cost. A negative edge could make a longer route cheaper <em>after</em> you've already finalized a vertex —
+        so Dijkstra can be wrong. For negative weights you need Bellman–Ford instead.
+      </div>
+
+      <p><b>Where you'll meet it.</b> GPS and map routing (weights = travel time), network routing protocols (link
+      cost), flight/fare finders, and any "cheapest way from here to there" over a weighted network. It's the
+      weighted generalization of BFS, and a cousin of <a href="../kruskal-mst/kruskal-mst.html">MST</a> algorithms
+      that also greedily pick the cheapest option each step.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="dijkstra-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="dijkstra-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — build a graph where the direct edge from the start looks cheapest at first,
-    then add a longer-looking two-hop path that's actually cheaper overall, and watch the relaxation catch it.
+    Dijkstra = a greedy min-heap sweep: always finalize the cheapest-reachable vertex next, relax its edges, repeat.
+    With non-negative weights, one confident step at a time builds every shortest path.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  var POS={ A:[70,150], B:[220,60], C:[220,240], D:[370,150], E:[500,150] };
+  var W={ "A-B":4, "A-C":1, "B-C":2, "B-D":1, "C-D":5, "D-E":3 };
+  var EDGES=[["A","B"],["A","C"],["B","C"],["B","D"],["C","D"],["D","E"]];
+  function ek(a,b){ return a<b?a+"-"+b:b+"-"+a; }
+  function nodesFor(state,dist){ var ns={}; Object.keys(POS).forEach(function(id){
+    var d=dist[id]; ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:state[id]||"",label:(d===undefined||d===Infinity)?"∞":String(d)}; }); return ns; }
+  function edgesFor(active){ return EDGES.map(function(e){ var k=ek(e[0],e[1]); return {from:e[0],to:e[1],weight:W[k],cls:(active===k?"active":"")}; }); }
+  function clone(o){ var c={}; Object.keys(o).forEach(function(k){c[k]=o[k];}); return c; }
+  function F(state,dist,active,narr){ return {nodes:nodesFor(state,clone(dist)), edges:edgesFor(active), narr:narr}; }
 
-  var CODE=[
-    "void dijkstra(Graph *g, int src, int dist[], int n) {",
-    "  int visited[MAXV] = {0};",
-    "  for (int i = 0; i < n; i++) dist[i] = INF;",
-    "  dist[src] = 0;",
-    "",
-    "  for (int count = 0; count < n; count++) {",
-    "    int u = -1;",
-    "    for (int i = 0; i < n; i++)                       // pick the closest unvisited vertex",
-    "      if (!visited[i] && (u == -1 || dist[i] < dist[u])) u = i;",
-    "    if (u == -1 || dist[u] == INF) break;                // remaining vertices are unreachable",
-    "    visited[u] = 1;",
-    "    for (int i = 0; i < g->deg[u]; i++) {                // relax every neighbor of u",
-    "      int v = g->adj[u][i], w = g->weight[u][i];",
-    "      if (dist[u] + w < dist[v]) dist[v] = dist[u] + w;   // found a shorter path",
-    "    }",
-    "  }",
-    "}"
-  ];
+  // scripted Dijkstra from A: settle A0, C1, B3, D4, E7
+  var frames=[], st={}, dist={A:0};
+  st.A="frontier"; frames.push(F(st,dist,null,"Start: dist[A] = 0, everything else ∞. A is the only reachable vertex so far."));
+  st.A="active"; frames.push(F(st,dist,null,"Smallest tentative cost is A (0) — finalize it, then relax its edges."));
+  dist.B=4; setf('B'); frames.push(F(st,dist,"A-B","Relax A→B: 0 + 4 = 4 < ∞. dist[B] = 4."));
+  dist.C=1; setf('C'); frames.push(F(st,dist,"A-C","Relax A→C: 0 + 1 = 1 < ∞. dist[C] = 1."));
+  st.A="done"; frames.push(F(st,dist,null,"A is finalized. Tentative: C = 1, B = 4."));
+  st.C="active"; frames.push(F(st,dist,null,"Smallest tentative is C (1) — finalize it next."));
+  dist.B=3; frames.push(F(st,dist,"B-C","Relax C→B: 1 + 2 = 3 < 4. A cheaper way to B — update dist[B] = 3."));
+  dist.D=6; setf('D'); frames.push(F(st,dist,"C-D","Relax C→D: 1 + 5 = 6 < ∞. dist[D] = 6."));
+  st.C="done"; frames.push(F(st,dist,null,"C finalized. Tentative: B = 3, D = 6."));
+  st.B="active"; frames.push(F(st,dist,null,"Smallest tentative is B (3) — finalize it."));
+  dist.D=4; frames.push(F(st,dist,"B-D","Relax B→D: 3 + 1 = 4 < 6. Better route to D — update dist[D] = 4."));
+  st.B="done"; frames.push(F(st,dist,null,"B finalized. Tentative: D = 4."));
+  st.D="active"; frames.push(F(st,dist,null,"Smallest tentative is D (4) — finalize it."));
+  dist.E=7; setf('E'); frames.push(F(st,dist,"D-E","Relax D→E: 4 + 3 = 7 < ∞. dist[E] = 7."));
+  st.D="done"; frames.push(F(st,dist,null,"D finalized. Only E left."));
+  st.E="active"; frames.push(F(st,dist,null,"Finalize E (7) — no outgoing edges to relax."));
+  st.E="done"; frames.push(F(st,dist,null,"Done. Cheapest costs from A: A=0, C=1, B=3, D=4, E=7."));
+  function setf(id){ if(st[id]!=="done"&&st[id]!=="active") st[id]="frontier"; }
 
-  var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"}];
-  var edges=[{from:0,to:1,weight:4},{from:0,to:2,weight:1},{from:2,to:1,weight:1},{from:1,to:3,weight:2},{from:2,to:3,weight:6}];
-  var adj={}; nodes.forEach(function(n){adj[n.id]=[];});
-  edges.forEach(function(e){ adj[e.from].push({to:e.to, weight:e.weight}); });
-  function valOf(id){ return nodes.filter(function(n){return n.id===id;})[0].val; }
-
-  function scriptFrames(){
-    var dist={}, visited={}, frames=[];
-    nodes.forEach(function(n){ dist[n.id]=Infinity; });
-    dist[0]=0;
-
-    function push(curU, edgeKey, narr, codeLine){
-      frames.push({struct:{
-        nodes: nodes.map(function(n){
-          var role = n.id===curU ? "left head landed" : (visited[n.id]?"sorted":"");
-          var d=dist[n.id];
-          return {id:n.id, val:n.val, role:role, label:(d===Infinity)?"∞":String(d)};
-        }),
-        edges: edges.map(function(e){
-          var key=e.from+":"+e.to;
-          return {from:e.from, to:e.to, weight:e.weight, active: key===edgeKey};
-        })
-      }, narr:narr, code:CODE, codeLine:codeLine});
-    }
-
-    push(undefined, null, "Distance to A is 0, everything else starts at infinity.", [1,3]);
-    while(true){
-      var u=null;
-      nodes.forEach(function(n){ if(!visited[n.id] && (u===null || dist[n.id]<dist[u])) u=n.id; });
-      if(u===null || dist[u]===Infinity) break;
-      visited[u]=true;
-      push(u, null, "Settle "+valOf(u)+": distance "+dist[u]+" is now final.", 10);
-      adj[u].forEach(function(edge){
-        var v=edge.to, w=edge.weight, candidate=dist[u]+w;
-        if(candidate<dist[v]){
-          dist[v]=candidate;
-          push(u, u+":"+v, "Relax "+valOf(u)+"→"+valOf(v)+" (weight "+w+"): "+dist[u]+"+"+w+" improves "+valOf(v)+" to "+candidate+".", 13);
-        } else {
-          push(u, u+":"+v, "Edge "+valOf(u)+"→"+valOf(v)+" doesn't improve "+valOf(v)+".", 13);
-        }
-      });
-      if(Object.keys(visited).length>=nodes.length) break;
-    }
-    push(undefined, null, "All vertices settled — every shortest distance from A is final.", 16);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      DSRender.graph(document.getElementById("demoNodes"), document.getElementById("demoLinks"), frame.struct, {directed:true});
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  GraphAnim.play({ host:document.getElementById("demoHost"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:2000, frames:frames });
 })();
 </script>
 </body>
