@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
@@ -15,182 +33,129 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Left Is Smaller &middot; Right Is Larger</p>
+      <p class="eyebrow">Smaller Left, Bigger Right</p>
       <h1>Binary&nbsp;Search&nbsp;Tree</h1>
     </div>
-    <p class="note">A tree shaped so every node's left subtree is entirely smaller than it, and its right subtree entirely larger.</p>
+    <p class="note">A tree that keeps its keys sorted by one simple rule, so you can find, add, or remove any key by following a single path down.</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
-    <div class="panel-body notes">
-      <p>A binary search tree (BST) is defined by one invariant, applied at every node: everything in its
-      <b>left</b> subtree is smaller, everything in its <b>right</b> subtree is larger. That's it — but it's
-      enough to turn search into the same halving trick as binary search on a sorted array, except the
-      "halving" is baked into the tree's shape instead of computed with a midpoint each time.</p>
-      <p>Insert and delete follow the exact same left/right comparisons down from the root that search
-      does. Delete is the one tricky case: removing a node with two children would leave a hole with two
-      dangling subtrees, so its value gets replaced by its <b>in-order successor</b> (the smallest value in
-      its right subtree) instead, which is always safe to move up.</p>
+  <nav class="subnav" aria-label="BST pages">
+    <a class="here" href="binary-search-tree.html">Overview</a>
+    <a href="binary-search-tree-insert.html">Insert &amp; Search</a>
+    <a href="binary-search-tree-delete.html">Delete</a>
+    <a href="binary-search-tree-visualizer.html">Playground</a>
+  </nav>
 
+  <section class="panel">
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
+    <div class="panel-body notes">
+      <p>A <b>tree</b> is nodes connected like a family tree: one node at the top (the <b>root</b>), each node
+      with up to two children below it — a <b>left</b> child and a <b>right</b> child. "Binary" just means
+      "at most two children." A <b>binary search <em>tree</em></b> adds one rule that makes it powerful:</p>
+
+      <div class="callout">
+        <b>The BST rule.</b> For every node, all keys in its <em>left</em> subtree are <b>smaller</b>, and all
+        keys in its <em>right</em> subtree are <b>bigger</b>. That single invariant holds everywhere in the tree,
+        at every node — which means the keys are, in a sense, already sorted by position.
+      </div>
+
+      <p>Why care? Because that rule turns searching into a series of yes/no turns. Looking for a key, you stand
+      at the root and ask "is my key smaller or bigger?" — smaller, go left; bigger, go right. Each step throws
+      away a whole subtree you don't need to look at, the same halving trick as
+      <a href="../../searching/binary-search/binary-search.html">binary search</a>, but built into a
+      structure you can also cheaply insert into and delete from. Watch a lookup dive straight to its target:</p>
+
+      <div class="scroller"><div id="demoHost"></div><svg class="tree-svg" id="demoSvg"></svg></div>
+      <p class="narr" id="demoNarr" style="margin-top:12px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn each operation in depth</h2><span class="sub">the thought process, an animation, and the C</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="binary-search-tree-insert.html">
+          <span class="num">01</span><h3>Insert &amp; Search</h3>
+          <p>Both follow the same left/right walk down from the root — search stops on a match, insert stops at an empty spot and hangs a new leaf there.</p>
+          <span class="go">Open insert &amp; search &rarr;</span>
+        </a>
+        <a class="dive-card" href="binary-search-tree-delete.html">
+          <span class="num">02</span><h3>Delete</h3>
+          <p>The one operation with a twist: leaves and single-child nodes are easy; a node with two children is replaced by its in-order successor.</p>
+          <span class="go">Open delete &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">why balance is everything</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Operation</th><th>What it does</th><th>Time (balanced)</th><th>Time (worst case)</th></tr>
-        <tr><td>Search</td><td>Compare and go left or right</td><td><b>O(log n)</b></td><td>O(n)</td></tr>
-        <tr><td>Insert</td><td>Walk to an empty spot, place it there</td><td><b>O(log n)</b></td><td>O(n)</td></tr>
-        <tr><td>Delete</td><td>Find it, then splice or replace with successor</td><td><b>O(log n)</b></td><td>O(n)</td></tr>
-        <tr><td>In-order traversal</td><td>Visit left, self, right — yields sorted order</td><td colspan="2">O(n)</td></tr>
+        <tr><th>Operation</th><th>Balanced</th><th>Worst case (lopsided)</th></tr>
+        <tr><td>Search</td><td><b>O(log n)</b></td><td>O(n)</td></tr>
+        <tr><td>Insert</td><td><b>O(log n)</b></td><td>O(n)</td></tr>
+        <tr><td>Delete</td><td><b>O(log n)</b></td><td>O(n)</td></tr>
       </table>
 
-      <p>The worst case happens when insertions arrive in already-sorted order, degenerating the tree into
-      a straight line — no better than a linked list. Self-balancing variants like the AVL Tree exist
-      specifically to rule that out.</p>
+      <p>Every operation walks one path from the root to somewhere below, so its cost is the tree's
+      <b>height</b>, <code>h</code>. A nicely balanced tree of <code>n</code> nodes has height about
+      <code>log₂ n</code> (7 nodes → height 3), so everything is O(log n) — wonderfully fast.</p>
 
-      <p><b>When it breaks:</b> the two-children delete case is where bugs hide — splice out the in-order
-      successor without reattaching <em>its</em> right subtree first, and you silently drop an entire branch
-      of the tree. Forget the special case where the node being deleted is the root itself (no parent to
-      update) and you either crash or leave the tree pointing at a node that no longer exists.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; insert, then delete a two-child node</span></div>
-    <div class="panel-body">
-      <div class="scroller">
-        <div class="treewrap" id="demoWrap">
-          <svg class="links" id="demoLinks"></svg>
-          <div id="demoHost"></div>
-        </div>
+      <div class="callout">
+        <b>The catch: order of insertion.</b> Insert keys already in sorted order (1, 2, 3, 4, …) and every new
+        key goes to the right, so the "tree" degenerates into a straight line — a linked list in disguise, with
+        height <code>n</code> and O(n) operations. A BST is only as good as it is balanced.
       </div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / deleteNode()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p>That fragility is exactly why <b>self-balancing</b> trees exist: the <a href="../avl-tree/avl-tree.html">AVL
+      tree</a> and red-black trees do a little extra rearranging on every insert and delete to guarantee the
+      height stays ~log n no matter what order the keys arrive in. A plain BST is the foundation; those are the
+      hardened versions built on top of it.</p>
+
+      <p><b>Where you'll meet BSTs.</b> Ordered maps and sets (C++ <code>std::map</code>, Java
+      <code>TreeMap</code>), database indexes, anything that needs keys kept in sorted order <em>and</em> fast
+      insert/delete — a hash table is faster for pure lookup, but a BST also gives you "next bigger key,"
+      "everything in a range," and sorted iteration for free.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="binary-search-tree-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="binary-search-tree-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — delete a node with two children and watch its in-order successor take its place.
+    Next: read Insert &amp; Search and Delete, then grow your own tree in the playground — insert 50, 30, 70, 20,
+    40, 60, 80 for a tidy balanced tree, or 10, 20, 30, 40 to watch it degenerate into a line.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var INSERT_CODE=[
-    "void insert(Node **root, int val) {",
-    "  Node *parent = NULL, *cur = *root;",
-    "  while (cur) {",
-    "    parent = cur;",
-    "    cur = (val < cur->val) ? cur->left : cur->right;",
-    "  }",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->left = n->right = NULL;",
-    "  if (!parent) *root = n;",
-    "  else if (val < parent->val) parent->left = n;",
-    "  else parent->right = n;",
-    "}"
-  ];
-  var DELETE_CODE=[
-    "void deleteNode(Node **root, int val) {",
-    "  Node *parent = NULL, *cur = *root;",
-    "  while (cur && cur->val != val) {",
-    "    parent = cur;",
-    "    cur = (val < cur->val) ? cur->left : cur->right;",
-    "  }",
-    "  if (!cur) return;                          // not found",
-    "",
-    "  if (cur->left && cur->right) {              // two children",
-    "    Node *succParent = cur, *succ = cur->right;",
-    "    while (succ->left) { succParent = succ; succ = succ->left; }",
-    "    cur->val = succ->val;",
-    "    parent = succParent; cur = succ;          // splice out succ below",
-    "  }",
-    "",
-    "  Node *child = cur->left ? cur->left : cur->right;",
-    "  if (!parent) *root = child;",
-    "  else if (parent->left == cur) parent->left = child;",
-    "  else parent->right = child;",
-    "  free(cur);",
-    "}"
-  ];
-
-  function makeNode(val,id){ return {id:id, val:val, left:null, right:null}; }
-  function toTreeNode(n, activeId, activeRole){
-    if(!n) return null;
-    return { id:n.id, val:n.val, role: n.id===activeId?activeRole:"",
-      left: toTreeNode(n.left,activeId,activeRole), right: toTreeNode(n.right,activeId,activeRole) };
+  var TREE={ '50':{val:50,left:'30',right:'70'}, '30':{val:30,left:'20',right:'40'}, '70':{val:70,left:'60',right:'80'},
+    '20':{val:20},'40':{val:40},'60':{val:60},'80':{val:80} };
+  function snap(cls, ptrs){
+    var out={}; Object.keys(TREE).forEach(function(id){ out[id]={val:TREE[id].val,left:TREE[id].left,right:TREE[id].right}; if(cls&&cls[id])out[id].cls=cls[id]; });
+    return {root:'50', nodes:out, ptrs:ptrs};
   }
-
-  function scriptFrames(){
-    var nextId=0, root=null, frames=[];
-    function node(v){ return {id:nextId++, val:v, left:null, right:null}; }
-    function push(activeId, activeRole, narr, code, codeLine){ frames.push({struct:{root:toTreeNode(root,activeId,activeRole)}, narr:narr, code:code, codeLine:codeLine}); }
-    function insert(v){
-      if(!root){ push(undefined,"","Insert "+v+" — becomes the root.",INSERT_CODE,8); root=node(v); push(root.id,"left head landed", v+" is the root.",INSERT_CODE,8); return; }
-      push(root.id,"right","Insert "+v+".",INSERT_CODE,[1,4]);
-      var cur=root;
-      while(true){
-        if(v<cur.val){
-          if(!cur.left){ var n=node(v); cur.left=n; push(n.id,"left head landed", v+" placed left of "+cur.val+".",INSERT_CODE,9); return; }
-          cur=cur.left; push(cur.id,"right", v+" < parent — go left.",INSERT_CODE,4);
-        } else {
-          if(!cur.right){ var n2=node(v); cur.right=n2; push(n2.id,"left head landed", v+" placed right of "+cur.val+".",INSERT_CODE,10); return; }
-          cur=cur.right; push(cur.id,"right", v+" > parent — go right.",INSERT_CODE,4);
-        }
-      }
-    }
-    function del(v){
-      push(root.id,"right","Delete "+v+" — find it first.",DELETE_CODE,[1,5]);
-      var parent=null, cur=root, isLeft=false;
-      while(cur && cur.val!==v){ push(cur.id,"right", v<cur.val?"go left":"go right",DELETE_CODE,4); parent=cur; if(v<cur.val){isLeft=true;cur=cur.left;} else {isLeft=false;cur=cur.right;} }
-      if(!cur) return;
-      push(cur.id,"left head","Found "+v+".",DELETE_CODE,6);
-      function set(n){ if(!parent) root=n; else if(isLeft) parent.left=n; else parent.right=n; }
-      if(!cur.left && !cur.right){ set(null); push(undefined,"", v+" was a leaf — removed.",DELETE_CODE,[15,19]); }
-      else if(!cur.left || !cur.right){ var c=cur.left||cur.right; set(c); push(c.id,"sorted landed", v+" had one child — it moves up.",DELETE_CODE,[15,19]); }
-      else {
-        var sp=cur, s=cur.right;
-        push(s.id,"right","Two children — find the in-order successor.",DELETE_CODE,[8,9]);
-        while(s.left){ sp=s; s=s.left; push(s.id,"right","Keep going left to "+s.val+".",DELETE_CODE,10); }
-        var sv=s.val;
-        push(s.id,"left head","Successor is "+sv+".",DELETE_CODE,11);
-        cur.val=sv;
-        if(sp===cur) sp.right=s.right; else sp.left=s.right;
-        push(cur.id,"sorted landed", v+" replaced by "+sv+".",DELETE_CODE,[12,19]);
-      }
-    }
-    push(undefined,"","Create the tree: an empty root pointer.",INSERT_CODE,0);
-    insert(50); insert(30); insert(70); insert(20); insert(40); insert(60); insert(80);
-    del(30);
-    del(50);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 1000,
-    renderExtra: function(frame){
-      DSRender.tree(document.getElementById("demoHost"), document.getElementById("demoLinks"), frame.struct.root, {});
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  function one(k,v){var o={};o[k]=v;return o;}
+  function F(frame,narr){ frame.narr=narr; return frame; }
+  // search for 60: 60 vs 50 -> right; 60 vs 70 -> left; 60 == 60
+  TreeAnim.play({ host:document.getElementById("demoHost"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:1600, frames:[
+      F(snap({}, one('50',['cur'])), "Search for 60. Start at the root, 50."),
+      F(snap({}, one('70',['cur'])), "60 > 50 → go right, to 70. (The whole left subtree is skipped.)"),
+      F(snap({}, one('60',['cur'])), "60 < 70 → go left, to 60."),
+      F(snap(one('60','found'), one('60',['cur'])), "60 == 60 — found, in just 3 steps out of 7 nodes.")
+    ]});
 })();
 </script>
 </body>
