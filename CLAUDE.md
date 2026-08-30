@@ -95,12 +95,16 @@ A reworked structure is **one overview + N operation deep-dive pages + one playg
 
 ### Status
 
-- **Done (merged to `main`):** Linked List (overview + `insertion`/`deletion`/`traversal` deep-dive pages, on `LLAnim`), Stack, Queue, Circular Queue, Deque (each: code-free overview + 2 operation pages + operation-first empty playground, on `ArrAnim`). The linear four are a deliberate teaching arc: Stack → Queue (reveals dead space) → Circular Queue (fixes it with `%MAX`) → Deque (generalizes both).
-- **Known gap:** the Linked List **playground** (`linked-list-visualizer.html`) is on `LLAnim` but still uses the older control layout — not yet empty-start / operation-first. Retrofit it for consistency when convenient.
+- **Done (merged to `main`):**
+  - Linked List — overview + `insertion`/`deletion`/`traversal` deep-dive pages, on `LLAnim`.
+  - Stack, Queue, Circular Queue, Deque — each code-free overview + 2 operation pages + operation-first empty playground, on `ArrAnim`. A deliberate arc: Stack → Queue (reveals dead space) → Circular Queue (fixes it with `%MAX`) → Deque (generalizes both).
+  - Doubly Linked List — overview + `insertion`/`deletion`/`traversal` + operation-first playground, on `LLAnim` **double mode** (`frame.double` → `[prev•|value|next•]` boxes, backward arrow on the bottom, forward on top; nodes carry `prev`/`prevCls`; pointer tags stack with a k-offset).
+  - Hash Table — separate chaining as a multi-row `LLAnim` scene (each bucket a row: a `.ll-node.bucket` index box + its collision chain). Overview + `insert` + `search`(&delete) pages + operation-first playground (`key % M`, M=5).
+- **Known gap:** the singly Linked List **playground** (`linked-list-visualizer.html`) is on `LLAnim` but still uses the older control layout — not yet empty-start / operation-first. Retrofit for consistency when convenient.
 
 ### Plan of action (remaining order)
 
-1. **Doubly Linked List, Hash Table** — reuse `LLAnim` (`double` node boxes / prev arrows; collision chains).
+1. ~~Doubly Linked List, Hash Table~~ — **done.**
 2. **Trees: BST, AVL, Priority Queue (heap), Trie** — build a new **tree step-renderer** first (per-line node insert/rotate/heapify), the tree-world sibling of `LLAnim`/`ArrAnim`.
 3. **Graphs: Graph (BFS/DFS), Dijkstra, Topological Sort, Kruskal's MST, Union-Find** — a **graph step-renderer**.
 4. **Sorting (8) and Searching (3)** — an **array-bars** step-renderer (reuse `ArrAnim`'s slot model where it fits).
