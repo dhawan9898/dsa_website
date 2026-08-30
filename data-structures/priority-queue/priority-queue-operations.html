@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Priority Queue · Insert &amp; Extract</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .arrline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:6px}
+  .arrline b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="priority-queue.html">&larr; Priority Queue overview</a>
+      <p class="eyebrow">Bubble Up, Sift Down</p>
+      <h1>Insert &amp; Extract</h1>
+    </div>
+    <p class="note">Two mirror-image moves keep the heap valid: a new value climbs up toward the root; the root's replacement sinks down.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Priority Queue pages">
+    <a href="priority-queue.html">Overview</a>
+    <a class="here" href="priority-queue-operations.html">Insert &amp; Extract</a>
+    <a href="priority-queue-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Insert: bubble up</h2><span class="sub">O(log n)</span></div>
+    <div class="panel-body notes">
+      <p>To add a value, drop it in the first free spot — the end of the array, which is the next open leaf. That
+      keeps the tree complete, but the newcomer might be smaller than its parent, breaking the heap rule. So
+      <b>bubble it up</b>: while it's smaller than its parent, swap the two. It climbs until it's no longer
+      smaller — at most one step per level, so O(log n).</p>
+      <ol class="steps">
+        <li>Put the value at index <code>n</code> (the end), and grow the heap.</li>
+        <li>While it's smaller than its parent at <code>(i−1)/2</code>, swap up and follow it.</li>
+      </ol>
+      <div class="demo-wrap">
+        <div class="scroller"><div id="insHost"></div><svg class="tree-svg" id="insSvg"></svg></div>
+        <p class="arrline" id="insArr">array: <b></b></p>
+        <p class="narr" id="insNarr" style="margin-top:6px">&nbsp;</p>
+        <div class="code-panel" id="insCode" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Extract-min: sift down</h2><span class="sub">O(log n)</span></div>
+    <div class="panel-body notes">
+      <p>The minimum is the root, so removing it is easy to <em>find</em> but leaves a hole at the top. Fill it by
+      moving the <b>last</b> value up to the root (again keeping the tree complete), then <b>sift it down</b>:
+      repeatedly swap it with its <em>smaller</em> child until it's ≤ both children. Swapping with the smaller
+      child is what keeps the parent-≤-children rule true.</p>
+      <ol class="steps">
+        <li>Save the root (the answer); move the last value into the root and shrink the heap.</li>
+        <li>While a child is smaller, swap with the smaller child and follow it down.</li>
+      </ol>
+      <div class="demo-wrap">
+        <div class="scroller"><div id="popHost"></div><svg class="tree-svg" id="popSvg"></svg></div>
+        <p class="arrline" id="popArr">array: <b></b></p>
+        <p class="narr" id="popNarr" style="margin-top:6px">&nbsp;</p>
+        <div class="code-panel" id="popCode" style="margin-top:12px"></div>
+      </div>
+      <div class="callout">
+        <b>Why the smaller child?</b> If you swapped with the bigger child, that child would end up above the
+        smaller one — breaking the rule again. Promoting the smaller child keeps everything below it valid.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="priority-queue-visualizer.html">Try insert and extract in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    That's the whole heap: insert bubbles up, extract-min sifts down, both O(log n), and the minimum is always
+    one O(1) glance at the root.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  var INS=[
+    "void push(Heap *h, int val) {",
+    "  int i = h->n++;  h->a[i] = val;   // at the end",
+    "  while (i > 0 && h->a[(i-1)/2] > h->a[i]) {",
+    "    swap(&h->a[i], &h->a[(i-1)/2]); // bubble up",
+    "    i = (i-1)/2;",
+    "  }",
+    "}"];
+  var POP=[
+    "int pop_min(Heap *h) {",
+    "  int min = h->a[0];               // the answer",
+    "  h->a[0] = h->a[--h->n];          // last -> root",
+    "  int i = 0, s;",
+    "  while ((s = smaller_child(h, i)) != i) {",
+    "    swap(&h->a[i], &h->a[s]);       // sift down",
+    "    i = s;",
+    "  }",
+    "  return min;",
+    "}"];
+  function one(k,v){var o={};o[k]=v;return o;}
+  function tree(arr, cls, ptrs){
+    var nodes={};
+    for(var i=0;i<arr.length;i++){ nodes["h"+i]={val:arr[i],left:(2*i+1<arr.length?"h"+(2*i+1):null),right:(2*i+2<arr.length?"h"+(2*i+2):null)}; if(cls&&cls[i]!==undefined)nodes["h"+i].cls=cls[i]; }
+    var p={}; if(ptrs) Object.keys(ptrs).forEach(function(i){ p["h"+i]=ptrs[i]; });
+    return {root:arr.length?"h0":null, nodes:nodes, ptrs:p};
+  }
+  function mkPlayer(host,svg,arrEl){
+    return function(frames){
+      TreeAnim.play({ host:host, svg:svg, narrEl:host._narr, codeHost:host._code, ms:1800, frames:frames });
+      var mo=new MutationObserver(function(){
+        for(var k=0;k<frames.length;k++){ if(frames[k].narr===host._narr.textContent){ arrEl.innerHTML="array: <b>["+frames[k]._arr.join(", ")+"]</b>"; break; } }
+      });
+      mo.observe(host._narr,{childList:true,characterData:true,subtree:true});
+    };
+  }
+  function F(arr,code,line,cls,ptrs,narr){ var f=tree(arr,cls,ptrs); f.codeLines=code; f.code=line; f.narr=narr; f._arr=arr.slice(); return f; }
+
+  var ih=document.getElementById("insHost"); ih._narr=document.getElementById("insNarr"); ih._code=document.getElementById("insCode");
+  mkPlayer(ih, document.getElementById("insSvg"), document.getElementById("insArr"))([
+    F([10,15,30,20,5],   INS,[1], one(4,'active'), one(4,['i']), "Insert 5: place it at the end, index 4 (a new leaf)."),
+    (function(){ var c={}; c[4]='active'; c[1]='target'; return F([10,15,30,20,5], INS,2, c, one(4,['i']), "5 < its parent 15 — out of order, swap up."); })(),
+    F([10,5,30,20,15],   INS,[3,4], one(1,'active'), one(1,['i']), "5 rises to index 1."),
+    (function(){ var c={}; c[1]='active'; c[0]='target'; return F([10,5,30,20,15], INS,2, c, one(1,['i']), "5 < its parent 10 — swap up again."); })(),
+    F([5,10,30,20,15],   INS,[3,4], one(0,'active'), one(0,['i']), "5 reaches the root — it's the new minimum. Done, O(log n).")
+  ]);
+
+  var ph=document.getElementById("popHost"); ph._narr=document.getElementById("popNarr"); ph._code=document.getElementById("popCode");
+  mkPlayer(ph, document.getElementById("popSvg"), document.getElementById("popArr"))([
+    F([10,15,30,20],  POP,[1,2], one(0,'found'), null, "Extract-min: the root 10 is the answer. Move the last value, 20, up into the root."),
+    F([20,15,30],     POP,3, one(0,'active'), one(0,['i']), "20 sits at the root now — too big. Sift it down."),
+    (function(){ var c={}; c[0]='active'; c[1]='target'; return F([20,15,30], POP,4, c, one(0,['i']), "Its smaller child is 15 — swap down with it."); })(),
+    F([15,20,30],     POP,[5,6], one(1,'active'), one(1,['i']), "20 is now a leaf with no smaller child — heap order restored."),
+    F([15,20,30],     POP,8, {}, null, "Return 10. Extract-min is O(log n).")
+  ]);
+})();
+</script>
+</body>
+</html>

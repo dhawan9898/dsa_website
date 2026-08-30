@@ -3,11 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Priority Queue Visualizer</title>
+<title>Priority Queue (Heap) Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .arrline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .arrline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
@@ -15,235 +35,215 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="priority-queue.html">&larr; Priority Queue notes</a>
-      <p class="eyebrow">Binary Heap &middot; Root Is Always Next</p>
-      <h1>Priority&nbsp;Queue&nbsp;Visualizer</h1>
+      <p class="eyebrow">Smallest Always On Top</p>
+      <h1>Min-Heap&nbsp;Playground</h1>
     </div>
-    <p class="note">Insert sifts up, Extract sifts down — the root is always the highest-priority value.</p>
+    <p class="note">A binary heap: a complete tree where every parent is ≤ its children, so the minimum is always the root. Insert bubbles up; extract sifts down.</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="panel">
-    <div class="panel-head"><h2>Operate on the heap</h2><span class="sub" id="modeLabel">max-heap</span></div>
-    <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Value</span><input type="number" id="val" value="55"></label>
-        <button id="btnInsert" class="primary">Insert</button>
-        <button id="btnExtract">Extract</button>
-        <button id="btnPeek">Peek</button>
-        <button id="btnToggleMode">Switch to min-heap</button>
-      </div>
-      <p class="hint" id="hint">Insert bubbles a new value up; Extract removes the root, then sifts the last leaf back down into place.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
-    </div>
-  </section>
+  <nav class="subnav" aria-label="Priority Queue pages">
+    <a href="priority-queue.html">Overview</a>
+    <a href="priority-queue-operations.html">Insert &amp; Extract</a>
+    <a class="here" href="priority-queue-visualizer.html">Playground</a>
+  </nav>
 
   <section class="panel">
-    <div class="panel-head"><h2>The heap</h2><span class="sub">complete binary tree, stored as an array</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2></div>
     <div class="panel-body">
-      <div class="scroller">
-        <div class="treewrap" id="treeWrap">
-          <svg class="links" id="treeLinks"></svg>
-          <div id="treeNodes"></div>
+      <div class="opbtns">
+        <button class="opbtn" data-op="push">Insert</button>
+        <button class="opbtn" data-op="pop">Extract-min</button>
+        <button class="opbtn" data-op="reset">Reset</button>
+      </div>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow" id="valWrap" hidden><span>Value</span><input type="number" id="valF" value="15"></label>
+          <button class="primary" id="opRun">Run</button>
         </div>
       </div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> node currently moving</span>
-        <span class="key"><i class="swatch right"></i> node it's being compared / swapped with</span>
+      <p class="hint" id="hint" style="margin-top:12px">The heap is empty. Insert a few values — try 20, 15, 30, 10 — and watch each one bubble up to its correct spot.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The heap</h2><span class="sub">a complete tree; parent ≤ both children</span></div>
+    <div class="panel-body">
+      <div class="tree-stage"><div id="treeHost"></div><svg class="tree-svg" id="treeSvg"></svg></div>
+      <div class="tree-ctrls" id="playbar">
+        <button class="tree-cbtn" id="aBack">◀ Back</button>
+        <button class="tree-cbtn" id="aPlay">Play</button>
+        <button class="tree-cbtn" id="aStep">Step ▶</button>
+        <span class="tree-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="arrline" id="arrLine">array: <b>[]</b></p>
+      <p class="narr" id="narr" style="margin-top:8px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> the value moving (bubbling up / sifting down)</span>
+        <span class="key">node i's children live at array indices 2i+1 and 2i+2</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / extractMax() / peek()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the operation you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Because a binary heap is always a <em>complete</em> tree, its height is always O(log n), so both sift-up
-    and sift-down — and therefore both insert and extract — are O(log n). This is exactly the mechanics
-    behind <a href="../../sorting/heap-sort/heap-sort-visualizer.html">Heap Sort</a>, just exposed here as a live structure you keep
-    inserting into and extracting from, instead of a one-shot sort.
+    A heap is stored as a plain array — no pointers. The tree is just a way to picture it: index 0 is the root,
+    and node i's children are at 2i+1 and 2i+2. Insert and extract-min each touch one root-to-leaf path, so both
+    are O(log n); peeking the minimum is O(1).
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  var a=[];  // the heap array (min-heap)
 
-  var INSERT_CODE=[
-    "void insert(Heap *h, int val) {",
-    "  h->items[h->size] = val;",
-    "  int i = h->size++;",
-    "  while (i > 0) {",
-    "    int parent = (i - 1) / 2;",
-    "    if (h->items[i] <= h->items[parent]) break;   // max-heap",
-    "    swap(&h->items[i], &h->items[parent]);",
-    "    i = parent;",
+  var INS=[
+    "void push(Heap *h, int val) {",
+    "  h->a[h->n] = val;              // place at the end",
+    "  int i = h->n++;",
+    "  while (i > 0 && h->a[(i-1)/2] > h->a[i]) {",
+    "    swap(&h->a[i], &h->a[(i-1)/2]);   // bubble up",
+    "    i = (i-1)/2;",
     "  }",
-    "}"
-  ];
-  var EXTRACT_CODE=[
-    "int extractMax(Heap *h) {",
-    "  int top = h->items[0];",
-    "  h->items[0] = h->items[--h->size];",
+    "}"];
+  var POP=[
+    "int pop_min(Heap *h) {",
+    "  int min = h->a[0];             // root is the min",
+    "  h->a[0] = h->a[--h->n];        // last value to root",
     "  int i = 0;",
-    "  while (1) {",
-    "    int l = 2*i+1, r = 2*i+2, best = i;",
-    "    if (l < h->size && h->items[l] > h->items[best]) best = l;",
-    "    if (r < h->size && h->items[r] > h->items[best]) best = r;",
-    "    if (best == i) break;",
-    "    swap(&h->items[i], &h->items[best]);",
-    "    i = best;",
+    "  while (1) {                    // sift down",
+    "    int l=2*i+1, r=2*i+2, s=i;",
+    "    if (l<h->n && h->a[l]<h->a[s]) s=l;",
+    "    if (r<h->n && h->a[r]<h->a[s]) s=r;",
+    "    if (s==i) break;             // parent already smallest",
+    "    swap(&h->a[i], &h->a[s]); i=s;",
     "  }",
-    "  return top;",
-    "}"
-  ];
-  var PEEK_CODE=[
-    "int peek(Heap *h) {",
-    "  return h->items[0];",
-    "}"
-  ];
+    "  return min;",
+    "}"];
 
-  function cmp(mode,a,b){ return mode==="max" ? a>b : a<b; }
-  function toTreeFromHeap(heap, activeIdx, activeRole, otherIdx){
-    function build(i){
-      if(i>=heap.length) return null;
-      var role = i===activeIdx ? activeRole : (i===otherIdx ? "right" : "");
-      return { id:i, val:heap[i], role:role, left:build(2*i+1), right:build(2*i+2) };
+  function one(k,v){ var o={}; o[k]=v; return o; }
+  function tree(arr, o){
+    o=o||{}; var nodes={};
+    for(var i=0;i<arr.length;i++){
+      nodes["h"+i]={ val:arr[i], left:(2*i+1<arr.length?"h"+(2*i+1):null), right:(2*i+2<arr.length?"h"+(2*i+2):null) };
+      if(o.cls&&o.cls[i]!==undefined) nodes["h"+i].cls=o.cls[i];
     }
-    return build(0);
+    var ptrs={}; if(o.ptrs) Object.keys(o.ptrs).forEach(function(i){ ptrs["h"+i]=o.ptrs[i]; });
+    return { root: arr.length?"h0":null, nodes:nodes, ptrs:ptrs };
   }
-  function frame(state, activeIdx, activeRole, phase, narr, ops, otherIdx, code, codeLine){
-    return {struct:{root: toTreeFromHeap(state.heap, activeIdx, activeRole, otherIdx)}, phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
-  }
+  function F(arr, code, line, narr, o){ var f=tree(arr,o); f.codeLines=code; f.code=line; f.narr=narr; f._arr=arr.slice(); return f; }
+  function sw(arr,i,j){ var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
 
-  function opInsert(state, val){
-    var oc=(state.opsCount||0)+1;
-    var heap=state.heap.slice();
-    heap.push(val);
-    var i=heap.length-1, frames=[];
-    var st=function(){ return {heap:heap, mode:state.mode}; };
-    frames.push(frame(st(), i, "left head landed", "insert-start", "Insert "+val+" at the next open leaf, index "+i+".", oc, undefined, INSERT_CODE, [1,2]));
+  function opPush(val){
+    var frames=[];
+    a.push(val); var i=a.length-1;
+    frames.push(F(a, INS,[1,2], "Insert "+val+": drop it in at the end — the next open leaf keeps the tree complete.", {cls:one(i,'active'), ptrs:one(i,['i'])}));
     while(i>0){
-      var parent=Math.floor((i-1)/2);
-      if(cmp(state.mode, heap[i], heap[parent])){
-        frames.push(frame(st(), i, "right", "compare",
-          heap[i]+" "+(state.mode==="max"?"is greater than":"is less than")+" its parent "+heap[parent]+" — sift up.", oc, parent, INSERT_CODE, [5,7]));
-        var tmp=heap[i]; heap[i]=heap[parent]; heap[parent]=tmp;
-        i=parent;
-        frames.push(frame(st(), i, "left head landed", "sift-up", val+" moves to index "+i+".", oc, undefined, INSERT_CODE, 7));
-      } else {
-        frames.push(frame(st(), i, "left head", "settled",
-          heap[i]+" is not "+(state.mode==="max"?"greater":"less")+" than its parent "+heap[parent]+" — the heap property holds. Done.", oc, undefined, INSERT_CODE, 5));
-        return {frames:frames, state:{heap:heap, mode:state.mode, opsCount:oc}};
-      }
+      var p=(i-1)>>1;
+      if(a[p]<=a[i]){ frames.push(F(a, INS,3, a[i]+" ≥ its parent "+a[p]+" — heap order holds, stop.", {cls:one(i,'active'), ptrs:one(i,['i'])})); i=-1; break; }
+      var cls={}; cls[i]='active'; cls[p]='target';
+      frames.push(F(a, INS,3, a[i]+" < its parent "+a[p]+" — out of order, so bubble up (swap).", {cls:cls, ptrs:one(i,['i'])}));
+      sw(a,i,p);
+      frames.push(F(a, INS,[4,5], "Swapped: "+a[p]+" rises toward the root.", {cls:one(p,'active'), ptrs:one(p,['i'])}));
+      i=p;
     }
-    frames.push(frame(st(), 0, "left head landed", "settled", val+" reached the root.", oc, undefined, INSERT_CODE, 3));
-    return {frames:frames, state:{heap:heap, mode:state.mode, opsCount:oc}};
+    if(i===0) frames.push(F(a, INS,6, a[0]+" reached the root — it's the new minimum. Insert is O(log n).", {cls:one(0,'active')}));
+    frames.push(F(a, INS,7, "Done.", {}));
+    return {frames:frames};
   }
-
-  function opExtract(state){
-    if(!state.heap.length) return {error:"The heap is empty — nothing to extract."};
-    var oc=(state.opsCount||0)+1;
-    var heap=state.heap.slice(), frames=[];
-    var st=function(){ return {heap:heap, mode:state.mode}; };
-    var top=heap[0];
-    frames.push(frame(st(), 0, "left head", "extract-start", "Extract the "+(state.mode==="max"?"maximum":"minimum")+": "+top+" at the root.", oc, undefined, EXTRACT_CODE, 1));
-    var last=heap.pop();
-    if(!heap.length){
-      frames.push(frame(st(), undefined, "", "extracted", top+" removed. The heap is now empty.", oc, undefined, EXTRACT_CODE, 2));
-      return {frames:frames, state:{heap:heap, mode:state.mode, opsCount:oc}};
-    }
-    heap[0]=last;
-    frames.push(frame(st(), 0, "left head landed", "moved-last",
-      "Move the last leaf, "+last+", to the root, then sift it down to restore the heap property.", oc, undefined, EXTRACT_CODE, 2));
+  function opPop(){
+    var frames=[];
+    if(a.length===0){ frames.push(F(a, POP,0, "The heap is empty — nothing to extract.", {})); return {frames:frames}; }
+    var min=a[0];
+    frames.push(F(a, POP,[1,2], "Extract-min: the root, "+min+", is the smallest. Remove it, and move the last value up to the root to keep the tree complete.", {cls:one(0,'found')}));
+    a[0]=a[a.length-1]; a.pop();
+    if(a.length===0){ frames.push(F(a, POP,11, min+" removed. The heap is now empty.", {})); return {frames:frames}; }
+    frames.push(F(a, POP,3, a[0]+" is now at the root — probably too big. Sift it down.", {cls:one(0,'active'), ptrs:one(0,['i'])}));
     var i=0;
     while(true){
-      var l=2*i+1, r=2*i+2, best=i;
-      if(l<heap.length && cmp(state.mode, heap[l], heap[best])) best=l;
-      if(r<heap.length && cmp(state.mode, heap[r], heap[best])) best=r;
-      if(best===i){
-        frames.push(frame(st(), i, "left head landed", "settled",
-          heap[i]+" is not "+(state.mode==="max"?"smaller":"larger")+" than either child — the heap property holds. Done.", oc, undefined, EXTRACT_CODE, 8));
-        break;
-      }
-      frames.push(frame(st(), best, "right", "compare", "Child "+heap[best]+" belongs above "+heap[i]+" — swap.", oc, i, EXTRACT_CODE, [6,9]));
-      var tmp=heap[i]; heap[i]=heap[best]; heap[best]=tmp;
-      i=best;
-      frames.push(frame(st(), i, "left head landed", "sift-down", last+" moves to index "+i+".", oc, undefined, EXTRACT_CODE, 10));
+      var l=2*i+1, r=2*i+2, s=i;
+      if(l<a.length && a[l]<a[s]) s=l;
+      if(r<a.length && a[r]<a[s]) s=r;
+      if(s===i){ frames.push(F(a, POP,8, a[i]+" is ≤ its children — heap order restored. Stop.", {cls:one(i,'active'), ptrs:one(i,['i'])})); break; }
+      var cls={}; cls[i]='active'; cls[s]='target';
+      frames.push(F(a, POP,[5,7], "Its smaller child is "+a[s]+" — swap down with it.", {cls:cls, ptrs:one(i,['i'])}));
+      sw(a,i,s);
+      frames.push(F(a, POP,9, "Swapped: "+a[i]+" moves up, "+a[s]+" moves down.", {cls:one(s,'active'), ptrs:one(s,['i'])}));
+      i=s;
     }
-    return {frames:frames, state:{heap:heap, mode:state.mode, opsCount:oc}};
+    frames.push(F(a, POP,11, "Returned "+min+". Extract-min is O(log n).", {}));
+    return {frames:frames};
   }
 
-  function opPeek(state){
-    if(!state.heap.length) return {error:"The heap is empty — nothing to peek at."};
-    var oc=(state.opsCount||0)+1;
-    return {frames:[frame(state, 0, "left head", "peek",
-      "Peek: the "+(state.mode==="max"?"maximum":"minimum")+" is "+state.heap[0]+", at the root.", oc, undefined, PEEK_CODE, 1)],
-      state:{heap:state.heap.slice(), mode:state.mode, opsCount:oc}};
-  }
+  /* ---- page-local player ---- */
+  var host=document.getElementById("treeHost"), svg=document.getElementById("treeSvg");
+  var narrEl=document.getElementById("narr"), codeHost=document.getElementById("codeHost");
+  var countEl=document.getElementById("aCount"), playBtn=document.getElementById("aPlay"), arrLine=document.getElementById("arrLine");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    TreeAnim.render(host, svg, f); narrEl.textContent=f.narr||"";
+    TreeAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length;
+    arrLine.innerHTML="array: <b>["+(f._arr||[]).join(", ")+"]</b>"; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1600);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
 
-  function opToggleMode(state){
-    var oc=(state.opsCount||0)+1;
-    var newMode = state.mode==="max" ? "min" : "max";
-    document.getElementById("modeLabel").textContent = newMode+"-heap";
-    document.getElementById("btnToggleMode").textContent = "Switch to "+(newMode==="max"?"min":"max")+"-heap";
-    return {frames:[frame({heap:[],mode:newMode}, undefined, "", "mode-switch",
-      "Switched to a "+newMode+"-heap. The heap is cleared, since a max-heap and a min-heap order the same values differently — insert some values to see it.", oc)],
-      state:{heap:[], mode:newMode, opsCount:oc}};
-  }
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function drawEmpty(){ P.frames=[F(a,null,null, a.length?"Current heap.":"The heap is empty. Insert a value to start.", {})]; P.i=0; drawP(); }
 
-  function init(){
-    var state={heap:[], mode:"max", opsCount:0};
-    var frames=[frame(state, undefined, "", "start",
-      "Create the heap: an empty array. A binary heap keeps every parent ≥ its children (max-heap here) and is always a complete tree, so it's stored compactly with no pointers at all.", 0, undefined, INSERT_CODE, 0)];
-    [50,30,70,20,40,45].forEach(function(v){
-      var r=opInsert(state, v);
-      frames=frames.concat(r.frames);
-      state=r.state;
-    });
-    return {state:state, frames:frames};
+  var OPS={
+    push:{ name:"Insert", val:true, desc:"Add a value at the end of the array (the next leaf), then bubble it up: while it's smaller than its parent, swap. It rises until it's ≥ its parent." },
+    pop:{ name:"Extract-min", val:false, desc:"Take the root (the minimum), move the last value into the root, then sift it down: repeatedly swap with the smaller child until it's ≤ both children." },
+    reset:{ name:"Reset", val:false, desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"), opdescEl=document.getElementById("opdesc");
+  var valWrap=document.getElementById("valWrap"), valF=document.getElementById("valF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ a=[]; stopP(); drawEmpty(); TreeAnim.renderCode(codeHost,null,null);
+      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Heap cleared. Insert a value to start."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    valWrap.hidden=!meta.val; panel.hidden=false; hint("");
+    if(meta.val){ valF.focus(); valF.select(); }
   }
-  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+  function runCurrent(){
+    if(!current) return;
+    var r;
+    if(current==="push"){ var v=Number(valF.value); if(!isFinite(v)) return hint("Enter a value."); r=opPush(v); }
+    else if(current==="pop"){ r=opPop(); }
+    if(!r) return;
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+  valF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
 
-  VizDS.init({
-    init: init,
-    ops: {
-      insert: { btn:"btnInsert", enterOn:"val", run: function(state){
-        var v=num("val"); if(!isFinite(v)) return {error:"Enter a value."}; return opInsert(state,v);
-      }},
-      extract: { btn:"btnExtract", run: function(state){ return opExtract(state); } },
-      peek: { btn:"btnPeek", run: function(state){ return opPeek(state); } },
-      toggle: { btn:"btnToggleMode", run: function(state){ return opToggleMode(state); } }
-    },
-    renderExtra: function(frame){ DSRender.tree(document.getElementById("treeNodes"), document.getElementById("treeLinks"), frame.struct.root, {}); },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  drawEmpty();
 })();
 </script>
 </body>
