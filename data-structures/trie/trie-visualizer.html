@@ -8,6 +8,43 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  /* trie renderer */
+  .trie-stage{position:relative;overflow:auto}
+  .trie-stage .trie-svg{position:absolute;left:0;top:0;pointer-events:none;z-index:1}
+  .trie-node{position:absolute;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px;background:#fff;border:2px solid var(--ink);color:var(--ink);z-index:2;
+    transition:left .4s var(--ease),top .4s var(--ease),opacity .35s var(--ease),transform .35s var(--ease),border-color .3s var(--ease)}
+  .trie-node.root{border-style:dashed;font-size:10px;color:var(--ink-soft)}
+  .trie-node.active{border-color:var(--stamp);color:var(--stamp)}
+  .trie-node.wordend{box-shadow:0 0 0 3px rgba(46,107,79,.28);border-color:var(--seal)}
+  .trie-node.found{border-color:var(--seal);color:var(--seal);background:rgba(46,107,79,.12)}
+  .trie-node.miss{border-color:var(--stamp);border-style:dashed;color:var(--stamp)}
+  .trie-node.pop{animation:trpop .38s var(--ease)}
+  .trie-node.gone{opacity:0;transform:scale(.7)}
+  .trie-edge{stroke:var(--ink-soft);stroke-width:2;fill:none}
+  .trie-edge.active{stroke:var(--stamp);stroke-width:2.6}
+  .trie-elabel{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700;fill:var(--ink)}
+  .trie-ptr{position:absolute;z-index:3;transform:translateX(-50%)}
+  .trie-ptr span{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;color:#fff;background:var(--plot);padding:2px 6px;border-radius:4px}
+  @keyframes trpop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:none}}
+</style>
 </head>
 <body>
 
@@ -15,340 +52,263 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="trie.html">&larr; Trie notes</a>
-      <p class="eyebrow">Prefix Tree &middot; One Node Per Shared Letter</p>
-      <h1>Trie&nbsp;Visualizer</h1>
+      <p class="eyebrow">A Tree Of Prefixes</p>
+      <h1>Trie&nbsp;Playground</h1>
     </div>
-    <p class="note">Words that share a prefix share the same path from the root — the branching starts exactly where the words first differ.</p>
+    <p class="note">Each edge is a letter; each path from the root spells a prefix. Words that share a start share a path — that's what makes prefix lookups instant.</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="panel">
-    <div class="panel-head"><h2>Operate on the trie</h2><span class="sub">lowercase letters only</span></div>
-    <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Word</span><input type="text" id="word" value="can" autocomplete="off" spellcheck="false"></label>
-        <button id="btnInsert" class="primary">Insert</button>
-        <button id="btnSearch">Search</button>
-        <button id="btnPrefix">Starts With</button>
-        <button id="btnDelete">Delete</button>
-      </div>
-      <p class="hint" id="hint">Insert "care" or "card" to see the branch split from the shared "car" prefix.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
-    </div>
-  </section>
+  <nav class="subnav" aria-label="Trie pages">
+    <a href="trie.html">Overview</a>
+    <a class="here" href="trie-visualizer.html">Playground</a>
+  </nav>
 
   <section class="panel">
-    <div class="panel-head"><h2>The trie</h2><span class="sub">root is &bull;, a double border marks a complete word</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2><span class="sub">lowercase letters a–z</span></div>
     <div class="panel-body">
-      <div class="scroller">
-        <div class="treewrap" id="trieWrap">
-          <svg class="links" id="trieLinks"></svg>
-          <div id="trieNodes"></div>
+      <div class="opbtns">
+        <button class="opbtn" data-op="insert">Insert word</button>
+        <button class="opbtn" data-op="search">Search word</button>
+        <button class="opbtn" data-op="reset">Reset</button>
+      </div>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow" id="valWrap" hidden><span>Word</span><input type="text" id="valF" value="cat" maxlength="8"></label>
+          <button class="primary" id="opRun">Run</button>
         </div>
       </div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> node just visited / created</span>
-        <span class="key"><i class="swatch right"></i> node about to be pruned</span>
+      <p class="hint" id="hint" style="margin-top:12px">Empty trie. Insert <b>cat</b>, then <b>car</b> and <b>can</b> — they'll share the <b>ca</b> path — then search <b>ca</b> vs <b>car</b>.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The trie</h2><span class="sub">a ringed node marks the end of a real word</span></div>
+    <div class="panel-body">
+      <div class="trie-stage"><div id="trieHost"></div><svg class="trie-svg" id="trieSvg"></svg></div>
+      <div class="tree-ctrls" id="playbar">
+        <button class="tree-cbtn" id="aBack">◀ Back</button>
+        <button class="tree-cbtn" id="aPlay">Play</button>
+        <button class="tree-cbtn" id="aStep">Step ▶</button>
+        <span class="tree-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> the node cur is on</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal);box-shadow:0 0 0 2px rgba(46,107,79,.3)"></i> end-of-word marker</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / search() / startsWith() / deleteWord()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the operation you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Every operation here costs <b>O(L)</b>, where L is the length of the word — never O(number of words
-    stored) — because each step only ever follows one child pointer, regardless of how many other words
-    share the trie.
+    Insert and search each take O(L) time for a word of length L — completely independent of how many words the
+    trie holds. The price is memory: a node per distinct prefix character.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  TreeAnim.injectCSS(); // reuse .tree-ctrls / .tree-cbtn / .code-line styling
+  var NS="http://www.w3.org/2000/svg";
+  var nodes={ r:{ch:null, children:{}, end:false} }, nextId=0;
+  function mk(ch){ var id="n"+(nextId++); nodes[id]={ch:ch, children:{}, end:false}; return id; }
 
-  var INSERT_CODE=[
-    "void insert(Trie *t, const char *word) {",
+  var INS=[
+    "void insert(Trie *t, char *w) {",
     "  Node *cur = t->root;",
-    "  for (int i = 0; word[i]; i++) {",
-    "    int idx = word[i] - 'a';",
-    "    if (!cur->children[idx]) {",
-    "      cur->children[idx] = makeNode();            // create the missing branch",
-    "      cur->childCount++;",
-    "    }",
-    "    cur = cur->children[idx];",
+    "  for (; *w; w++) {                 // one letter at a time",
+    "    int c = *w - 'a';",
+    "    if (!cur->child[c])",
+    "      cur->child[c] = newNode();    // create if missing",
+    "    cur = cur->child[c];            // descend",
     "  }",
-    "  cur->isEnd = 1;                                   // mark the last node as a complete word",
-    "}"
-  ];
-  var SEARCH_CODE=[
-    "int search(Trie *t, const char *word) {",
+    "  cur->isWord = 1;                  // mark the end",
+    "}"];
+  var SRCH=[
+    "bool search(Trie *t, char *w) {",
     "  Node *cur = t->root;",
-    "  for (int i = 0; word[i]; i++) {",
-    "    int idx = word[i] - 'a';",
-    "    if (!cur->children[idx]) return 0;              // branch doesn't exist",
-    "    cur = cur->children[idx];",
+    "  for (; *w; w++) {",
+    "    int c = *w - 'a';",
+    "    if (!cur->child[c]) return false;  // no such path",
+    "    cur = cur->child[c];",
     "  }",
-    "  return cur->isEnd;                                 // a full word, not just a prefix",
-    "}"
-  ];
-  var STARTSWITH_CODE=[
-    "int startsWith(Trie *t, const char *prefix) {",
-    "  Node *cur = t->root;",
-    "  for (int i = 0; prefix[i]; i++) {",
-    "    int idx = prefix[i] - 'a';",
-    "    if (!cur->children[idx]) return 0;",
-    "    cur = cur->children[idx];",
-    "  }",
-    "  return 1;                                           // the whole prefix exists as a path",
-    "}"
-  ];
-  var DELETE_CODE=[
-    "void deleteWord(Trie *t, const char *word) {",
-    "  Node *path[MAXLEN]; int n = strlen(word);",
-    "  Node *cur = t->root;",
-    "  for (int i = 0; i < n; i++) {                 // walk down, recording the path",
-    "    int idx = word[i] - 'a';",
-    "    if (!cur->children[idx]) return;             // word isn't in the trie",
-    "    path[i] = cur = cur->children[idx];",
-    "  }",
-    "  if (!cur->isEnd) return;                        // present only as a prefix, not a word",
-    "  cur->isEnd = 0;",
-    "  for (int i = n - 1; i >= 0; i--) {              // walk back up, pruning dead ends",
-    "    Node *node = path[i], *parent = (i == 0) ? t->root : path[i - 1];",
-    "    if (node->isEnd || node->childCount > 0) break;   // still needed -- stop pruning",
-    "    parent->children[word[i] - 'a'] = NULL;",
-    "    parent->childCount--;",
-    "  }",
-    "}"
-  ];
+    "  return cur->isWord;               // a whole word?",
+    "}"];
 
-  function cloneTree(node){
-    var copy={ch:node.ch, isEnd:node.isEnd, isRoot:node.isRoot, children:{}};
-    Object.keys(node.children).forEach(function(k){ copy.children[k]=cloneTree(node.children[k]); });
-    return copy;
+  // ---- page-local multi-way trie renderer (reuses tree-* look) ----
+  function layout(){
+    var pos={}, x={v:0};
+    function rec(id, depth){
+      var kids=Object.keys(nodes[id].children).sort().map(function(c){return nodes[id].children[c];});
+      if(kids.length===0){ pos[id]={col:x.v++, depth:depth}; return; }
+      kids.forEach(function(k){ rec(k,depth+1); });
+      var s=0; kids.forEach(function(k){ s+=pos[k].col; }); pos[id]={col:s/kids.length, depth:depth};
+    }
+    rec('r',0); return pos;
   }
-  function makeNode(ch){ return {ch:ch, isEnd:false, isRoot:false, children:{}}; }
-  function makeRoot(){ return {ch:"", isEnd:false, isRoot:true, children:{}}; }
-
-  var Tree={boxEls:{}, links:[]};
-  function div(c){ var d=document.createElement("div"); d.className=c; return d; }
-
-  function renderTrieTree(root, activePath, activeRole){
-    var nodesHost=document.getElementById("trieNodes"), svg=document.getElementById("trieLinks");
-    nodesHost.innerHTML="";
-    Tree.boxEls={}; Tree.links=[];
-    var counter=0;
-    var activeSet={}; if(activePath!==undefined) activeSet[activePath]=true;
-
-    function place(node, path, parentEl){
-      var id=counter++;
-      var wrap=div("tnode");
-      var box=div("tbox");
-      var role=activeSet[path]?activeRole:"";
-      var cell=div("cell"+(role?" "+role:""));
-      cell.textContent=node.isRoot?"•":node.ch;
-      box.appendChild(cell);
-      wrap.appendChild(box);
-      if(node.isEnd){ var lab=div("tlabel"); lab.textContent="word"; wrap.appendChild(lab); }
-      Tree.boxEls[id]=box;
-      var childKeys=Object.keys(node.children).sort();
-      if(childKeys.length){
-        var kidsWrap=div("tkids");
-        childKeys.forEach(function(k){
-          var childId=place(node.children[k], path+k, kidsWrap);
-          Tree.links.push({p:id, c:childId, active: !!(activeSet[path] && activeSet[path+k])});
+  var HGAP=64, VGAP=74, PADX=30, PADY=30, NW=38;
+  var elNodes={}, elPtr=null;
+  function render(frame){
+    var pos=layout();
+    var maxCol=0,maxD=0; Object.keys(pos).forEach(function(id){ if(pos[id].col>maxCol)maxCol=pos[id].col; if(pos[id].depth>maxD)maxD=pos[id].depth; });
+    var host=document.getElementById("trieHost"), svg=document.getElementById("trieSvg");
+    var W=PADX*2+(maxCol+1)*HGAP, H=PADY*2+(maxD+1)*VGAP; if(W<240)W=240; if(H<110)H=110;
+    host.style.position="relative"; host.style.minWidth=W+"px"; host.style.height=H+"px";
+    svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.style.width=W+"px"; svg.style.height=H+"px";
+    function nx(id){ return PADX+pos[id].col*HGAP; } function ny(id){ return PADY+pos[id].depth*VGAP; }
+    var seen={}, cls=frame.cls||{};
+    Object.keys(nodes).forEach(function(id){
+      if(!pos[id]) return; seen[id]=true;
+      var box=elNodes[id];
+      if(!box){ box=document.createElement("div"); box.className="trie-node"; box.textContent=(id==='r')?"root":nodes[id].ch; host.appendChild(box); box._pop=true; elNodes[id]=box; }
+      box.style.left=nx(id)+"px"; box.style.top=ny(id)+"px";
+      var c="trie-node"+(id==='r'?" root":"")+(nodes[id].end?" wordend":"")+(cls[id]?(" "+cls[id]):"");
+      if(box._pop){ c+=" pop"; box._pop=false; } box.className=c;
+    });
+    Object.keys(elNodes).forEach(function(id){ if(!seen[id]){ var b=elNodes[id]; b.classList.add("gone"); (function(bb){setTimeout(function(){if(bb.parentNode)bb.parentNode.removeChild(bb);},380);})(b); delete elNodes[id]; }});
+    // cur pointer
+    if(elPtr && !frame.cur){ if(elPtr.parentNode)elPtr.parentNode.removeChild(elPtr); elPtr=null; }
+    if(frame.cur && pos[frame.cur]){ if(!elPtr){ elPtr=document.createElement("div"); elPtr.className="trie-ptr"; elPtr.innerHTML='<span>cur</span>'; host.appendChild(elPtr); }
+      elPtr.style.left=(nx(frame.cur)+NW/2)+"px"; elPtr.style.top=(ny(frame.cur)-22)+"px"; }
+    // edges with letter labels, measured/followed
+    var token=(host._tok=(host._tok||0)+1), start=performance.now();
+    function draw(){
+      while(svg.firstChild) svg.removeChild(svg.firstChild);
+      var hr=host.getBoundingClientRect();
+      Object.keys(nodes).forEach(function(id){
+        if(!elNodes[id])return;
+        Object.keys(nodes[id].children).forEach(function(ch){
+          var cId=nodes[id].children[ch]; if(!elNodes[cId])return;
+          var pr=elNodes[id].getBoundingClientRect(), cr=elNodes[cId].getBoundingClientRect();
+          var x1=pr.left-hr.left+pr.width/2, y1=pr.top-hr.top+pr.height, x2=cr.left-hr.left+cr.width/2, y2=cr.top-hr.top;
+          var ln=document.createElementNS(NS,"line"); ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+          ln.setAttribute("class","trie-edge"+((frame.activeEdge&&frame.activeEdge===id+">"+cId)?" active":"")); svg.appendChild(ln);
+          var tx=document.createElementNS(NS,"text"); tx.setAttribute("x",(x1+x2)/2+6); tx.setAttribute("y",(y1+y2)/2); tx.setAttribute("class","trie-elabel"); tx.textContent=ch; svg.appendChild(tx);
         });
-        wrap.appendChild(kidsWrap);
-      }
-      parentEl.appendChild(wrap);
-      return id;
+      });
     }
-    place(root, "", nodesHost);
-    drawLinks();
+    function follow(){ if(host._tok!==token)return; draw(); if(performance.now()-start<520) requestAnimationFrame(follow); }
+    draw(); requestAnimationFrame(follow);
   }
 
-  function drawLinks(){
-    var svg=document.getElementById("trieLinks"), wrapEl=document.getElementById("trieWrap");
-    if(!wrapEl) return;
-    if(!Tree.links.length){ svg.innerHTML=""; return; }
-    var base=wrapEl.getBoundingClientRect();
-    svg.setAttribute("viewBox","0 0 "+wrapEl.offsetWidth+" "+wrapEl.offsetHeight);
-    svg.setAttribute("width",wrapEl.offsetWidth);
-    svg.setAttribute("height",wrapEl.offsetHeight);
-    var out="";
-    Tree.links.forEach(function(L){
-      var pb=Tree.boxEls[L.p], cb=Tree.boxEls[L.c];
-      if(!pb||!cb) return;
-      var pr=pb.getBoundingClientRect(), cr=cb.getBoundingClientRect();
-      var x1=pr.left+pr.width/2-base.left, y1=pr.bottom-base.top;
-      var x2=cr.left+cr.width/2-base.left, y2=cr.top-base.top;
-      var my=y1+(y2-y1)/2;
-      out+='<path class="'+(L.active?"active":"")+'" d="M'+x1+' '+y1+' V'+my+' H'+x2+' V'+y2+'"></path>';
-    });
-    svg.innerHTML=out;
-  }
-  var rt;
-  window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(drawLinks,120); });
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(drawLinks);
+  function snapClone(){ var s={}; Object.keys(nodes).forEach(function(id){ s[id]={ch:nodes[id].ch, end:nodes[id].end, children:{}}; Object.keys(nodes[id].children).forEach(function(c){ s[id].children[c]=nodes[id].children[c]; }); }); return s; }
+  function F(code,line,narr,o){ o=o||{}; return {codeLines:code, code:line, narr:narr, cls:o.cls, cur:o.cur, activeEdge:o.activeEdge, _snap:snapClone()}; }
 
-  function frame(root, activePath, activeRole, phase, narr, ops, code, codeLine){
-    return {struct:{root:root, path:activePath, role:activeRole}, phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
-  }
-
-  function opInsert(state, word){
-    if(!word || !/^[a-z]+$/.test(word)) return {error:"Enter a lowercase word (letters only)."};
-    var oc=(state.opsCount||0)+1;
-    var root=cloneTree(state.root);
-    var frames=[], cur=root, path="";
-    for(var i=0;i<word.length;i++){
-      var ch=word[i];
-      if(!cur.children[ch]){
-        cur.children[ch]=makeNode(ch);
-        frames.push(frame(root, path+ch, "left head landed", "create", "No branch for \""+ch+"\" yet — create node \""+(path+ch)+"\".", oc, INSERT_CODE, [4,7]));
+  function opInsert(word){
+    word=(word||"").toLowerCase().replace(/[^a-z]/g,"");
+    if(!word) return {error:"Enter a word using letters a–z."};
+    var frames=[], cur='r';
+    frames.push(F(INS,[1,2], "Insert \""+word+"\". Start at the root.", {cur:'r'}));
+    for(var k=0;k<word.length;k++){
+      var ch=word[k];
+      if(nodes[cur].children[ch]){
+        frames.push(F(INS,[5,6], "'"+ch+"' already branches from here — reuse that edge and descend.", {cur:cur}));
+        cur=nodes[cur].children[ch];
+        frames.push(F(INS,6, "Now on the '"+ch+"' node.", {cur:cur}));
       } else {
-        frames.push(frame(root, path+ch, "left head", "walk", "Branch \""+ch+"\" already exists — follow it.", oc, INSERT_CODE, 8));
+        var nid=mk(ch); nodes[cur].children[ch]=nid;
+        frames.push(F(INS,[4,6], "No '"+ch+"' edge yet — create a new node for it and descend.", {cur:nid, activeEdge:cur+">"+nid, cls:one(nid,'active')}));
+        cur=nid;
       }
-      cur=cur.children[ch];
-      path+=ch;
     }
-    cur.isEnd=true;
-    frames.push(frame(root, path, "left head landed", "mark-end", "\""+word+"\" is now a complete word in the trie.", oc, INSERT_CODE, 10));
-    return {frames:frames, state:{root:root, opsCount:oc}};
+    nodes[cur].end=true;
+    frames.push(F(INS,8, "Mark the last node as end-of-word (the ring). \""+word+"\" is now stored — O("+word.length+").", {cur:cur, cls:one(cur,'active')}));
+    return {frames:frames};
   }
-
-  function walkPath(root, word){
-    var cur=root, path="", steps=[];
-    for(var i=0;i<word.length;i++){
-      var ch=word[i];
-      if(!cur.children[ch]) return {found:false, steps:steps};
-      cur=cur.children[ch];
-      path+=ch;
-      steps.push(path);
-    }
-    return {found:true, node:cur, steps:steps};
-  }
-
-  function opSearch(state, word){
-    if(!word || !/^[a-z]+$/.test(word)) return {error:"Enter a lowercase word (letters only)."};
-    var oc=(state.opsCount||0)+1;
-    var root=state.root, frames=[];
-    var w=walkPath(root, word);
-    for(var i=0;i<w.steps.length;i++){
-      frames.push(frame(root, w.steps[i], "left head", "walk", "Follow \""+word[i]+"\" to \""+w.steps[i]+"\".", oc, SEARCH_CODE, [4,5]));
-    }
-    if(!w.found){
-      frames.push(frame(root, w.steps[w.steps.length-1]||"", "", "not-found", "No branch for the next letter — \""+word+"\" isn't in the trie.", oc, SEARCH_CODE, 4));
-    } else if(w.node.isEnd){
-      frames.push(frame(root, word, "found", "found", "\""+word+"\" is a complete word in the trie.", oc, SEARCH_CODE, 7));
-    } else {
-      frames.push(frame(root, word, "", "prefix-only", "The path exists, but no word ends here — \""+word+"\" itself was never inserted.", oc, SEARCH_CODE, 7));
-    }
-    return {frames:frames, state:{root:root, opsCount:oc}};
-  }
-
-  function opPrefix(state, word){
-    if(!word || !/^[a-z]+$/.test(word)) return {error:"Enter a lowercase prefix (letters only)."};
-    var oc=(state.opsCount||0)+1;
-    var root=state.root, frames=[];
-    var w=walkPath(root, word);
-    for(var i=0;i<w.steps.length;i++){
-      frames.push(frame(root, w.steps[i], "left head", "walk", "Follow \""+word[i]+"\" to \""+w.steps[i]+"\".", oc, STARTSWITH_CODE, [3,5]));
-    }
-    if(w.found){
-      frames.push(frame(root, word, "found", "found", "The whole prefix \""+word+"\" exists as a path — some word in the trie starts with it.", oc, STARTSWITH_CODE, 7));
-    } else {
-      frames.push(frame(root, w.steps[w.steps.length-1]||"", "", "not-found", "No branch for the next letter — nothing in the trie starts with \""+word+"\".", oc, STARTSWITH_CODE, 4));
-    }
-    return {frames:frames, state:{root:root, opsCount:oc}};
-  }
-
-  function opDelete(state, word){
-    if(!word || !/^[a-z]+$/.test(word)) return {error:"Enter a lowercase word (letters only)."};
-    var oc=(state.opsCount||0)+1;
-    var root=cloneTree(state.root);
-    var frames=[];
-    var w=walkPath(root, word);
-    for(var i=0;i<w.steps.length;i++){
-      frames.push(frame(root, w.steps[i], "left head", "walk", "Walk down to \""+w.steps[i]+"\".", oc, DELETE_CODE, [4,6]));
-    }
-    if(!w.found){
-      frames.push(frame(root, w.steps[w.steps.length-1]||"", "", "not-found", "\""+word+"\" isn't in the trie — nothing to delete.", oc, DELETE_CODE, 5));
-      return {frames:frames, state:{root:root, opsCount:oc}};
-    }
-    if(!w.node.isEnd){
-      frames.push(frame(root, word, "", "not-a-word", "\""+word+"\" is only a prefix of other words, not a complete word itself — nothing to delete.", oc, DELETE_CODE, 8));
-      return {frames:frames, state:{root:root, opsCount:oc}};
-    }
-    w.node.isEnd=false;
-    frames.push(frame(root, word, "left head landed", "unmark", "Unmark \""+word+"\" as a complete word.", oc, DELETE_CODE, 9));
-
-    for(var j=word.length-1;j>=0;j--){
-      var prefix=word.slice(0,j), ch=word[j];
-      var parent = j===0 ? root : walkPath(root, prefix).node;
-      var node=parent.children[ch];
-      var childCount=Object.keys(node.children).length;
-      if(node.isEnd || childCount>0){
-        frames.push(frame(root, prefix+ch, "right head", "keep", "\""+(prefix+ch)+"\" is still needed — "+(node.isEnd?"it's the end of another word.":"it has other children.")+" Stop pruning.", oc, DELETE_CODE, 12));
-        break;
+  function opSearch(word){
+    word=(word||"").toLowerCase().replace(/[^a-z]/g,"");
+    if(!word) return {error:"Enter a word using letters a–z."};
+    var frames=[], cur='r';
+    frames.push(F(SRCH,[1,2], "Search \""+word+"\". Start at the root.", {cur:'r'}));
+    for(var k=0;k<word.length;k++){
+      var ch=word[k];
+      if(!nodes[cur].children[ch]){
+        frames.push(F(SRCH,4, "There's no '"+ch+"' edge from here — the path doesn't exist, so \""+word+"\" isn't in the trie.", {cur:cur, cls:one(cur,'miss')}));
+        return {frames:frames};
       }
-      delete parent.children[ch];
-      frames.push(frame(root, prefix, "left head landed", "prune", "\""+(prefix+ch)+"\" has no children and ends no word — prune it.", oc, DELETE_CODE, [13,14]));
+      cur=nodes[cur].children[ch];
+      frames.push(F(SRCH,[3,5], "Follow the '"+ch+"' edge to the next node.", {cur:cur, activeEdge:findParent(cur)+">"+cur, cls:one(cur,'active')}));
     }
-    return {frames:frames, state:{root:root, opsCount:oc}};
+    if(nodes[cur].end) frames.push(F(SRCH,6, "Reached the end and this node is marked end-of-word — \""+word+"\" is in the trie.", {cur:cur, cls:one(cur,'found')}));
+    else frames.push(F(SRCH,6, "The path exists, but this node isn't marked end-of-word — \""+word+"\" is only a prefix, not a stored word.", {cur:cur, cls:one(cur,'miss')}));
+    return {frames:frames};
   }
+  function findParent(id){ var p='?'; Object.keys(nodes).forEach(function(pid){ Object.keys(nodes[pid].children).forEach(function(c){ if(nodes[pid].children[c]===id) p=pid; }); }); return p; }
+  function one(k,v){ var o={}; o[k]=v; return o; }
 
-  function init(){
-    var root=makeRoot();
-    var state={root:root, opsCount:0};
-    var frames=[frame(root, "", "", "start", "An empty trie: just the root, representing the empty string.", 0, INSERT_CODE, 1)];
-    ["cat","car","care","dog"].forEach(function(w){
-      var r=opInsert(state, w);
-      frames=frames.concat(r.frames);
-      state=r.state;
-    });
-    return {state:state, frames:frames};
+  /* ---- player ---- */
+  var narrEl=document.getElementById("narr"), codeHost=document.getElementById("codeHost");
+  var countEl=document.getElementById("aCount"), playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false, base:null};
+  function applySnap(s){ nodes=s; }
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    applySnap(cloneSnap(f._snap));
+    render(f); narrEl.textContent=f.narr||"";
+    TreeAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function cloneSnap(s){ var o={}; Object.keys(s).forEach(function(id){ o[id]={ch:s[id].ch,end:s[id].end,children:{}}; Object.keys(s[id].children).forEach(function(c){o[id].children[c]=s[id].children[c];}); }); return o; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1600);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function drawEmpty(){ render({}); narrEl.textContent=(Object.keys(nodes).length>1)?"Current trie.":"Empty trie — just a root. Insert a word to grow it."; TreeAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; }
+
+  var OPS={
+    insert:{ name:"Insert word", val:true, desc:"Walk the word letter by letter from the root, creating a node for any letter that doesn't already branch here, then mark the final node as end-of-word. O(word length)." },
+    search:{ name:"Search word", val:true, desc:"Follow the word's letters from the root. Any missing edge means it's absent; if you reach the end, it counts only if that node is marked end-of-word." },
+    reset:{ name:"Reset", val:false, desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"), opdescEl=document.getElementById("opdesc");
+  var valWrap=document.getElementById("valWrap"), valF=document.getElementById("valF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ nodes={ r:{ch:null,children:{},end:false} }; nextId=0; stopP();
+      Object.keys(elNodes).forEach(function(id){ if(elNodes[id].parentNode)elNodes[id].parentNode.removeChild(elNodes[id]); }); elNodes={};
+      if(elPtr&&elPtr.parentNode){elPtr.parentNode.removeChild(elPtr);} elPtr=null;
+      drawEmpty(); panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Trie cleared. Insert a word to start."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    valWrap.hidden=false; panel.hidden=false; hint(""); valF.focus(); valF.select();
   }
-  function str(id){ return document.getElementById(id).value.trim().toLowerCase(); }
+  function runCurrent(){
+    if(!current) return;
+    var w=valF.value, r;
+    if(current==="insert") r=opInsert(w);
+    else if(current==="search") r=opSearch(w);
+    if(!r) return;
+    if(r.error){ stopP(); hint(r.error); return; }
+    hint("Use ◀ Back / Step ▶ to walk it letter by letter, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+  valF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
 
-  VizDS.init({
-    init: init,
-    ops: {
-      insert: { btn:"btnInsert", enterOn:"word", run: function(state){ return opInsert(state, str("word")); } },
-      search: { btn:"btnSearch", run: function(state){ return opSearch(state, str("word")); } },
-      prefix: { btn:"btnPrefix", run: function(state){ return opPrefix(state, str("word")); } },
-      del: { btn:"btnDelete", run: function(state){ return opDelete(state, str("word")); } }
-    },
-    renderExtra: function(f){ renderTrieTree(f.struct.root, f.struct.path, f.struct.role); },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  drawEmpty();
 })();
 </script>
 </body>

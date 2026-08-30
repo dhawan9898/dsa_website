@@ -100,13 +100,14 @@ A reworked structure is **one overview + N operation deep-dive pages + one playg
   - Stack, Queue, Circular Queue, Deque — each code-free overview + 2 operation pages + operation-first empty playground, on `ArrAnim`. A deliberate arc: Stack → Queue (reveals dead space) → Circular Queue (fixes it with `%MAX`) → Deque (generalizes both).
   - Doubly Linked List — overview + `insertion`/`deletion`/`traversal` + operation-first playground, on `LLAnim` **double mode** (`frame.double` → `[prev•|value|next•]` boxes, backward arrow on the bottom, forward on top; nodes carry `prev`/`prevCls`; pointer tags stack with a k-offset).
   - Hash Table — separate chaining as a multi-row `LLAnim` scene (each bucket a row: a `.ll-node.bucket` index box + its collision chain). Overview + `insert` + `search`(&delete) pages + operation-first playground (`key % M`, M=5).
+  - **Trees (Phase 2 complete):** built `shared/tree-anim.js` (`TreeAnim`) — binary tree renderer, in-order layout (x = in-order rank, y = depth), nodes glide on structural change and SVG edges follow via a measured rAF redraw (smooth AVL rotations). BST (overview + `insert` + `delete` + playground), AVL (overview + `rotations` + playground, full recursive `insertRec` with LL/RR/LR/RL), Priority Queue / min-heap (overview + `operations` + playground; array-backed complete tree, sift = value swaps, array line synced under the tree). **Trie** — multi-way (up to 26 children), so a **page-local** multi-way renderer (reuses `TreeAnim.injectCSS()` for control/code styling; 38px letter circles, green end-of-word ring, measured-edge follow): code-free overview (insert cat/car/can loop) + operation-first playground (Insert/Search word, a–z).
 - **Known gap:** the singly Linked List **playground** (`linked-list-visualizer.html`) is on `LLAnim` but still uses the older control layout — not yet empty-start / operation-first. Retrofit for consistency when convenient.
 
 ### Plan of action (remaining order)
 
 1. ~~Doubly Linked List, Hash Table~~ — **done.**
-2. **Trees: BST, AVL, Priority Queue (heap), Trie** — build a new **tree step-renderer** first (per-line node insert/rotate/heapify), the tree-world sibling of `LLAnim`/`ArrAnim`.
-3. **Graphs: Graph (BFS/DFS), Dijkstra, Topological Sort, Kruskal's MST, Union-Find** — a **graph step-renderer**.
+2. ~~Trees: BST, AVL, Priority Queue (heap), Trie~~ — **done** (on `shared/tree-anim.js` + a page-local renderer for Trie's multi-way branching).
+3. **Graphs: Graph (BFS/DFS), Dijkstra, Topological Sort, Kruskal's MST, Union-Find** — build a new **graph step-renderer** first (per-line node visit / edge relax / union), the graph-world sibling of `TreeAnim`.
 4. **Sorting (8) and Searching (3)** — an **array-bars** step-renderer (reuse `ArrAnim`'s slot model where it fits).
 5. **Foundations & techniques** — lighter touch; already conceptual.
 
