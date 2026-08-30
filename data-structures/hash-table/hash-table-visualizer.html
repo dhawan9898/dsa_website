@@ -9,9 +9,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
 <style>
-  .subrow-label{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px}
-  .subrow-label:first-child{margin-top:0}
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -20,230 +33,249 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="hash-table.html">&larr; Hash Table notes</a>
-      <p class="eyebrow">Hash &middot; Bucket &middot; Chain</p>
-      <h1>Hash&nbsp;Table&nbsp;Visualizer</h1>
+      <p class="eyebrow">Key &rarr; Bucket, In One Step</p>
+      <h1>Hash&nbsp;Table&nbsp;Playground</h1>
     </div>
-    <p class="note">Every key hashes to a bucket index; collisions just chain onto that bucket as a small linked list.</p>
+    <p class="note">Start empty. Each key is hashed to a bucket with <code>key % M</code>; keys that collide chain together in that bucket.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Hash Table pages">
+    <a href="hash-table.html">Overview</a>
+    <a href="hash-table-insert.html">Insert</a>
+    <a href="hash-table-search.html">Search &amp; Delete</a>
+    <a class="here" href="hash-table-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Operate on the table</h2><span class="sub">8 buckets &middot; text keys</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2><span class="sub">M = 5 buckets · hash is key % 5</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld"><span>Key</span><input type="text" id="key" value="fox" autocomplete="off" spellcheck="false"></label>
-        <button id="btnInsert" class="primary">Insert</button>
-        <button id="btnDelete">Delete</button>
-        <button id="btnSearch">Search</button>
+      <div class="opbtns">
+        <button class="opbtn" data-op="insert">Insert</button>
+        <button class="opbtn" data-op="search">Search</button>
+        <button class="opbtn" data-op="del">Delete</button>
+        <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <p class="hint" id="hint">Try keys that hash to the same bucket (their character codes sum to the same value mod 8) to see chaining.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow" id="valWrap" hidden><span>Key</span><input type="number" id="valF" value="12"></label>
+          <button class="primary" id="opRun">Run</button>
+        </div>
       </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">All 5 buckets are empty. Insert a key — try 12, then 17 and 22 to force collisions in bucket 2.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The table</h2><span class="sub">bucket index = hash(key) mod 8</span></div>
+    <div class="panel-head"><h2>The table</h2><span class="sub">each row is a bucket; its chain holds the keys that hashed there</span></div>
     <div class="panel-body">
-      <p class="subrow-label">Buckets — chain length per index</p>
-      <div class="scroller"><div class="array-row" id="bucketHost"></div></div>
-      <p class="subrow-label">Chain at the active bucket</p>
-      <div class="scroller"><div id="chainHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> bucket / key involved in this step</span>
-        <span class="key"><i class="swatch dim"></i> empty bucket</span>
-        <span class="key"><i class="swatch found"></i> search match</span>
+      <div class="ll-stage"><div id="htStage" class="ll-host"></div><svg class="ll-svg" id="htSvg"></svg></div>
+      <div class="ll-ctrls" id="playbar">
+        <button class="ll-cbtn" id="aBack">◀ Back</button>
+        <button class="ll-cbtn" id="aPlay">Play</button>
+        <button class="ll-cbtn" id="aStep">Step ▶</button>
+        <span class="ll-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key">dark box = a bucket index · light boxes = keys chained in that bucket</span>
+        <span class="key">green = a link just formed · red = the active bucket / node</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / deleteKey() / search()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the operation you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    With a good hash function spreading keys evenly across buckets, each chain stays short — close to
-    n/capacity keys — so insert, delete, and search are all O(1) on average. A bad hash function (or too
-    many keys for too few buckets) collapses that average toward O(n): one long chain to walk.
+    The hash turns a key straight into a bucket index — no searching — so with a good spread the average insert,
+    search and delete are all O(1). Collisions (two keys landing in one bucket) just extend that bucket's chain;
+    only a badly overloaded table degrades toward O(n).
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/ll-anim.js?v=4"></script>
 <script>
 (function(){
   "use strict";
-  var CAP=8;
-  function hash(key){ var s=0; for(var i=0;i<key.length;i++) s+=key.charCodeAt(i); return s%CAP; }
+  var M=5;
+  var buckets=[[],[],[],[],[]], nextId=0;
+  function mk(key){ return {id:"e"+(nextId++), key:key}; }
 
-  var INIT_CODE=[
-    "void initTable(HashTable *t) {",
-    "  for (int i = 0; i < CAP; i++) t->buckets[i] = NULL;",
-    "}"
-  ];
   var INSERT_CODE=[
-    "void insert(HashTable *t, const char *key) {",
-    "  unsigned idx = 0;",
-    "  for (int i = 0; key[i]; i++) idx += key[i];",
-    "  idx %= CAP;                                // hash(key) -> bucket index",
-    "  Node *cur = t->buckets[idx], *tail = NULL;",
-    "  while (cur) {",
-    "    if (strcmp(cur->key, key) == 0) return;    // already present",
-    "    tail = cur;",
-    "    cur = cur->next;",
-    "  }",
-    "  Node *node = malloc(sizeof(Node));",
-    "  strcpy(node->key, key);",
-    "  node->next = NULL;",
-    "  if (tail) tail->next = node;                 // chain onto the end",
-    "  else t->buckets[idx] = node;                 // first key in this bucket",
-    "}"
-  ];
-  var DELETE_CODE=[
-    "void deleteKey(HashTable *t, const char *key) {",
-    "  unsigned idx = 0;",
-    "  for (int i = 0; key[i]; i++) idx += key[i];",
-    "  idx %= CAP;",
-    "  Node *cur = t->buckets[idx], *prev = NULL;",
-    "  while (cur) {",
-    "    if (strcmp(cur->key, key) == 0) {          // found it",
-    "      if (prev) prev->next = cur->next;",
-    "      else t->buckets[idx] = cur->next;",
-    "      free(cur);",
-    "      return;",
-    "    }",
-    "    prev = cur;",
-    "    cur = cur->next;",
-    "  }",
-    "}"
-  ];
+    "void insert(HashTable *t, int key) {",
+    "  int i = key % M;              // hash to a bucket",
+    "  Node *n = malloc(sizeof(Node));",
+    "  n->key = key;",
+    "  n->next = t->bucket[i];       // prepend to chain",
+    "  t->bucket[i] = n;",
+    "}"];
   var SEARCH_CODE=[
-    "Node *search(HashTable *t, const char *key) {",
-    "  unsigned idx = 0;",
-    "  for (int i = 0; key[i]; i++) idx += key[i];",
-    "  idx %= CAP;",
-    "  for (Node *cur = t->buckets[idx]; cur; cur = cur->next)",
-    "    if (strcmp(cur->key, key) == 0) return cur;   // match",
-    "  return NULL;                                     // walked the whole chain, not found",
-    "}"
-  ];
+    "Node* search(HashTable *t, int key) {",
+    "  int i = key % M;              // same hash",
+    "  Node *cur = t->bucket[i];",
+    "  while (cur) {",
+    "    if (cur->key == key) return cur;",
+    "    cur = cur->next;",
+    "  }",
+    "  return NULL;                  // not in the table",
+    "}"];
+  var DELETE_CODE=[
+    "void delete(HashTable *t, int key) {",
+    "  int i = key % M;",
+    "  Node *cur = t->bucket[i], *prev = NULL;",
+    "  while (cur && cur->key != key) {",
+    "    prev = cur; cur = cur->next;",
+    "  }",
+    "  if (!cur) return;             // not found",
+    "  if (prev) prev->next = cur->next;",
+    "  else t->bucket[i] = cur->next;",
+    "  free(cur);",
+    "}"];
 
-  function bucketCells(buckets, activeIdx, activeRole){
-    return buckets.map(function(chain,i){
-      return { val: chain.length, role: i===activeIdx ? activeRole : (chain.length?"":"dim") };
-    });
+  function one(k,v){ var o={}; o[k]=v; return o; }
+  function htNodes(bk, o){
+    o=o||{}; var out=[];
+    for(var i=0;i<M;i++){
+      var chain=bk[i], firstId=chain.length?chain[0].id:"null";
+      var bn={id:"b"+i, val:i, row:i, col:0, cls:"bucket"+(o.activeBucket===i?" active":""),
+        next:(o.bucketLink&&o.bucketLink[i]!==undefined)?o.bucketLink[i]:firstId};
+      if(o.bucketLinkCls&&o.bucketLinkCls[i]) bn.nextCls=o.bucketLinkCls[i];
+      out.push(bn);
+      for(var j=0;j<chain.length;j++){
+        var e=chain[j], node={id:e.id, val:e.key, row:i, col:1+j};
+        node.next=(o.link&&o.link[e.id]!==undefined)?o.link[e.id]:(j<chain.length-1?chain[j+1].id:"null");
+        if(o.linkCls&&o.linkCls[e.id]) node.nextCls=o.linkCls[e.id];
+        if(o.active===e.id) node.cls=o.activeCls||"active";
+        else if(o.clsMap&&o.clsMap[e.id]) node.cls=o.clsMap[e.id];
+        if(o.ptrs&&o.ptrs[e.id]) node.ptrs=o.ptrs[e.id];
+        out.push(node);
+      }
+    }
+    return out;
   }
-  function chainStruct(chain, activeRole, activeKey, landedKey){
-    return {
-      dir:"v", nullEnd:true, emptyText:"Empty bucket",
-      linkLanded: chain.map(function(k){ return k===landedKey; }),
-      nodes: chain.map(function(k){ return {val:k, role:(k===activeKey?activeRole:"")}; })
-    };
+  function F(nodeArr, code, line, narr){ return {nodes:nodeArr, codeLines:code, code:line, narr:narr}; }
+  function withIdx(idx, chain){ return buckets.map(function(c,i){ return i===idx?chain:c; }); }
+
+  function opInsert(key){
+    var idx=((key%M)+M)%M, old=buckets[idx].slice(), X=mk(key), frames=[];
+    var oldHead=old.length?old[0].id:"null";
+    frames.push(F(htNodes(withIdx(idx,old),{activeBucket:idx}), INSERT_CODE,[0,1],
+      "Insert "+key+". Hash: i = "+key+" % "+M+" = "+idx+"."+(old.length?" Bucket "+idx+" isn't empty — a collision, which chaining handles fine.":"")));
+    var chainNew=[X].concat(old);
+    frames.push(F(htNodes(withIdx(idx,chainNew),{active:X.id, link:one(X.id,oldHead), linkCls:one(X.id,"formed"), bucketLink:one(idx,oldHead)}), INSERT_CODE,[2,4],
+      "Make a node for "+key+"; point its next at the bucket's current head"+(old.length?", "+old[0].key+".":" — NULL, the bucket was empty.")));
+    frames.push(F(htNodes(withIdx(idx,chainNew),{active:X.id, link:one(X.id,oldHead), linkCls:one(X.id,"formed"), bucketLink:one(idx,X.id), bucketLinkCls:one(idx,"formed")}), INSERT_CODE,5,
+      "Point bucket "+idx+" at the new node — it becomes the chain's head."));
+    frames.push(F(htNodes(withIdx(idx,chainNew),{}), INSERT_CODE,6, key+" is stored in bucket "+idx+". Insert is O(1) — just a prepend."));
+    buckets[idx]=chainNew; return {frames:frames};
+  }
+  function opSearch(key){
+    var idx=((key%M)+M)%M, chain=buckets[idx], frames=[];
+    frames.push(F(htNodes(buckets,{activeBucket:idx}), SEARCH_CODE,[0,1], "Search "+key+". Hash straight to bucket "+idx+" — no scanning other buckets."));
+    if(!chain.length){ frames.push(F(htNodes(buckets,{activeBucket:idx}), SEARCH_CODE,7, "Bucket "+idx+" is empty — "+key+" isn't in the table.")); return {frames:frames}; }
+    for(var j=0;j<chain.length;j++){
+      var e=chain[j], match=e.key===key;
+      frames.push(F(htNodes(buckets,{activeBucket:idx, active:e.id, activeCls:(match?"found":"active"), ptrs:one(e.id,["cur"])}), SEARCH_CODE,(match?4:3),
+        "Is "+e.key+" == "+key+"? "+(match?"Yes — found in bucket "+idx+".":"No.")));
+      if(match) return {frames:frames};
+      if(j<chain.length-1) frames.push(F(htNodes(buckets,{activeBucket:idx, active:chain[j+1].id, ptrs:one(chain[j+1].id,["cur"])}), SEARCH_CODE,5, "cur = cur->next."));
+    }
+    frames.push(F(htNodes(buckets,{activeBucket:idx}), SEARCH_CODE,7, key+" not found — walked bucket "+idx+"'s chain to NULL."));
+    return {frames:frames};
+  }
+  function opDelete(key){
+    var idx=((key%M)+M)%M, chain=buckets[idx].slice(), frames=[], pos=-1;
+    frames.push(F(htNodes(buckets,{activeBucket:idx}), DELETE_CODE,[0,1], "Delete "+key+". Hash to bucket "+idx+"."));
+    for(var j=0;j<chain.length;j++){
+      var e=chain[j], match=e.key===key;
+      frames.push(F(htNodes(buckets,{activeBucket:idx, active:e.id, activeCls:(match?"target":"active"), ptrs:one(e.id,["cur"])}), DELETE_CODE,3,
+        "Is "+e.key+" == "+key+"? "+(match?"Yes — remove this one.":"No, walk on.")));
+      if(match){ pos=j; break; }
+    }
+    if(pos<0){ frames.push(F(htNodes(buckets,{activeBucket:idx}), DELETE_CODE,6, key+" isn't in bucket "+idx+" — nothing to delete.")); return {frames:frames}; }
+    var target=chain[pos];
+    if(pos===0){
+      frames.push(F(htNodes(buckets,{activeBucket:idx, clsMap:one(target.id,"target"), bucketLink:one(idx,(chain[1]?chain[1].id:"null")), bucketLinkCls:one(idx,"active")}), DELETE_CODE,8,
+        "It's the chain head, so point bucket "+idx+" past it to "+(chain[1]?chain[1].key:"NULL")+"."));
+    } else {
+      var prev=chain[pos-1], succ=chain[pos+1];
+      frames.push(F(htNodes(buckets,{activeBucket:idx, clsMap:one(target.id,"target"), link:one(prev.id,(succ?succ.id:"null")), linkCls:one(prev.id,"active")}), DELETE_CODE,7,
+        prev.key+"'s next skips over "+target.key+" to "+(succ?succ.key:"NULL")+"."));
+    }
+    var after=chain.slice(0,pos).concat(chain.slice(pos+1));
+    frames.push(F(htNodes(withIdx(idx,after),{activeBucket:idx}), DELETE_CODE,9, "free "+key+". Removed from bucket "+idx+"."));
+    buckets[idx]=after; return {frames:frames};
   }
 
-  function opInsert(state, key){
-    if(!key) return {error:"Enter a key to insert."};
-    var oc=(state.opsCount||0)+1;
-    var buckets=state.buckets.map(function(b){ return b.slice(); });
-    var idx=hash(key), frames=[];
-    function frame(activeRole, phase, narr, code, codeLine, landedKey){
-      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key, landedKey)}, phase:phase, narr:narr, ops:oc, code:code, codeLine:codeLine};
-    }
-    frames.push(frame("", "hash", "Hash \""+key+"\": sum its character codes and take mod "+CAP+" — lands on bucket "+idx+".", INSERT_CODE, [1,3]));
-    if(buckets[idx].indexOf(key)>=0) return {error:"\""+key+"\" is already in the table (bucket "+idx+")."};
-    var collision=buckets[idx].length>0;
-    var oldTail=collision?buckets[idx][buckets[idx].length-1]:undefined;
-    if(collision){
-      frames.push(frame("", "collision", "Bucket "+idx+" already holds "+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+" — a collision. Walk the chain to its end before attaching \""+key+"\".", INSERT_CODE, [5,9]));
-    }
-    buckets[idx].push(key);
-    var landedKey=collision?oldTail:key;
-    frames.push(frame("left head landed", "inserted", "\""+key+"\" added to bucket "+idx+"."+(collision?" Chain length is now "+buckets[idx].length+".":""), INSERT_CODE, collision?13:14, landedKey));
-    return {frames:frames, state:{buckets:buckets, opsCount:oc}};
-  }
-  function opDelete(state, key){
-    if(!key) return {error:"Enter a key to delete."};
-    var oc=(state.opsCount||0)+1;
-    var buckets=state.buckets.map(function(b){ return b.slice(); });
-    var idx=hash(key), frames=[];
-    function frame(activeRole, phase, narr, code, codeLine, landedKey){
-      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key, landedKey)}, phase:phase, narr:narr, ops:oc, code:code, codeLine:codeLine};
-    }
-    frames.push(frame("", "hash", "Hash \""+key+"\": lands on bucket "+idx+". Walk that bucket's chain to find it.", DELETE_CODE, [1,4]));
-    var pos=buckets[idx].indexOf(key);
-    if(pos<0) return {error:"\""+key+"\" isn't in the table."};
-    frames.push(frame("left head", "found", "Found \""+key+"\" in bucket "+idx+".", DELETE_CODE, [5,6]));
-    var predKey=pos>0?buckets[idx][pos-1]:undefined;
-    buckets[idx].splice(pos,1);
-    frames.push(frame("", "deleted", "\""+key+"\" removed from bucket "+idx+"."+(buckets[idx].length ? (" "+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+" remain in the chain.") : " The bucket is now empty."), DELETE_CODE, pos>0?7:8, predKey));
-    return {frames:frames, state:{buckets:buckets, opsCount:oc}};
-  }
-  function opSearch(state, key){
-    if(!key) return {error:"Enter a key to search for."};
-    var oc=(state.opsCount||0)+1;
-    var buckets=state.buckets.map(function(b){ return b.slice(); });
-    var idx=hash(key), frames=[];
-    function frame(activeRole, phase, narr, code, codeLine){
-      return {struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx], activeRole, key)}, phase:phase, narr:narr, ops:oc, code:code, codeLine:codeLine};
-    }
-    frames.push(frame("", "hash", "Hash \""+key+"\": lands on bucket "+idx+".", SEARCH_CODE, [1,3]));
-    var found=buckets[idx].indexOf(key)>=0;
-    if(found) frames.push(frame("found", "found", "\""+key+"\" found in bucket "+idx+".", SEARCH_CODE, 5));
-    else frames.push(frame("", "not-found", "\""+key+"\" isn't in bucket "+idx+"'s chain ("+buckets[idx].length+" key"+(buckets[idx].length===1?"":"s")+") — not present.", SEARCH_CODE, 6));
-    return {frames:frames, state:{buckets:buckets, opsCount:oc}};
-  }
+  /* ---- page-local player ---- */
+  var stage=document.getElementById("htStage"), svg=document.getElementById("htSvg");
+  var narrEl=document.getElementById("narr"), codeHost=document.getElementById("codeHost");
+  var countEl=document.getElementById("aCount"), playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    LLAnim.render(stage, svg, f); narrEl.textContent=f.narr||"";
+    LLAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1500);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
 
-  function init(){
-    var state={buckets:[], opsCount:0};
-    for(var i=0;i<CAP;i++) state.buckets.push([]);
-    var frames=[{
-      struct:{buckets:bucketCells(state.buckets,undefined,""), chain:chainStruct([],"")},
-      phase:"start", narr:"Create the table: "+CAP+" empty buckets. A hash function will turn each key into one of these "+CAP+" indices.", ops:0, code:INIT_CODE, codeLine:1
-    }];
-    ["cat","dog","ax","sun"].forEach(function(k){
-      var r=opInsert(state, k);
-      frames=frames.concat(r.frames);
-      state=r.state;
-    });
-    return {state:state, frames:frames};
-  }
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function drawEmpty(){ P.frames=[F(htNodes(buckets,{}),null,null,"An empty hash table: 5 buckets, each pointing at NULL. Insert a key to hash it into one.")]; P.i=0; drawP(); }
 
-  VizDS.init({
-    init: init,
-    ops: {
-      insert: { btn:"btnInsert", enterOn:"key", run: function(state){ return opInsert(state, document.getElementById("key").value.trim()); } },
-      del: { btn:"btnDelete", run: function(state){ return opDelete(state, document.getElementById("key").value.trim()); } },
-      search: { btn:"btnSearch", run: function(state){ return opSearch(state, document.getElementById("key").value.trim()); } }
-    },
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("bucketHost"), frame.struct.buckets);
-      DSRender.sequence(document.getElementById("chainHost"), frame.struct.chain);
-    },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  var OPS={
+    insert:{ name:"Insert", val:true, desc:"Hash the key with key % M to get a bucket, then prepend a node onto that bucket's chain. O(1). Keys that hash to the same bucket collide and share the chain." },
+    search:{ name:"Search", val:true, desc:"Hash the key to its bucket, then walk only that bucket's chain comparing keys. On average O(1); worst case (everything in one bucket) O(n)." },
+    del:{ name:"Delete", val:true, desc:"Hash to the bucket, find the key in its chain, and unlink the node — exactly like deleting from a linked list, but only within one short chain." },
+    reset:{ name:"Reset", val:false, desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"), opdescEl=document.getElementById("opdesc");
+  var valWrap=document.getElementById("valWrap"), valF=document.getElementById("valF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ buckets=[[],[],[],[],[]]; nextId=0; stopP(); drawEmpty(); LLAnim.renderCode(codeHost,null,null);
+      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Table cleared — all buckets empty."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    valWrap.hidden=!meta.val; panel.hidden=false; hint("");
+    if(meta.val){ valF.focus(); valF.select(); }
+  }
+  function runCurrent(){
+    if(!current) return;
+    var v=Number(valF.value), r;
+    if(!isFinite(v)) return hint("Enter an integer key.");
+    if(current==="insert") r=opInsert(v);
+    else if(current==="search") r=opSearch(v);
+    else if(current==="del") r=opDelete(v);
+    if(!r) return;
+    if(r.error){ stopP(); hint(r.error); return; }
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+  valF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
+
+  drawEmpty();
 })();
 </script>
 </body>

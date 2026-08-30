@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
@@ -15,183 +33,145 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Hash &middot; Bucket &middot; Chain</p>
+      <p class="eyebrow">Key &rarr; Bucket, In One Step</p>
       <h1>Hash&nbsp;Table</h1>
     </div>
-    <p class="note">Turns a key into an array index with a hash function, giving average O(1) insert, delete, and search.</p>
+    <p class="note">A structure that turns a key straight into an array index with a bit of arithmetic — so lookups don't search, they jump.</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
-    <div class="panel-body notes">
-      <p>A hash table runs every key through a <b>hash function</b> that turns it into a number, then uses
-      that number (modulo the table's capacity) as an index straight into an array of <b>buckets</b>. If the
-      hash function spreads keys evenly, most buckets end up with zero or one entries, and looking a key up
-      is just "compute its hash, jump to that bucket" — O(1) on average, no searching required.</p>
-      <p>Two different keys can hash to the same bucket — a <b>collision</b> — and with enough keys, they
-      will. This visualizer resolves collisions with <b>chaining</b>: each bucket holds a small linked list,
-      and a colliding key just gets appended to it. (The alternative, <b>open addressing</b>, probes for a
-      different empty slot elsewhere in the array instead.)</p>
+  <nav class="subnav" aria-label="Hash Table pages">
+    <a class="here" href="hash-table.html">Overview</a>
+    <a href="hash-table-insert.html">Insert</a>
+    <a href="hash-table-search.html">Search &amp; Delete</a>
+    <a href="hash-table-visualizer.html">Playground</a>
+  </nav>
 
+  <section class="panel">
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
+    <div class="panel-body notes">
+      <p>Imagine a wall of numbered mailboxes. To file a letter you don't search — you run the person's name
+      through a rule that spits out a box number, and drop it straight in. To fetch it later you run the
+      <em>same</em> rule, get the <em>same</em> box number, and open that one box. No scanning the wall. A
+      <b>hash table</b> works exactly like that: it stores key–value pairs in an
+      <a href="../../foundations/arrays-memory/arrays-memory.html">array</a> of "buckets," and a
+      <b>hash function</b> is the rule that turns a key into a bucket index.</p>
+
+      <p>The simplest hash for integer keys is <code>key % M</code> (the remainder when dividing by the number of
+      buckets <code>M</code>) — it always lands in <code>0 … M-1</code>. Because computing the index is just
+      arithmetic — no searching — insert, look-up, and delete are all <b>O(1) on average</b>. That "jump
+      straight to it" speed is why hash tables are everywhere.</p>
+
+      <div class="callout">
+        <b>The catch: collisions.</b> Different keys can hash to the same bucket (17 and 22 both give
+        <code>% 5 = 2</code>). That's unavoidable — you have infinitely many possible keys and only <code>M</code>
+        buckets. So a hash table needs a plan for when two keys want the same box.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Handling collisions: chaining</h2><span class="sub">each bucket holds a little linked list</span></div>
+    <div class="panel-body notes">
+      <p>The approach shown here is <b>separate chaining</b>: each bucket isn't a single slot but the head of a
+      <a href="../linked-list/linked-list.html">linked list</a>. Keys that collide simply get added to that
+      bucket's chain. Insert prepends to the chain (O(1)); search and delete hash to the bucket and then walk
+      only <em>that one short chain</em>, never the others. Watch three keys collide into one bucket:</p>
+
+      <div class="scroller"><div id="demoStage" class="ll-host"></div><svg class="ll-svg" id="demoSvg"></svg></div>
+      <p class="narr" id="demoNarr" style="margin-top:12px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn each operation in depth</h2><span class="sub">the thought process, an animation, and the C</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="hash-table-insert.html">
+          <span class="num">01</span><h3>Insert</h3>
+          <p>Hash the key with <code>key % M</code>, then prepend a node to that bucket's chain — including when it collides.</p>
+          <span class="go">Open insert &rarr;</span>
+        </a>
+        <a class="dive-card" href="hash-table-search.html">
+          <span class="num">02</span><h3>Search &amp; Delete</h3>
+          <p>Hash to the one bucket, then walk just its chain to find — or unlink — the key.</p>
+          <span class="go">Open search &amp; delete &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">load factor, and where hash tables show up</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
         <tr><th>Operation</th><th>Average</th><th>Worst case</th></tr>
-        <tr><td>Insert</td><td><b>O(1)</b></td><td>O(n) — one giant chain</td></tr>
-        <tr><td>Delete</td><td><b>O(1)</b></td><td>O(n)</td></tr>
+        <tr><td>Insert</td><td><b>O(1)</b></td><td>O(n)</td></tr>
         <tr><td>Search</td><td><b>O(1)</b></td><td>O(n)</td></tr>
+        <tr><td>Delete</td><td><b>O(1)</b></td><td>O(n)</td></tr>
       </table>
 
-      <p>This is the mechanism behind every language's built-in dictionary/map/object type (Python's
-      <code>dict</code>, JavaScript's <code>Object</code>/<code>Map</code>, Java's <code>HashMap</code>) and
-      behind database indexes built for fast exact-match lookups.</p>
+      <p><b>Why two columns?</b> If the hash spreads keys evenly, every chain stays short and operations are
+      O(1). But if the hash is bad — or the table gets too full — keys pile into a few buckets and those chains
+      grow toward length n, dragging operations to O(n). The health metric is the <b>load factor</b> = items ÷
+      buckets; once it climbs past ~0.75, real implementations <b>resize</b> (allocate a bigger array and
+      re-hash everything) to keep chains short. That resize is occasionally expensive but rare, so the
+      <em>average</em> stays O(1).</p>
 
-      <p><b>Implementation:</b> the code panel below backs each bucket with <code>Node *buckets[CAP]</code> —
-      a fixed-size array of chain heads, no bucket array resizing. Insert walks a bucket's chain once to
-      reject a duplicate key, then attaches the new node at whichever end that walk stopped: the bucket
-      pointer itself if the chain was empty, or the old tail's <code>next</code> if it wasn't. Delete and
-      search both walk the same chain with <code>strcmp</code>, comparing whole keys rather than just their
-      hashes — the hash only narrows which bucket to search, it never confirms a match by itself.</p>
+      <p><b>Beyond chaining.</b> The other big collision strategy is <b>open addressing</b>: keep one item per
+      bucket, and on a collision probe forward to the next free slot. No chains, better cache behaviour, but
+      trickier deletes. Either way the headline idea is the same — hash the key to jump close to its home.</p>
 
-      <p><b>When it breaks:</b> this demo's hash function is deliberately weak — it just sums character
-      codes, so anagrams like <code>cat</code> and <code>act</code> hash identically and always collide,
-      exactly what the demo below shows. A real hash function needs to mix a key's bytes (position included)
-      so anagrams and near-duplicates scatter across buckets instead of piling into one. The other classic
-      failure is never resizing: even with a good hash function, a fixed <code>CAP</code> means chains grow
-      steadily longer as more keys arrive, and O(1) quietly degrades toward O(n). Production hash tables
-      watch the <em>load factor</em> (entries &divide; capacity) and, once it crosses some threshold, allocate
-      a bigger bucket array and rehash every existing key into it.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; inserts, a collision, then a delete</span></div>
-    <div class="panel-body">
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 4px">Buckets</p>
-      <div class="scroller"><div class="array-row" id="demoBuckets"></div></div>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Chain at the active bucket</p>
-      <div class="scroller"><div id="demoChain"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / deleteKey()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Where you'll meet hash tables.</b> They back dictionaries / maps / objects in nearly every language
+      (Python <code>dict</code>, JS objects, Java <code>HashMap</code>), database indexes, caches, de-duplication,
+      counting unique things, and set membership tests. When code needs "look this up by name, fast," it's
+      almost always a hash table underneath.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="hash-table-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="hash-table-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — insert a few keys and watch two of them collide into the same bucket.
+    Next: read Insert and Search &amp; Delete, then build a table in the playground — insert 12, 17, and 22 to
+    watch them collide and chain in bucket 2.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/ll-anim.js?v=4"></script>
 <script>
 (function(){
   "use strict";
-  var CAP=8;
-  function hash(key){ var s=0; for(var i=0;i<key.length;i++) s+=key.charCodeAt(i); return s%CAP; }
-
-  var INIT_CODE=[
-    "void initTable(HashTable *t) {",
-    "  for (int i = 0; i < CAP; i++) t->buckets[i] = NULL;",
-    "}"
-  ];
-  var INSERT_CODE=[
-    "void insert(HashTable *t, const char *key) {",
-    "  unsigned idx = 0;",
-    "  for (int i = 0; key[i]; i++) idx += key[i];",
-    "  idx %= CAP;                                // hash(key) -> bucket index",
-    "  Node *cur = t->buckets[idx], *tail = NULL;",
-    "  while (cur) {",
-    "    if (strcmp(cur->key, key) == 0) return;    // already present",
-    "    tail = cur;",
-    "    cur = cur->next;",
-    "  }",
-    "  Node *node = malloc(sizeof(Node));",
-    "  strcpy(node->key, key);",
-    "  node->next = NULL;",
-    "  if (tail) tail->next = node;                 // chain onto the end",
-    "  else t->buckets[idx] = node;                 // first key in this bucket",
-    "}"
-  ];
-  var DELETE_CODE=[
-    "void deleteKey(HashTable *t, const char *key) {",
-    "  unsigned idx = 0;",
-    "  for (int i = 0; key[i]; i++) idx += key[i];",
-    "  idx %= CAP;",
-    "  Node *cur = t->buckets[idx], *prev = NULL;",
-    "  while (cur) {",
-    "    if (strcmp(cur->key, key) == 0) {          // found it",
-    "      if (prev) prev->next = cur->next;",
-    "      else t->buckets[idx] = cur->next;",
-    "      free(cur);",
-    "      return;",
-    "    }",
-    "    prev = cur;",
-    "    cur = cur->next;",
-    "  }",
-    "}"
-  ];
-
-  function bucketCells(buckets, activeIdx, activeRole){
-    return buckets.map(function(chain,i){ return {val:chain.length, role:i===activeIdx?activeRole:(chain.length?"":"dim")}; });
+  var M=5;
+  function htNodes(bk, activeBucket){
+    var out=[];
+    for(var i=0;i<M;i++){
+      var chain=bk[i];
+      out.push({id:"b"+i, val:i, row:i, col:0, cls:"bucket"+(activeBucket===i?" active":""), next:chain.length?("k"+chain[0]):"null"});
+      for(var j=0;j<chain.length;j++){
+        out.push({id:"k"+chain[j], val:chain[j], row:i, col:1+j, next:(j<chain.length-1?("k"+chain[j+1]):"null"),
+          cls:(j===0 && activeBucket===i?"active":undefined)});
+      }
+    }
+    return out;
   }
-  function chainStruct(chain, activeRole, activeKey, landedKey){
-    return {dir:"v", nullEnd:true, emptyText:"Empty bucket",
-      linkLanded: chain.map(function(k){ return k===landedKey; }),
-      nodes:chain.map(function(k){ return {val:k, role:(k===activeKey?activeRole:"")}; })};
-  }
-
+  function F(bk, activeBucket, narr){ return {nodes:htNodes(bk,activeBucket), narr:narr}; }
   function scriptFrames(){
-    var buckets=[]; for(var i=0;i<CAP;i++) buckets.push([]);
-    var frames=[];
-    function push(idx, activeRole, key, narr, code, codeLine, landedKey){
-      frames.push({struct:{buckets:bucketCells(buckets, idx, "left head"), chain:chainStruct(buckets[idx]||[], activeRole, key, landedKey)}, narr:narr, code:code, codeLine:codeLine});
-    }
-    function insert(key){
-      var idx=hash(key);
-      push(idx,"",key, "Hash \""+key+"\" — lands on bucket "+idx+".", INSERT_CODE, [1,3]);
-      var collision=buckets[idx].length>0;
-      var oldTail=collision?buckets[idx][buckets[idx].length-1]:undefined;
-      if(collision) push(idx,"",key, "Collision — walk the chain at bucket "+idx+" to its end.", INSERT_CODE, [5,9]);
-      buckets[idx].push(key);
-      push(idx,"left head landed",key, "\""+key+"\" added to bucket "+idx+".", INSERT_CODE, collision?13:14, collision?oldTail:key);
-    }
-    function del(key){
-      var idx=hash(key);
-      push(idx,"left head",key, "Delete \""+key+"\" — found in bucket "+idx+".", DELETE_CODE, [5,6]);
-      var pos=buckets[idx].indexOf(key);
-      var predKey=pos>0?buckets[idx][pos-1]:undefined;
-      buckets[idx].splice(pos,1);
-      push(idx,"",key, "\""+key+"\" removed from bucket "+idx+".", DELETE_CODE, pos>0?7:8, predKey);
-    }
-    push(undefined,"","", "Create the table: "+CAP+" empty buckets.", INIT_CODE, 1);
-    insert("cat"); insert("dog"); insert("act"); insert("sun");
-    del("dog");
+    var bk=[[],[],[],[],[]], frames=[];
+    function ins(k){ var i=k%M; bk=bk.map(function(c,ci){return ci===i?[k].concat(c):c;});
+      frames.push(F(bk, i, "Insert "+k+": hash "+k+" % 5 = "+i+", prepend to bucket "+i+".")); }
+    ins(3); ins(12); ins(17); ins(22);
+    frames.push(F(bk, 2, "Bucket 2 now chains 22 → 17 → 12 — three collisions, all found by walking one short chain."));
     return frames;
   }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 1000,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoBuckets"), frame.struct.buckets);
-      DSRender.sequence(document.getElementById("demoChain"), frame.struct.chain);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  LLAnim.play({ host:document.getElementById("demoStage"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), frames:scriptFrames(), ms:1700 });
 })();
 </script>
 </body>
