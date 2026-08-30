@@ -112,5 +112,7 @@ A reworked structure is **one overview + N operation deep-dive pages + one playg
 3. ~~Graphs: Graph (BFS/DFS), Dijkstra, Topological Sort, Kruskal's MST, Union-Find~~ — **done** (on `shared/graph-anim.js` + `shared/forest-anim.js` for the union-find forest).
 4. ~~Sorting (8) and Searching (3)~~ — **done** (on `shared/bars-anim.js`; merge-sort keeps its self-contained visualizer, overview reworked).
 5. **Foundations & techniques** — lighter touch; already conceptual.
+   - **Foundations** (`big-o`, `pointers`, `recursion`, `arrays-memory`) — reviewed: already clear, multi-level concept pages on the older `ds-engine`/`DSRender`, and each already cross-links *forward* to the reworked topics that depend on it (and is linked *back* from them). By design they are single-page with no visualizer (per the Concept-page rules above), so the overview+playground split doesn't apply. Left as-is — no rework needed.
+   - **Techniques** (`n-queens` backtracking, `activity-selection` greedy) — still on `ds-engine`/`DSRender` with their own page-local board / Gantt-timeline renderers; functional and step-through, but not yet on the code-free-overview + operation-first-playground template. The one remaining optional rework if a fuller pass is wanted.
 
 Work one topic per PR, merged as it goes. When reworking, **copy the nearest already-reworked topic** (e.g. Stack) rather than an un-reworked one, and re-derive every `shared/*`/cross-page href for the folder depth.
