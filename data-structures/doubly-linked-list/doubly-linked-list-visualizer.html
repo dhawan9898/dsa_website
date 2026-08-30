@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 16px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+</style>
 </head>
 <body>
 
@@ -16,142 +34,123 @@
     <div>
       <a class="masthead-nav" href="doubly-linked-list.html">&larr; Doubly Linked List notes</a>
       <p class="eyebrow">Each Node Points Both Ways</p>
-      <h1>Doubly&nbsp;Linked&nbsp;List</h1>
+      <h1>Doubly&nbsp;Linked&nbsp;List&nbsp;Playground</h1>
     </div>
-    <p class="note">A tail pointer and prev links mean tail insertion is O(1) and deletion never needs a separate walk to find "the node before" — this visualizer picks whichever end is closer.</p>
+    <p class="note">Start empty and build it yourself. Every insert and delete wires <em>two</em> pointers — a next and a prev — at each spot.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Doubly Linked List pages">
+    <a href="doubly-linked-list.html">Overview</a>
+    <a href="doubly-linked-list-insertion.html">Insertion</a>
+    <a href="doubly-linked-list-deletion.html">Deletion</a>
+    <a href="doubly-linked-list-traversal.html">Traversal</a>
+    <a class="here" href="doubly-linked-list-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Operate on the list</h2><span class="sub">indices are 0-based</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2><span class="sub">indices are 0-based</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Value</span><input type="number" id="vHead" value="5"></label>
-        <button id="btnInsertHead" class="primary">Insert Head</button>
-        <label class="fld narrow"><span>Value</span><input type="number" id="vTail" value="5"></label>
-        <button id="btnInsertTail" class="primary">Insert Tail</button>
+      <div class="opbtns">
+        <button class="opbtn" data-op="insHead">Insert head</button>
+        <button class="opbtn" data-op="insTail">Insert tail</button>
+        <button class="opbtn" data-op="insAt">Insert at index</button>
+        <button class="opbtn" data-op="delAt">Delete at index</button>
+        <button class="opbtn" data-op="search">Search</button>
+        <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <div class="row" style="margin-top:10px">
-        <label class="fld narrow"><span>Index</span><input type="number" id="idxIns" value="1" min="0"></label>
-        <label class="fld narrow"><span>Value</span><input type="number" id="valIns" value="5"></label>
-        <button id="btnInsertIndex" class="primary">Insert at Index</button>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow" id="idxWrap" hidden><span>Index</span><input type="number" id="idxF" value="1" min="0"></label>
+          <label class="fld narrow" id="valWrap" hidden><span>Value</span><input type="number" id="valF" value="5"></label>
+          <button class="primary" id="opRun">Run</button>
+        </div>
       </div>
-      <div class="row" style="margin-top:10px">
-        <label class="fld narrow"><span>Index</span><input type="number" id="idxDel" value="0" min="0"></label>
-        <button id="btnDelete">Delete at Index</button>
-        <label class="fld narrow"><span>Value</span><input type="number" id="searchVal" value="7"></label>
-        <button id="btnSearch">Search</button>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <label class="fld narrow"><span>Index</span><input type="number" id="idxUpd" value="0" min="0"></label>
-        <label class="fld narrow"><span>New value</span><input type="number" id="valUpd" value="99"></label>
-        <button id="btnUpdate">Update at Index</button>
-      </div>
-      <p class="hint" id="hint">Try Insert/Delete at an index near the end — watch it walk backward from TAIL instead of forward from HEAD.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">The list is empty. Click <b>Insert head</b> or <b>Insert tail</b> to add your first node.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-head"><h2>The list</h2><span class="sub">HEAD on the left, TAIL on the right</span></div>
     <div class="panel-body">
-      <div class="scroller"><div id="listHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch right"></i> node being walked past</span>
-        <span class="key"><i class="swatch left"></i> node being inserted / deleted / updated / matched</span>
+      <div class="ll-stage"><div id="listStage" class="ll-host"></div><svg class="ll-svg" id="listSvg"></svg></div>
+      <div class="ll-ctrls" id="playbar">
+        <button class="ll-cbtn" id="aBack">◀ Back</button>
+        <button class="ll-cbtn" id="aPlay">Play</button>
+        <button class="ll-cbtn" id="aStep">Step ▶</button>
+        <span class="ll-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key">top arrow = <code>next</code> (forward) · bottom arrow = <code>prev</code> (backward)</span>
+        <span class="key">green = a link just formed · red = a link being changed</span>
+        <span class="key">HEAD is the first node · TAIL is the last</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertHead() / insertTail() / insertAt() / deleteAt() / search() / updateAt()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the operation you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Two extra pointers per node (prev, and a maintained tail) buy real advantages: O(1) tail insertion,
-    O(1) deletion once you've found the node (no trailing "previous" pointer needed), and — as this
-    visualizer shows — a choice of which end to walk from when reaching an arbitrary index.
+    The prev pointers cost one extra link per node, but they buy a lot: an O(1) tail insert, deleting a node in
+    O(1) once you're standing on it (no walk to find the one before it), and walking the list backward.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/ll-anim.js?v=3"></script>
 <script>
 (function(){
   "use strict";
+  var nodes=[], nextId=0;
+  function mk(v){ return {id:nextId++, val:v}; }
 
-  var INIT_CODE=[
-    "void initList(DList *l) {",
-    "  l->head = l->tail = NULL;",
-    "}"
-  ];
-  var INSERT_HEAD_CODE=[
+  var INS_HEAD=[
     "void insertHead(DList *l, int val) {",
     "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->prev = NULL; n->next = l->head;",
-    "  if (l->head) l->head->prev = n;",
-    "  else l->tail = n;",
+    "  n->val = val; n->prev = NULL;",
+    "  n->next = l->head;               // forward link",
+    "  if (l->head) l->head->prev = n;  // back link",
     "  l->head = n;",
-    "}"
-  ];
-  var INSERT_TAIL_CODE=[
+    "}"];
+  var INS_TAIL=[
     "void insertTail(DList *l, int val) {",
     "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->next = NULL; n->prev = l->tail;",
-    "  if (l->tail) l->tail->next = n;",
-    "  else l->head = n;",
+    "  n->val = val; n->next = NULL;",
+    "  n->prev = l->tail;               // back link",
+    "  if (l->tail) l->tail->next = n;  // forward link",
     "  l->tail = n;",
-    "}"
-  ];
-  var INSERT_INDEX_CODE=[
-    "void insertAt(DList *l, int idx, int val) {",
-    "  if (idx == 0) { insertHead(l, val); return; }",
+    "}"];
+  var INS_AT=[
+    "void insertAt(DList *l, int i, int val) {",
     "  Node *cur = l->head;",
-    "  for (int i = 0; i < idx - 1; i++) cur = cur->next;",
+    "  for (int k=0; k<i; k++) cur = cur->next;  // node at i",
+    "  Node *p = cur->prev;             // predecessor",
     "  Node *n = malloc(sizeof(Node));",
     "  n->val = val;",
-    "  n->prev = cur; n->next = cur->next;",
-    "  if (cur->next) cur->next->prev = n;",
-    "  else l->tail = n;",
-    "  cur->next = n;",
-    "}"
-  ];
-  var DELETE_INDEX_CODE=[
-    "void deleteAt(DList *l, int idx) {",
-    "  Node *target = l->head;",
-    "  for (int i = 0; i < idx; i++) target = target->next;",
-    "  if (target->prev) target->prev->next = target->next;",
-    "  else l->head = target->next;",
-    "  if (target->next) target->next->prev = target->prev;",
-    "  else l->tail = target->prev;",
-    "  free(target);",
-    "}"
-  ];
-  var SEARCH_CODE=[
+    "  n->next = cur; n->prev = p;      // link new node both ways",
+    "  p->next = n; cur->prev = n;      // neighbors point to it",
+    "}"];
+  var DEL_AT=[
+    "void deleteAt(DList *l, int i) {",
+    "  Node *cur = l->head;",
+    "  for (int k=0; k<i; k++) cur = cur->next;  // the victim",
+    "  if (cur->prev) cur->prev->next = cur->next;",
+    "  else l->head = cur->next;        // was head",
+    "  if (cur->next) cur->next->prev = cur->prev;",
+    "  else l->tail = cur->prev;        // was tail",
+    "  free(cur);",
+    "}"];
+  var SEARCH=[
     "Node* search(DList *l, int val) {",
     "  Node *cur = l->head;",
     "  while (cur) {",
@@ -159,200 +158,167 @@
     "    cur = cur->next;",
     "  }",
     "  return NULL;",
-    "}"
-  ];
-  var UPDATE_CODE=[
-    "void updateAt(DList *l, int idx, int val) {",
-    "  Node *cur = l->head;",
-    "  for (int i = 0; i < idx; i++) cur = cur->next;",
-    "  cur->val = val;",
-    "}"
-  ];
+    "}"];
 
-  function makeNode(val,id){ return {id:id, val:val, prev:null, next:null}; }
-  function size(state){ var n=0,cur=state.head; while(cur){n++;cur=cur.next;} return n; }
-
-  function toStruct(state, activeId, activeRole, linkLandedId){
-    var nodes=[], linkActive=[], linkLanded=[], cur=state.head, i=0, n=size(state);
-    while(cur){
-      var badges=[]; if(i===0) badges.push("HEAD"); if(i===n-1) badges.push("TAIL");
-      nodes.push({val:cur.val, role:(cur.id===activeId?activeRole:""), ptr:badges.join("/")});
-      linkActive.push(cur.id===activeId || (cur.next && cur.next.id===activeId));
-      linkLanded.push(cur.id===linkLandedId || (cur.next && cur.next.id===linkLandedId));
-      cur=cur.next; i++;
-    }
-    return {dir:"h", nullEnd:true, double:true, emptyText:"Empty list — HEAD and TAIL are both NULL", nodes:nodes, linkActive:linkActive, linkLanded:linkLanded};
-  }
-  function frame(state, activeId, activeRole, phase, narr, ops, code, codeLine, linkLandedId){
-    return {struct:toStruct(state,activeId,activeRole,linkLandedId), phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
-  }
-
-  function opInsertHead(state,val){
-    var oc=(state.opsCount||0)+1, nextId=state.nextId||0, frames=[];
-    frames.push(frame(state, undefined, "", "insert-head-start", "Insert "+val+" at the head — O(1): rewire two pointers, no walk.", oc, INSERT_HEAD_CODE, [1,4]));
-    var node=makeNode(val,nextId++);
-    node.next=state.head;
-    if(state.head) state.head.prev=node;
-    var newTail=state.tail||node;
-    var newState={head:node, tail:newTail, opsCount:oc, nextId:nextId};
-    frames.push(frame(newState, node.id, "left head landed", "inserted", val+" is the new head.", oc, INSERT_HEAD_CODE, 5, node.id));
-    return {frames:frames, state:newState};
-  }
-  function opInsertTail(state,val){
-    var oc=(state.opsCount||0)+1, nextId=state.nextId||0, frames=[];
-    frames.push(frame(state, undefined, "", "insert-tail-start", "Insert "+val+" at the tail — O(1) here, because a tail pointer is maintained. No walk needed.", oc, INSERT_TAIL_CODE, [1,4]));
-    var node=makeNode(val,nextId++);
-    var oldTail=state.tail;
-    node.prev=oldTail;
-    if(oldTail) oldTail.next=node;
-    var newHead=state.head||node;
-    var newState={head:newHead, tail:node, opsCount:oc, nextId:nextId};
-    frames.push(frame(newState, node.id, "left head landed", "inserted", val+" is the new tail.", oc, INSERT_TAIL_CODE, 5, oldTail?oldTail.id:node.id));
-    return {frames:frames, state:newState};
-  }
-  function opInsertAtIndex(state,val,idx){
-    var n=size(state);
-    if(!isFinite(idx)||idx<0||idx>n) return {error:"Index must be between 0 and "+n+"."};
-    if(idx===0) return opInsertHead(state,val);
-    if(idx===n) return opInsertTail(state,val);
-    var oc=(state.opsCount||0)+1, nextId=state.nextId||0, frames=[];
-    var fwd=idx-1, back=n-1-idx, before;
-    if(fwd<=back){
-      frames.push(frame(state, state.head.id, "right", "insert-index-start",
-        "Insert "+val+" at index "+idx+": "+fwd+" step"+(fwd===1?"":"s")+" forward from HEAD is closer than "+back+" back from TAIL.", oc, INSERT_INDEX_CODE, [2,3]));
-      var cur=state.head, i=0;
-      while(i<fwd){ cur=cur.next; i++; frames.push(frame(state,cur.id,"right","walk","Step forward to index "+i+" ("+cur.val+").",oc, INSERT_INDEX_CODE, 3)); }
-      before=cur;
-    } else {
-      frames.push(frame(state, state.tail.id, "right", "insert-index-start",
-        "Insert "+val+" at index "+idx+": "+back+" step"+(back===1?"":"s")+" backward from TAIL is closer than "+fwd+" forward from HEAD.", oc, INSERT_INDEX_CODE, [2,3]));
-      var curB=state.tail, iB=n-1;
-      while(iB>idx){ curB=curB.prev; iB--; frames.push(frame(state,curB.id,"right","walk","Step backward to index "+iB+" ("+curB.val+").",oc, INSERT_INDEX_CODE, 3)); }
-      before=curB.prev;
-    }
-    var node=makeNode(val,nextId++);
-    node.prev=before; node.next=before.next;
-    before.next.prev=node; before.next=node;
-    var newState={head:state.head, tail:state.tail, opsCount:oc, nextId:nextId};
-    frames.push(frame(newState, node.id, "left head landed", "inserted", val+" now sits between "+before.val+" and "+node.next.val+".", oc, INSERT_INDEX_CODE, [4,9], before.id));
-    return {frames:frames, state:newState};
-  }
-  function opDeleteAtIndex(state, idx){
-    var n=size(state);
-    if(!n) return {error:"The list is empty — nothing to delete."};
-    if(!isFinite(idx)||idx<0||idx>=n) return {error:"Index must be between 0 and "+(n-1)+"."};
-    var oc=(state.opsCount||0)+1, frames=[];
-    if(idx===0){
-      frames.push(frame(state, state.head.id, "left head", "delete-start", "Delete index 0, the head.", oc, DELETE_INDEX_CODE, [1,4]));
-      var v=state.head.val, newHead=state.head.next;
-      if(newHead) newHead.prev=null;
-      var newState={head:newHead, tail:newHead?state.tail:null, opsCount:oc, nextId:state.nextId};
-      frames.push(frame(newState, undefined, "", "deleted", v+" removed. "+(newHead?("New head is "+newHead.val+"."):"The list is now empty."), oc, DELETE_INDEX_CODE, 7));
-      return {frames:frames, state:newState};
-    }
-    if(idx===n-1){
-      frames.push(frame(state, state.tail.id, "left head", "delete-start", "Delete index "+idx+", the tail — O(1), no walk needed.", oc, DELETE_INDEX_CODE, [1,6]));
-      var v2=state.tail.val, newTail=state.tail.prev;
-      if(newTail) newTail.next=null;
-      var newState2={head:newTail?state.head:null, tail:newTail, opsCount:oc, nextId:state.nextId};
-      frames.push(frame(newState2, undefined, "", "deleted", v2+" removed. "+(newTail?("New tail is "+newTail.val+"."):"The list is now empty."), oc, DELETE_INDEX_CODE, 7));
-      return {frames:frames, state:newState2};
-    }
-    var fwd=idx, back=n-1-idx, target;
-    if(fwd<=back){
-      frames.push(frame(state, state.head.id, "right", "delete-start", "Delete index "+idx+": walk forward from HEAD.", oc, DELETE_INDEX_CODE, [1,2]));
-      var cur=state.head, i=0;
-      while(i<idx){ cur=cur.next; i++; frames.push(frame(state,cur.id,"right","walk","Step forward to index "+i+" ("+cur.val+").",oc, DELETE_INDEX_CODE, 2)); }
-      target=cur;
-    } else {
-      frames.push(frame(state, state.tail.id, "right", "delete-start", "Delete index "+idx+": walk backward from TAIL.", oc, DELETE_INDEX_CODE, [1,2]));
-      var curB=state.tail, iB=n-1;
-      while(iB>idx){ curB=curB.prev; iB--; frames.push(frame(state,curB.id,"right","walk","Step backward to index "+iB+" ("+curB.val+").",oc, DELETE_INDEX_CODE, 2)); }
-      target=curB;
-    }
-    frames.push(frame(state, target.id, "left head", "delete-target",
-      "Found index "+idx+": "+target.val+". Its own prev and next pointers are enough to splice it out — no trailing 'previous' node needed.", oc, DELETE_INDEX_CODE, [3,6]));
-    var p=target.prev, nx=target.next;
-    p.next=nx; nx.prev=p;
-    var newState3={head:state.head, tail:state.tail, opsCount:oc, nextId:state.nextId};
-    frames.push(frame(newState3, undefined, "", "deleted", target.val+" removed. "+p.val+" and "+nx.val+" now link directly to each other.", oc, DELETE_INDEX_CODE, 7, p.id));
-    return {frames:frames, state:newState3};
-  }
-  function opSearch(state, val){
-    if(!state.head) return {error:"The list is empty — nothing to search."};
-    var oc=(state.opsCount||0)+1, frames=[];
-    var cur=state.head, i=0, found=false;
-    while(cur){
-      var isMatch=cur.val===val;
-      frames.push(frame(state, cur.id, "left head", isMatch?"found":"compare",
-        "Check index "+i+": is "+cur.val+" equal to "+val+"? "+(isMatch?"Yes — found it.":"No — follow next."), oc, SEARCH_CODE, isMatch?3:[2,4]));
-      if(isMatch){ found=true; break; }
-      cur=cur.next; i++;
-    }
-    if(!found) frames.push(frame(state, undefined, "", "not-found", val+" was never found — reached NULL.", oc, SEARCH_CODE, 6));
-    return {frames:frames, state:{head:state.head, tail:state.tail, opsCount:oc, nextId:state.nextId}};
-  }
-  function opUpdateAtIndex(state, idx, val){
-    var n=size(state);
-    if(!n) return {error:"The list is empty — nothing to update."};
-    if(!isFinite(idx)||idx<0||idx>=n) return {error:"Index must be between 0 and "+(n-1)+"."};
-    var oc=(state.opsCount||0)+1, frames=[];
-    var fwd=idx, back=n-1-idx, cur;
-    if(fwd<=back){
-      frames.push(frame(state, state.head.id, "right", "walk-start", "Walk forward from HEAD to index "+idx+".", oc, UPDATE_CODE, [1,2]));
-      cur=state.head; var i=0;
-      while(i<idx){ cur=cur.next; i++; frames.push(frame(state,cur.id,"right","walk","Step forward to index "+i+" ("+cur.val+").",oc, UPDATE_CODE, 2)); }
-    } else {
-      frames.push(frame(state, state.tail.id, "right", "walk-start", "Walk backward from TAIL to index "+idx+".", oc, UPDATE_CODE, [1,2]));
-      cur=state.tail; var iB=n-1;
-      while(iB>idx){ cur=cur.prev; iB--; frames.push(frame(state,cur.id,"right","walk","Step backward to index "+iB+" ("+cur.val+").",oc, UPDATE_CODE, 2)); }
-    }
-    var oldVal=cur.val;
-    cur.val=val;
-    frames.push(frame(state, cur.id, "left head landed", "updated", "Index "+idx+" changes from "+oldVal+" to "+val+".", oc, UPDATE_CODE, 3));
-    return {frames:frames, state:{head:state.head, tail:state.tail, opsCount:oc, nextId:state.nextId}};
-  }
-
-  function init(){
-    var state={head:null, tail:null, opsCount:0, nextId:0};
-    var frames=[frame(state, undefined, "", "start",
-      "Create the list: head and tail both start NULL.", 0, INIT_CODE, 1)];
-    [10,25,7].forEach(function(v){
-      var r=opInsertTail(state, v);
-      frames=frames.concat(r.frames);
-      state=r.state;
+  function one(k,v){ var o={}; o[k]=v; return o; }
+  function dn(id,val,row,col,next,prev,cls,o){ o=o||{};
+    return {id:id,val:val,row:row,col:col,next:next,prev:prev,cls:cls,nextCls:o.next,prevCls:o.prev,ptrs:o.ptrs}; }
+  function dnodes(list,o){
+    o=o||{};
+    var headId=o.headId!==undefined?o.headId:(list[0]&&list[0].id);
+    var tailId=o.tailId!==undefined?o.tailId:(list[list.length-1]&&list[list.length-1].id);
+    return list.map(function(n,i){
+      var node={id:n.id,val:n.val,row:0,col:i};
+      node.next=(o.link&&o.link[n.id]!==undefined)?o.link[n.id]:(i<list.length-1?list[i+1].id:"null");
+      node.prev=(o.plink&&o.plink[n.id]!==undefined)?o.plink[n.id]:(i>0?list[i-1].id:"null");
+      if(o.linkCls&&o.linkCls[n.id]) node.nextCls=o.linkCls[n.id];
+      if(o.plinkCls&&o.plinkCls[n.id]) node.prevCls=o.plinkCls[n.id];
+      var p=[]; if(n.id===headId)p.push("HEAD"); if(n.id===tailId)p.push("TAIL");
+      if(o.ptrs&&o.ptrs[n.id]) p=p.concat(o.ptrs[n.id]);
+      if(p.length) node.ptrs=p;
+      if(o.active===n.id) node.cls=o.activeCls||"active";
+      else if(o.clsMap&&o.clsMap[n.id]) node.cls=o.clsMap[n.id];
+      return node;
     });
-    return {state:state, frames:frames};
   }
-  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+  function F(nodeArr, code, line, narr){ return {double:true, nodes:nodeArr, codeLines:code, code:line, narr:narr}; }
 
-  VizDS.init({
-    init: init,
-    ops: {
-      insertHead: { btn:"btnInsertHead", enterOn:"vHead", run: function(state){
-        var v=num("vHead"); if(!isFinite(v)) return {error:"Enter a value."}; return opInsertHead(state,v);
-      }},
-      insertTail: { btn:"btnInsertTail", enterOn:"vTail", run: function(state){
-        var v=num("vTail"); if(!isFinite(v)) return {error:"Enter a value."}; return opInsertTail(state,v);
-      }},
-      insertIndex: { btn:"btnInsertIndex", run: function(state){
-        var v=num("valIns"), idx=num("idxIns");
-        if(!isFinite(v)) return {error:"Enter a value."};
-        return opInsertAtIndex(state,v,idx);
-      }},
-      del: { btn:"btnDelete", run: function(state){ return opDeleteAtIndex(state, num("idxDel")); } },
-      search: { btn:"btnSearch", enterOn:"searchVal", run: function(state){
-        var v=num("searchVal"); if(!isFinite(v)) return {error:"Enter a value to search for."}; return opSearch(state,v);
-      }},
-      update: { btn:"btnUpdate", run: function(state){
-        var v=num("valUpd"), idx=num("idxUpd");
-        if(!isFinite(v)) return {error:"Enter a new value."};
-        return opUpdateAtIndex(state, idx, v);
-      }}
-    },
-    renderExtra: function(frame){ DSRender.sequence(document.getElementById("listHost"), frame.struct); },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  function opInsertHead(val){
+    var before=nodes.slice(), X=mk(val), h=before[0], frames=[];
+    frames.push(F(dnodes(before,{}), INS_HEAD,0,"Insert "+val+" at the head."));
+    frames.push(F(dnodes(before,{}).concat([dn(X.id,null,1,0,undefined,undefined,'active')]), INS_HEAD,1,"malloc a new empty node."));
+    frames.push(F(dnodes(before,{}).concat([dn(X.id,val,1,0,undefined,'null','active')]), INS_HEAD,2,"Store "+val+"; its prev is NULL — it will be the first node."));
+    frames.push(F(dnodes(before,{}).concat([dn(X.id,val,1,0,(h?h.id:'null'),'null','active',{next:'formed'})]), INS_HEAD,3, h?("Point the new node's next forward at the old head, "+h.val+"."):"List was empty, so next is NULL too."));
+    if(h) frames.push(F(dnodes(before,{plink:one(h.id,X.id),plinkCls:one(h.id,'formed')}).concat([dn(X.id,val,1,0,h.id,'null','active',{next:'formed'})]), INS_HEAD,4,"Point the old head's prev BACK at the new node — both links now connect them."));
+    var after=[X].concat(before);
+    frames.push(F(dnodes(after,{active:X.id}), INS_HEAD,5, val+" is the new head."));
+    frames.push(F(dnodes(after,{}), INS_HEAD,6,"Done. Head insertion is O(1)."));
+    nodes=after; return {frames:frames};
+  }
+  function opInsertTail(val){
+    var before=nodes.slice(), X=mk(val), t=before[before.length-1], col=before.length, frames=[];
+    frames.push(F(dnodes(before,{}), INS_TAIL,0,"Insert "+val+" at the tail. With a TAIL pointer there's no walk — O(1)."));
+    frames.push(F(dnodes(before,{}).concat([dn(X.id,null,1,col,undefined,undefined,'active')]), INS_TAIL,1,"malloc a new empty node."));
+    frames.push(F(dnodes(before,{}).concat([dn(X.id,val,1,col,'null',undefined,'active',{next:'formed'})]), INS_TAIL,2,"Store "+val+"; its next is NULL — it will be the last node."));
+    if(t){
+      frames.push(F(dnodes(before,{}).concat([dn(X.id,val,1,col,'null',t.id,'active',{next:'formed',prev:'formed'})]), INS_TAIL,3,"Point the new node's prev BACK at the old tail, "+t.val+"."));
+      frames.push(F(dnodes(before,{link:one(t.id,X.id),linkCls:one(t.id,'formed')}).concat([dn(X.id,val,1,col,'null',t.id,'active',{next:'formed',prev:'formed'})]), INS_TAIL,4,"Point the old tail's next forward at the new node."));
+    }
+    var after=before.concat([X]);
+    frames.push(F(dnodes(after,{active:X.id}), INS_TAIL,5, val+" is the new tail."));
+    frames.push(F(dnodes(after,{}), INS_TAIL,6,"Done — O(1). That's the DLL's edge over a singly list, which must walk to the tail."));
+    nodes=after; return {frames:frames};
+  }
+  function opInsertAt(idx,val){
+    var len=nodes.length;
+    if(!isFinite(idx)||idx<0||idx>len) return {error:"Index must be between 0 and "+len+" for insert."};
+    if(idx===0) return opInsertHead(val);
+    if(idx===len) return opInsertTail(val);
+    var before=nodes.slice(), X=mk(val), succ=before[idx], pred=before[idx-1], frames=[];
+    frames.push(F(dnodes(before,{ptrs:one(before[0].id,['cur']),active:before[0].id}), INS_AT,1,"Start cur at the head."));
+    for(var k=1;k<=idx;k++) frames.push(F(dnodes(before,{ptrs:one(before[k].id,['cur']),active:before[k].id}), INS_AT,2,"Step cur to index "+k+" ("+before[k].val+")."+(k===idx?" The new node goes just before it.":"")));
+    frames.push(F(dnodes(before,{ptrs:one(succ.id,['cur']),clsMap:one(pred.id,'target')}), INS_AT,3,"p = cur->prev is the predecessor, "+pred.val+"."));
+    frames.push(F(dnodes(before,{ptrs:one(succ.id,['cur']),clsMap:one(pred.id,'target')}).concat([dn(X.id,val,1,idx-0.5,undefined,undefined,'active')]), INS_AT,[4,5],"malloc a new node and store "+val+"."));
+    frames.push(F(dnodes(before,{ptrs:one(succ.id,['cur']),clsMap:one(pred.id,'target')}).concat([dn(X.id,val,1,idx-0.5,succ.id,pred.id,'active',{next:'formed',prev:'formed'})]), INS_AT,6,"Link the new node BOTH ways: next → "+succ.val+", prev → "+pred.val+"."));
+    frames.push(F(dnodes(before,{ptrs:one(succ.id,['cur']),clsMap:one(pred.id,'target'),link:one(pred.id,X.id),plink:one(succ.id,X.id),linkCls:one(pred.id,'active'),plinkCls:one(succ.id,'active')}).concat([dn(X.id,val,1,idx-0.5,succ.id,pred.id,'active',{next:'formed',prev:'formed'})]), INS_AT,7,"Now the neighbors point at it: "+pred.val+"'s next and "+succ.val+"'s prev both → the new node."));
+    var after=before.slice(0,idx).concat([X],before.slice(idx));
+    frames.push(F(dnodes(after,{active:X.id}), INS_AT,8, val+" is spliced in at index "+idx+". Four pointers wired: O(n) to walk, O(1) to splice."));
+    nodes=after; return {frames:frames};
+  }
+  function opDeleteAt(idx){
+    var len=nodes.length;
+    if(!len) return {error:"The list is empty — nothing to delete."};
+    if(!isFinite(idx)||idx<0||idx>=len) return {error:"Index must be between 0 and "+(len-1)+" for delete."};
+    var before=nodes.slice(), target=before[idx], pred=before[idx-1], succ=before[idx+1], frames=[];
+    frames.push(F(dnodes(before,{ptrs:one(before[0].id,['cur']),active:before[0].id}), DEL_AT,1,"Start cur at the head."));
+    for(var k=1;k<=idx;k++) frames.push(F(dnodes(before,{ptrs:one(before[k].id,['cur']),active:before[k].id}), DEL_AT,2,"Step cur to index "+k+" ("+before[k].val+")."+(k===idx?" This is the victim.":"")));
+    var o1={ptrs:one(target.id,['cur']),clsMap:one(target.id,'target')};
+    if(pred){ o1.link=one(pred.id,(succ?succ.id:'null')); o1.linkCls=one(pred.id,'active'); } else { o1.headId=(succ?succ.id:null); }
+    frames.push(F(dnodes(before,o1), DEL_AT,(pred?3:4), pred?("cur->prev ("+pred.val+")'s next skips over the victim to "+(succ?succ.val:"NULL")+"."):("The victim was the head, so move head to "+(succ?succ.val:"NULL")+".")));
+    var o2=JSON.parse(JSON.stringify(o1));
+    if(succ){ o2.plink=one(succ.id,(pred?pred.id:'null')); o2.plinkCls=one(succ.id,'active'); } else { o2.tailId=(pred?pred.id:null); }
+    frames.push(F(dnodes(before,o2), DEL_AT,(succ?5:6), succ?("cur->next ("+succ.val+")'s prev skips back to "+(pred?pred.val:"NULL")+". The victim is bypassed both ways."):("The victim was the tail, so move tail to "+(pred?pred.val:"NULL")+".")));
+    var after=before.slice(0,idx).concat(before.slice(idx+1));
+    frames.push(F(dnodes(after,{}), DEL_AT,7, "free the victim. "+(after.length?"Unlinking is O(1) once you're on the node.":"The list is now empty.")));
+    nodes=after; return {frames:frames};
+  }
+  function opSearch(val){
+    if(!nodes.length) return {error:"The list is empty — nothing to search."};
+    var before=nodes.slice(), frames=[];
+    frames.push(F(dnodes(before,{ptrs:one(before[0].id,['cur']),active:before[0].id}), SEARCH,[1,2],"Search for "+val+", walking forward from the head."));
+    for(var i=0;i<before.length;i++){
+      var match=before[i].val===val;
+      frames.push(F(dnodes(before,{ptrs:one(before[i].id,['cur']),active:before[i].id,activeCls:(match?'found':'active')}), SEARCH,3,"Is "+before[i].val+" == "+val+"? "+(match?"Yes — found at index "+i+". Stop.":"No.")));
+      if(match) return {frames:frames};
+      if(i<before.length-1) frames.push(F(dnodes(before,{ptrs:one(before[i+1].id,['cur']),active:before[i+1].id}), SEARCH,4,"cur = cur->next."));
+    }
+    frames.push(F(dnodes(before,{}), SEARCH,6, val+" was never found — cur reached NULL."));
+    return {frames:frames};
+  }
+
+  /* ---- page-local player ---- */
+  var stage=document.getElementById("listStage"), svg=document.getElementById("listSvg");
+  var narrEl=document.getElementById("narr"), codeHost=document.getElementById("codeHost");
+  var countEl=document.getElementById("aCount"), playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    LLAnim.render(stage, svg, f); narrEl.textContent=f.narr||"";
+    LLAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1600);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function drawEmpty(){ P.frames=[F(dnodes(nodes,{}),null,null, nodes.length?"Current list.":"The list is empty — HEAD and TAIL are NULL.")]; P.i=0; drawP(); }
+
+  var OPS={
+    insHead:{ name:"Insert head", val:true, idx:false, desc:"Add a new node at the front. Its next points at the old head, the old head's prev points back at it, then head moves — O(1)." },
+    insTail:{ name:"Insert tail", val:true, idx:false, desc:"Add a new node at the back. Because a DLL keeps a tail pointer, this is O(1) — no walk. Its prev points at the old tail, the old tail's next points forward at it." },
+    insAt:{ name:"Insert at index", val:true, idx:true, desc:"Splice a node into the middle. Walk to the spot, then wire FOUR pointers: the new node's next and prev, plus the two neighbors pointing back at it." },
+    delAt:{ name:"Delete at index", val:false, idx:true, desc:"Remove a node. Its two neighbors are right there via prev and next, so they skip over it both ways — no separate walk to find the predecessor." },
+    search:{ name:"Search", val:true, idx:false, desc:"Walk forward from the head comparing values. O(n), like a singly list — but a DLL could also walk backward from the tail." },
+    reset:{ name:"Reset", val:false, idx:false, desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"), opdescEl=document.getElementById("opdesc");
+  var valWrap=document.getElementById("valWrap"), idxWrap=document.getElementById("idxWrap"), valF=document.getElementById("valF"), idxF=document.getElementById("idxF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ nodes=[]; nextId=0; stopP(); drawEmpty(); LLAnim.renderCode(codeHost,null,null);
+      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("List cleared. Click Insert head or Insert tail to start."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    valWrap.hidden=!meta.val; idxWrap.hidden=!meta.idx; panel.hidden=false; hint("");
+    if(meta.idx){ idxF.focus(); idxF.select(); } else if(meta.val){ valF.focus(); valF.select(); }
+  }
+  function runCurrent(){
+    if(!current) return;
+    var v=Number(valF.value), idx=Number(idxF.value), r;
+    if(current==="insHead"){ if(!isFinite(v)) return hint("Enter a value."); r=opInsertHead(v); }
+    else if(current==="insTail"){ if(!isFinite(v)) return hint("Enter a value."); r=opInsertTail(v); }
+    else if(current==="insAt"){ if(!isFinite(v)) return hint("Enter a value."); if(!isFinite(idx)) return hint("Enter an index."); r=opInsertAt(idx,v); }
+    else if(current==="delAt"){ if(!isFinite(idx)) return hint("Enter an index."); r=opDeleteAt(idx); }
+    else if(current==="search"){ if(!isFinite(v)) return hint("Enter a value."); r=opSearch(v); }
+    if(!r) return;
+    if(r.error){ stopP(); hint(r.error); return; }
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+  valF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
+  idxF.addEventListener("keydown", function(e){ if(e.key==="Enter") runCurrent(); });
+
+  drawEmpty();
 })();
 </script>
 </body>

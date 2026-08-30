@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doubly Linked List · Deletion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="doubly-linked-list.html">&larr; Doubly Linked List overview</a>
+      <p class="eyebrow">Both Neighbours, No Walk</p>
+      <h1>Deletion</h1>
+    </div>
+    <p class="note">The stored prev pointer is deletion's superpower: the node hands you both its neighbours, so unlinking it is O(1).</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Doubly Linked List pages">
+    <a href="doubly-linked-list.html">Overview</a>
+    <a href="doubly-linked-list-insertion.html">Insertion</a>
+    <a class="here" href="doubly-linked-list-deletion.html">Deletion</a>
+    <a href="doubly-linked-list-traversal.html">Traversal</a>
+    <a href="doubly-linked-list-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Why deletion is easier here</h2></div>
+    <div class="panel-body notes">
+      <p>In a <a href="../linked-list/linked-list.html">singly list</a>, deleting a node means first
+      <em>walking</em> to find the node before it, so its <code>next</code> can be re-pointed — that walk is the
+      O(n) part. A doubly list stores that predecessor already: the victim's own <code>prev</code> field
+      <em>is</em> the node before it, and its <code>next</code> is the node after. Both neighbours are in hand
+      the instant you're standing on the victim, so the unlink itself is <b>O(1)</b>.</p>
+
+      <div class="callout">
+        <b>Route around both ways, then free.</b> Make the victim's predecessor's <code>next</code> skip forward
+        to the victim's successor, and the successor's <code>prev</code> skip back to the predecessor. Now
+        nothing points at the victim from either direction — free it.
+      </div>
+
+      <ol class="steps">
+        <li>Let <code>cur</code> be the victim. Its neighbours are <code>cur-&gt;prev</code> and
+        <code>cur-&gt;next</code>.</li>
+        <li><code>cur-&gt;prev-&gt;next = cur-&gt;next</code> (or move <code>head</code> if the victim was first).</li>
+        <li><code>cur-&gt;next-&gt;prev = cur-&gt;prev</code> (or move <code>tail</code> if the victim was last).</li>
+        <li><code>free(cur)</code>.</li>
+      </ol>
+
+      <div class="demo-wrap">
+        <div class="scroller"><div id="delStage" class="ll-host"></div><svg class="ll-svg" id="delSvg"></svg></div>
+        <p class="narr" id="delNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="delCode" style="margin-top:12px"></div>
+      </div>
+
+      <p><b>The two edge cases</b> are the two <code>NULL</code> checks in the code: if the victim was the head
+      it has no predecessor (move <code>head</code> instead), and if it was the tail it has no successor (move
+      <code>tail</code> instead). Handle those and the same routine deletes any node.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="doubly-linked-list-visualizer.html">Try deletion in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Last piece: <a href="doubly-linked-list-traversal.html">Traversal</a> — walking the list forward and, uniquely, backward.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ll-anim.js?v=3"></script>
+<script>
+(function(){
+  "use strict";
+  var DEL_CODE=[
+    "void deleteNode(DList *l, Node *cur) {",
+    "  if (cur->prev) cur->prev->next = cur->next;",
+    "  else l->head = cur->next;        // was head",
+    "  if (cur->next) cur->next->prev = cur->prev;",
+    "  else l->tail = cur->prev;        // was tail",
+    "  free(cur);",
+    "}"];
+  function dn(id,val,row,col,next,prev,cls,o){o=o||{}; return {id:id,val:val,row:row,col:col,next:next,prev:prev,cls:cls,nextCls:o.next,prevCls:o.prev,ptrs:o.ptrs};}
+  function one(k,v){var o={};o[k]=v;return o;}
+  function base(list,o){o=o||{};
+    var headId=o.headId!==undefined?o.headId:(list[0]&&list[0].id);
+    var tailId=o.tailId!==undefined?o.tailId:(list[list.length-1]&&list[list.length-1].id);
+    return list.map(function(n,i){
+      var node={id:n.id,val:n.val,row:0,col:i};
+      node.next=(o.link&&o.link[n.id]!==undefined)?o.link[n.id]:(i<list.length-1?list[i+1].id:"null");
+      node.prev=(o.plink&&o.plink[n.id]!==undefined)?o.plink[n.id]:(i>0?list[i-1].id:"null");
+      if(o.linkCls&&o.linkCls[n.id])node.nextCls=o.linkCls[n.id];
+      if(o.plinkCls&&o.plinkCls[n.id])node.prevCls=o.plinkCls[n.id];
+      var p=[]; if(n.id===headId)p.push("HEAD"); if(n.id===tailId)p.push("TAIL");
+      if(o.ptrs&&o.ptrs[n.id])p=p.concat(o.ptrs[n.id]);
+      if(p.length)node.ptrs=p;
+      if(o.active===n.id)node.cls=o.activeCls||"active"; else if(o.clsMap&&o.clsMap[n.id])node.cls=o.clsMap[n.id];
+      return node;
+    });
+  }
+  function F(nodeArr,code,line,narr){return {double:true,nodes:nodeArr,codeLines:code,code:line,narr:narr};}
+
+  // delete 20 (index 1) from 10 <-> 20 <-> 30
+  var M=[{id:'a',val:10},{id:'b',val:20},{id:'c',val:30}];
+  LLAnim.play({host:document.getElementById("delStage"),svg:document.getElementById("delSvg"),
+    narrEl:document.getElementById("delNarr"),codeHost:document.getElementById("delCode"),ms:1900,frames:[
+      F(base(M,{ptrs:one('b',['cur']),clsMap:one('b','target')}), DEL_CODE,0,"Delete 20 (cur). Its prev is 10 and its next is 30 — both in hand, no walk."),
+      F(base(M,{ptrs:one('b',['cur']),clsMap:one('b','target'),link:one('a','c'),linkCls:one('a','active')}), DEL_CODE,1,"cur->prev (10)'s next skips forward over 20, straight to 30."),
+      F(base(M,{ptrs:one('b',['cur']),clsMap:one('b','target'),link:one('a','c'),linkCls:one('a','active'),plink:one('c','a'),plinkCls:one('c','active')}), DEL_CODE,3,"cur->next (30)'s prev skips back to 10. 20 is bypassed both ways."),
+      F(base([{id:'a',val:10},{id:'c',val:30}],{}), DEL_CODE,5,"free(20). The list is 10 ⇄ 30 — the unlink was O(1).")
+    ]});
+})();
+</script>
+</body>
+</html>

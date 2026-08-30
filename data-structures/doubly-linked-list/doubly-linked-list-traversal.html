@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doubly Linked List · Traversal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="doubly-linked-list.html">&larr; Doubly Linked List overview</a>
+      <p class="eyebrow">Forward And Backward</p>
+      <h1>Traversal</h1>
+    </div>
+    <p class="note">The same walk as a singly list — and a second one a singly list can't do: backward from the tail.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Doubly Linked List pages">
+    <a href="doubly-linked-list.html">Overview</a>
+    <a href="doubly-linked-list-insertion.html">Insertion</a>
+    <a href="doubly-linked-list-deletion.html">Deletion</a>
+    <a class="here" href="doubly-linked-list-traversal.html">Traversal</a>
+    <a href="doubly-linked-list-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Forward: the familiar walk</h2><span class="sub">O(n)</span></div>
+    <div class="panel-body notes">
+      <p>Walking forward is identical to a singly list: start <code>cur</code> at the head and follow
+      <code>next</code> until it's <code>NULL</code>. The prev pointers just come along for the ride.</p>
+      <div class="demo-wrap">
+        <div class="scroller"><div id="fwdStage" class="ll-host"></div><svg class="ll-svg" id="fwdSvg"></svg></div>
+        <p class="narr" id="fwdNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="fwdCode" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Backward: the DLL's exclusive</h2><span class="sub">O(n)</span></div>
+    <div class="panel-body notes">
+      <p>This is the one a singly list can never do. Start <code>cur</code> at the <b>tail</b> and follow
+      <code>prev</code> until it's <code>NULL</code>. Same shape as the forward walk, mirrored — which is why a
+      DLL is the natural fit whenever you need to move both directions (a text cursor, browser history, an
+      undo timeline).</p>
+      <div class="demo-wrap">
+        <div class="scroller"><div id="bwdStage" class="ll-host"></div><svg class="ll-svg" id="bwdSvg"></svg></div>
+        <p class="narr" id="bwdNarr" style="margin-top:10px">&nbsp;</p>
+        <div class="code-panel" id="bwdCode" style="margin-top:12px"></div>
+      </div>
+      <div class="callout">
+        <b>Why it's only possible here.</b> A backward walk needs each node to know the one before it. That's
+        exactly what the <code>prev</code> pointer stores — and exactly what a singly list lacks, which is why it
+        can only ever move forward.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="doubly-linked-list-visualizer.html">Build a list and walk it in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    That's the doubly linked list: <a href="doubly-linked-list-insertion.html">insert</a> and
+    <a href="doubly-linked-list-deletion.html">delete</a> keeping both links in sync, and traversal in either
+    direction.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/ll-anim.js?v=3"></script>
+<script>
+(function(){
+  "use strict";
+  var FWD_CODE=[
+    "for (Node *cur = l->head;   // start at head",
+    "     cur != NULL;",
+    "     cur = cur->next) {      // step forward",
+    "  visit(cur->val);",
+    "}"];
+  var BWD_CODE=[
+    "for (Node *cur = l->tail;   // start at tail",
+    "     cur != NULL;",
+    "     cur = cur->prev) {      // step backward",
+    "  visit(cur->val);",
+    "}"];
+  function dn(id,val,col,next,prev,cls,ptrs){return {id:id,val:val,row:0,col:col,next:next,prev:prev,cls:cls,ptrs:ptrs};}
+  function chain(vals, activeIdx, activeCls, curLbl){
+    return vals.map(function(v,i){
+      var ptrs=[]; if(i===0)ptrs.push("HEAD"); if(i===vals.length-1)ptrs.push("TAIL");
+      if(i===activeIdx)ptrs.push(curLbl||"cur");
+      return dn("n"+i, v, i, i<vals.length-1?"n"+(i+1):"null", i>0?"n"+(i-1):"null",
+        (i===activeIdx?(activeCls||"active"):undefined), ptrs.length?ptrs:undefined);
+    });
+  }
+  function F(nodeArr,code,line,narr){return {double:true,nodes:nodeArr,codeLines:code,code:line,narr:narr};}
+  var V=[10,20,30];
+  LLAnim.play({host:document.getElementById("fwdStage"),svg:document.getElementById("fwdSvg"),
+    narrEl:document.getElementById("fwdNarr"),codeHost:document.getElementById("fwdCode"),ms:1500,frames:[
+      F(chain(V,0,"active"), FWD_CODE,0,"cur starts at the head, 10."),
+      F(chain(V,0,"active"), FWD_CODE,3,"Visit 10."),
+      F(chain(V,1,"active"), FWD_CODE,2,"cur = cur->next → 20. Visit it."),
+      F(chain(V,2,"active"), FWD_CODE,2,"cur = cur->next → 30. Visit it."),
+      F(chain(V,-1), FWD_CODE,1,"cur = cur->next → NULL. Stop. Forward walk done.")
+    ]});
+  LLAnim.play({host:document.getElementById("bwdStage"),svg:document.getElementById("bwdSvg"),
+    narrEl:document.getElementById("bwdNarr"),codeHost:document.getElementById("bwdCode"),ms:1500,frames:[
+      F(chain(V,2,"active"), BWD_CODE,0,"cur starts at the TAIL, 30."),
+      F(chain(V,2,"active"), BWD_CODE,3,"Visit 30."),
+      F(chain(V,1,"active"), BWD_CODE,2,"cur = cur->prev → 20. Visit it."),
+      F(chain(V,0,"active"), BWD_CODE,2,"cur = cur->prev → 10. Visit it."),
+      F(chain(V,-1), BWD_CODE,1,"cur = cur->prev → NULL. Stop. Backward walk done.")
+    ]});
+})();
+</script>
+</body>
+</html>

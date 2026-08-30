@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
@@ -18,176 +36,138 @@
       <p class="eyebrow">Each Node Points Both Ways</p>
       <h1>Doubly&nbsp;Linked&nbsp;List</h1>
     </div>
-    <p class="note">Every node keeps a pointer to its predecessor as well as its successor, and the list keeps a tail pointer too.</p>
+    <p class="note">A linked list with a second pointer in every node — one to the next node and one to the previous — so you can walk it in either direction.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Doubly Linked List pages">
+    <a class="here" href="doubly-linked-list.html">Overview</a>
+    <a href="doubly-linked-list-insertion.html">Insertion</a>
+    <a href="doubly-linked-list-deletion.html">Deletion</a>
+    <a href="doubly-linked-list-traversal.html">Traversal</a>
+    <a href="doubly-linked-list-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>A doubly linked list adds one thing to a singly linked list: every node also stores a <b>prev</b>
-      pointer back to its predecessor, and the list itself keeps a maintained <b>tail</b> pointer. Those
-      two additions pay for themselves: inserting at the tail becomes O(1) instead of O(n), deleting a node
-      you already have a reference to needs no separate "find the previous node" walk, and you can walk the
-      list backward just as easily as forward — so reaching an arbitrary index can start from whichever end
-      is closer.</p>
-      <p>The cost is bookkeeping: every insert and delete has to keep <em>two</em> pointers consistent per
-      affected node instead of one, and each node spends a little more memory on the extra pointer.</p>
+      <p>Read the <a href="../linked-list/linked-list.html">singly linked list</a> first — a doubly linked list
+      (DLL) is that, with one addition. In a singly list each node knows only the node <em>after</em> it, so you
+      can only ever move forward, and you can never look back. A DLL gives every node a second pointer,
+      <code>prev</code>, aimed at the node <em>before</em> it. Now the chain is a two-way street: from any node
+      you can step forward with <code>next</code> or backward with <code>prev</code>.</p>
 
-      <p><b>When it breaks:</b> that extra bookkeeping is exactly where doubly-linked-list bugs live — update
-      <code>next</code> on one side of a splice but forget the matching <code>prev</code> on the other, and
-      the list looks fine walking forward while being silently broken walking backward (or vice versa).
-      Deleting the head or tail is its own special case: forget to also update the list's <code>head</code>/
-      <code>tail</code> pointer (not just the neighbouring node's link) and you're left pointing at a node
-      that no longer starts or ends the list.</p>
+      <p>Think of train cars coupled at both ends instead of one. The list keeps a <b>HEAD</b> (first car) and
+      usually a <b>TAIL</b> (last car); the head's <code>prev</code> is <code>NULL</code> and the tail's
+      <code>next</code> is <code>NULL</code>, marking the two ends.</p>
 
+      <div class="callout">
+        <b>One extra pointer, three payoffs.</b> A DLL can (1) walk <em>backward</em> as easily as forward,
+        (2) insert at the tail in O(1) using the tail pointer, and (3) delete a node you're already standing on
+        in O(1) — because that node's <code>prev</code> and <code>next</code> hand you both neighbours instantly,
+        with no walk to find "the node before." The cost is one more pointer of memory per node, and one more
+        link to keep correct on every insert and delete.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>How it works</h2><span class="sub">a node with two pointers</span></div>
+    <div class="panel-body notes">
+      <p>Each node is now three fields: <code>prev</code>, the value, and <code>next</code> — drawn below as
+      <code>[prev • | value | next •]</code>. The forward arrows run along the top, the backward arrows along the
+      bottom. Every operation's real work is keeping <em>both</em> sets of arrows consistent. Watch a list get
+      built and then walked backward from the tail:</p>
+
+      <div class="scroller"><div id="demoStage" class="ll-host"></div><svg class="ll-svg" id="demoSvg"></svg></div>
+      <p class="narr" id="demoNarr" style="margin-top:12px">&nbsp;</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn each operation in depth</h2><span class="sub">the thought process, an animation, and the C</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="doubly-linked-list-insertion.html">
+          <span class="num">01</span><h3>Insertion</h3>
+          <p>Add at the head, the tail (O(1)!), or the middle — wiring both the next and the prev of every node involved.</p>
+          <span class="go">Open insertion &rarr;</span>
+        </a>
+        <a class="dive-card" href="doubly-linked-list-deletion.html">
+          <span class="num">02</span><h3>Deletion</h3>
+          <p>Unlink a node in O(1) once you're on it: its two neighbours skip over it both ways, then free it.</p>
+          <span class="go">Open deletion &rarr;</span>
+        </a>
+        <a class="dive-card" href="doubly-linked-list-traversal.html">
+          <span class="num">03</span><h3>Traversal</h3>
+          <p>Walk forward with <code>next</code> from the head, or backward with <code>prev</code> from the tail.</p>
+          <span class="go">Open traversal &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs, trade-offs, and where DLLs show up</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
-        <tr><td>Insert Head</td><td>New node becomes the head</td><td><b>O(1)</b></td></tr>
-        <tr><td>Insert Tail</td><td>New node becomes the tail (tail pointer, no walk)</td><td><b>O(1)</b></td></tr>
-        <tr><td>Insert / Delete at Index</td><td>Walk from whichever end is closer</td><td>O(n)</td></tr>
-        <tr><td>Search</td><td>Walk from the head comparing values</td><td>O(n)</td></tr>
+        <tr><th>Operation</th><th>Singly</th><th>Doubly</th></tr>
+        <tr><td>Insert / delete at head</td><td>O(1)</td><td><b>O(1)</b></td></tr>
+        <tr><td>Insert / delete at tail</td><td>O(n) (walk to find it)</td><td><b>O(1)</b> (tail pointer)</td></tr>
+        <tr><td>Delete a given node</td><td>O(n) (walk to find prev)</td><td><b>O(1)</b> (prev is stored)</td></tr>
+        <tr><td>Walk backward</td><td>impossible</td><td><b>O(n)</b></td></tr>
+        <tr><td>Reach index k</td><td>O(n)</td><td>O(n)</td></tr>
       </table>
 
-      <p>This is what <code>LinkedList</code> is in most standard libraries (Java's <code>LinkedList</code>,
-      C++'s <code>std::list</code>), and it's the shape behind LRU caches, browser history with both back
-      and forward, and music-player "next/previous track" navigation.</p>
-    </div>
-  </section>
+      <p><b>The trade-off.</b> Every benefit above comes from the extra <code>prev</code> pointer — which means
+      more memory per node and a second link to update on every structural change. Get one of the two links
+      wrong (a classic bug is fixing <code>next</code> but forgetting <code>prev</code>) and the list is
+      corrupt in one direction only, which is nastily hard to spot.</p>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; both ends, both directions</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertHead() / insertTail() / deleteHead() / deleteTail()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Where you'll meet DLLs.</b> Browser history (back <em>and</em> forward), the undo/redo timeline in
+      editors, LRU caches (move a used item to the front, evict from the back — both O(1)), music/media
+      playlists with previous-track, and the standard-library <code>list</code> / <code>LinkedList</code> in
+      most languages. A <a href="../deque/deque.html">deque</a> is often a DLL under the hood.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="doubly-linked-list-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="doubly-linked-list-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — insert or delete at an index near the tail and watch it walk backward instead
-    of forward.
+    Next: read Insertion, Deletion, and Traversal, then build a list in the playground and watch both the next
+    and prev arrows rewire on every change.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/ll-anim.js?v=3"></script>
 <script>
 (function(){
   "use strict";
-
-  var INIT_CODE=[
-    "void initList(DList *l) {",
-    "  l->head = l->tail = NULL;",
-    "}"
-  ];
-  var INSERT_HEAD_CODE=[
-    "void insertHead(DList *l, int val) {",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->prev = NULL; n->next = l->head;",
-    "  if (l->head) l->head->prev = n;",
-    "  else l->tail = n;",
-    "  l->head = n;",
-    "}"
-  ];
-  var INSERT_TAIL_CODE=[
-    "void insertTail(DList *l, int val) {",
-    "  Node *n = malloc(sizeof(Node));",
-    "  n->val = val; n->next = NULL; n->prev = l->tail;",
-    "  if (l->tail) l->tail->next = n;",
-    "  else l->head = n;",
-    "  l->tail = n;",
-    "}"
-  ];
-  var DELETE_HEAD_CODE=[
-    "void deleteHead(DList *l) {",
-    "  Node *old = l->head;",
-    "  l->head = old->next;",
-    "  if (l->head) l->head->prev = NULL;",
-    "  else l->tail = NULL;",
-    "  free(old);",
-    "}"
-  ];
-  var DELETE_TAIL_CODE=[
-    "void deleteTail(DList *l) {",
-    "  Node *old = l->tail;",
-    "  l->tail = old->prev;",
-    "  if (l->tail) l->tail->next = NULL;",
-    "  else l->head = NULL;",
-    "  free(old);",
-    "}"
-  ];
-
-  function size(head){ var n=0,cur=head; while(cur){n++;cur=cur.next;} return n; }
-  function toStruct(head, activeId, activeRole, linkLandedId){
-    var nodes=[], linkActive=[], linkLanded=[], cur=head, i=0, n=size(head);
-    while(cur){
-      var badges=[]; if(i===0) badges.push("HEAD"); if(i===n-1) badges.push("TAIL");
-      nodes.push({val:cur.val, role:(cur.id===activeId?activeRole:""), ptr:badges.join("/")});
-      linkActive.push(cur.id===activeId || (cur.next && cur.next.id===activeId));
-      linkLanded.push(cur.id===linkLandedId || (cur.next && cur.next.id===linkLandedId));
-      cur=cur.next; i++;
-    }
-    return {dir:"h", nullEnd:true, double:true, emptyText:"Empty list", nodes:nodes, linkActive:linkActive, linkLanded:linkLanded};
+  function dn(id,val,col,next,prev,cls,ptrs){ return {id:id,val:val,row:0,col:col,next:next,prev:prev,cls:cls,ptrs:ptrs}; }
+  function chain(vals, activeIdx, activeCls){
+    return vals.map(function(v,i){
+      var ptrs=[]; if(i===0)ptrs.push("HEAD"); if(i===vals.length-1)ptrs.push("TAIL");
+      return dn("n"+i, v, i, i<vals.length-1?"n"+(i+1):"null", i>0?"n"+(i-1):"null",
+        (i===activeIdx?(activeCls||"active"):undefined), ptrs.length?ptrs:undefined);
+    });
   }
-
-  function scriptFrames(){
-    var nextId=0, head=null, tail=null, frames=[];
-    function node(v){ return {id:nextId++, val:v, prev:null, next:null}; }
-    function push(activeId,activeRole,narr,code,codeLine,linkLandedId){
-      frames.push({struct:toStruct(head,activeId,activeRole,linkLandedId), narr:narr, code:code, codeLine:codeLine});
-    }
-    function insHead(v){
-      push(head?head.id:undefined,"right","Insert "+v+" at the head — O(1).",INSERT_HEAD_CODE,[1,4]);
-      var n=node(v); n.next=head; if(head) head.prev=n; head=n; if(!tail) tail=n;
-      push(n.id,"left head landed", v+" is the new head.",INSERT_HEAD_CODE,5,n.id);
-    }
-    function insTail(v){
-      push(tail?tail.id:undefined,"right","Insert "+v+" at the tail — O(1), no walk needed.",INSERT_TAIL_CODE,[1,4]);
-      var n=node(v); n.prev=tail; if(tail) tail.next=n; tail=n; if(!head) head=n;
-      push(n.id,"left head landed", v+" is the new tail.",INSERT_TAIL_CODE,5,tail.prev?tail.prev.id:n.id);
-    }
-    function delHead(){
-      var v=head.val;
-      push(head.id,"left head","Delete the head, "+v+".",DELETE_HEAD_CODE,[1,4]);
-      head=head.next; if(head) head.prev=null; else tail=null;
-      push(undefined,"", v+" removed.",DELETE_HEAD_CODE,5);
-    }
-    function delTail(){
-      var v=tail.val;
-      push(tail.id,"left head","Delete the tail, "+v+" — O(1) thanks to the tail pointer.",DELETE_TAIL_CODE,[1,4]);
-      tail=tail.prev; if(tail) tail.next=null; else head=null;
-      push(undefined,"", v+" removed.",DELETE_TAIL_CODE,5);
-    }
-    push(undefined,"","Create the list: head and tail both start NULL.",INIT_CODE,1);
-    insHead(6); insTail(3); insTail(9); insHead(1);
-    delTail(); delHead(); delTail(); delHead();
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      DSRender.sequence(document.getElementById("demoHost"), frame.struct);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  function F(nodeArr, narr){ return {double:true, nodes:nodeArr, narr:narr}; }
+  LLAnim.play({ host:document.getElementById("demoStage"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:1700, frames:[
+      F(chain([10]), "One node: it's both HEAD and TAIL. prev and next are both NULL."),
+      F(chain([10,20]), "Add 20 at the tail: 10's next → 20, and 20's prev → 10. Both links wired."),
+      F(chain([10,20,30]), "Add 30. Follow the top arrows forward: 10 → 20 → 30 → NULL."),
+      F(chain([10,20,30],2,"active"), "Now walk BACKWARD from the tail using prev. Start at 30…"),
+      F(chain([10,20,30],1,"active"), "…prev takes us to 20…"),
+      F(chain([10,20,30],0,"active"), "…and prev again to 10. A singly list could never do this.")
+    ]});
 })();
 </script>
 </body>
