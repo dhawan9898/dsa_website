@@ -8,6 +8,27 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .oprun select{font-family:"IBM Plex Mono",monospace;font-size:15px;padding:7px 10px;border:1px solid var(--ink);border-radius:5px;background:#fff;color:var(--ink)}
+  .qline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .qline b{color:var(--plot)}
+</style>
 </head>
 <body>
 
@@ -15,285 +36,208 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="graph.html">&larr; Graph notes</a>
-      <p class="eyebrow">Vertices &middot; Edges &middot; Traversal</p>
-      <h1>Graph&nbsp;Visualizer</h1>
+      <p class="eyebrow">Explore It Two Ways</p>
+      <h1>Graph&nbsp;Playground</h1>
     </div>
-    <p class="note">Build a graph by hand, then compare how BFS and DFS explore it from the same starting vertex.</p>
+    <p class="note">One fixed graph, two traversals. Pick BFS or DFS, choose where to start, and walk the visit order one line of C at a time.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Graph pages">
+    <a href="graph.html">Overview</a>
+    <a href="graph-bfs.html">Breadth-First</a>
+    <a href="graph-dfs.html">Depth-First</a>
+    <a class="here" href="graph-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Build the graph</h2><span class="sub">undirected</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2><span class="sub">a fixed 6-vertex graph</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Vertex label</span><input type="text" id="vLabel" value="F" autocomplete="off"></label>
-        <button id="btnAddVertex" class="primary">Add Vertex</button>
+      <div class="opbtns">
+        <button class="opbtn" data-op="bfs">Breadth-First</button>
+        <button class="opbtn" data-op="dfs">Depth-First</button>
+        <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <div class="row" style="margin-top:10px">
-        <label class="fld narrow"><span>From</span><input type="text" id="eFrom" value="A" autocomplete="off"></label>
-        <label class="fld narrow"><span>To</span><input type="text" id="eTo" value="D" autocomplete="off"></label>
-        <button id="btnAddEdge" class="primary">Add Edge</button>
-        <button id="btnRemoveEdge">Remove Edge</button>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow"><span>Start vertex</span>
+            <select id="startF">
+              <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option>
+            </select>
+          </label>
+          <button class="primary" id="opRun">Run</button>
+        </div>
       </div>
-      <div class="row" style="margin-top:10px">
-        <label class="fld narrow"><span>Start vertex</span><input type="text" id="startVal" value="A" autocomplete="off"></label>
-        <button id="btnBFS" class="primary">BFS</button>
-        <button id="btnDFS" class="primary">DFS</button>
-      </div>
-      <p class="hint" id="hint">Run BFS and DFS from the same vertex and compare the visit order in the commentary log.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">Pick <b>Breadth-First</b> or <b>Depth-First</b>, choose a start vertex, and run. The same graph explores in a different order each way.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The graph</h2><span class="sub">vertices arranged on a circle</span></div>
+    <div class="panel-head"><h2>The graph</h2><span class="sub">undirected and unweighted — neighbours taken in alphabetical order</span></div>
     <div class="panel-body">
-      <div class="graphwrap" id="graphWrap">
-        <svg class="links" id="graphLinks"></svg>
-        <div id="graphNodes"></div>
+      <div class="graph-stage"><div id="gHost"></div><svg class="graph-svg" id="gSvg"></svg></div>
+      <div class="graph-ctrls" id="playbar">
+        <button class="graph-cbtn" id="aBack">◀ Back</button>
+        <button class="graph-cbtn" id="aPlay">Play</button>
+        <button class="graph-cbtn" id="aStep">Step ▶</button>
+        <span class="graph-step" id="aCount">0 / 0</span>
       </div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> current vertex</span>
-        <span class="key"><i class="swatch sorted"></i> visited</span>
+      <p class="qline" id="auxLine">&nbsp;</p>
+      <p class="narr" id="narr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> visiting now</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> waiting (queue / stack)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> done</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; addEdge() / bfs() / dfs()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">the C for the traversal you ran, line highlighted</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Both BFS and DFS visit every vertex reachable from the start exactly once, in O(V + E) time — the
-    difference is purely order. BFS uses a queue and spreads outward level by level (shortest path in an
-    unweighted graph); DFS uses a stack (or recursion) and commits to one path as deep as it goes before
-    backtracking.
+    Same graph, same start, two different orders — and both are O(V + E). BFS (a queue) fans out ring by ring; DFS
+    (recursion, i.e. a stack) drives deep and backtracks.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var INIT_CODE=[
-    "void initGraph(Graph *g) {",
-    "  g->n = 0;",
-    "}"
-  ];
-  var ADD_VERTEX_CODE=[
-    "int addVertex(Graph *g, char label) {",
-    "  g->label[g->n] = label;",
-    "  g->deg[g->n] = 0;",
-    "  return g->n++;",
-    "}"
-  ];
-  var ADD_EDGE_CODE=[
-    "void addEdge(Graph *g, int a, int b) {",
-    "  g->adj[a][g->deg[a]++] = b;   // undirected: record both directions",
-    "  g->adj[b][g->deg[b]++] = a;",
-    "}"
-  ];
-  var REMOVE_EDGE_CODE=[
-    "void removeEdge(Graph *g, int a, int b) {",
-    "  int i;",
-    "  for (i = 0; i < g->deg[a]; i++)",
-    "    if (g->adj[a][i] == b) { g->adj[a][i] = g->adj[a][--g->deg[a]]; break; }",
-    "  for (i = 0; i < g->deg[b]; i++)",
-    "    if (g->adj[b][i] == a) { g->adj[b][i] = g->adj[b][--g->deg[b]]; break; }",
-    "}"
-  ];
-  var BFS_CODE=[
-    "void bfs(Graph *g, int start) {",
-    "  int visited[MAXV] = {0}, queue[MAXV], head = 0, tail = 0;",
-    "  visited[start] = 1;",
-    "  queue[tail++] = start;                 // enqueue start",
-    "  while (head < tail) {",
-    "    int cur = queue[head++];             // dequeue",
-    "    visit(cur);",
-    "    for (int i = 0; i < g->deg[cur]; i++) {",
-    "      int nb = g->adj[cur][i];",
-    "      if (!visited[nb]) {",
-    "        visited[nb] = 1;",
-    "        queue[tail++] = nb;               // discover + enqueue",
+  var POS={ A:[70,60], B:[230,60], C:[390,60], D:[70,230], E:[230,230], F:[390,230] };
+  var EDGES=[["A","B"],["B","C"],["A","D"],["B","E"],["C","F"],["D","E"],["E","F"]];
+  var ADJ={A:["B","D"],B:["A","C","E"],C:["B","F"],D:["A","E"],E:["B","D","F"],F:["C","E"]};
+  var BFS=[
+    "void bfs(Graph *g, int s) {",
+    "  bool seen[V] = { false };",
+    "  Queue q;  enqueue(&q, s);",
+    "  seen[s] = true;",
+    "  while (!isEmpty(&q)) {",
+    "    int u = dequeue(&q);        // visit u",
+    "    for (int v : neighbours(u))",
+    "      if (!seen[v]) {",
+    "        seen[v] = true;",
+    "        enqueue(&q, v);",
     "      }",
-    "    }",
     "  }",
-    "}"
-  ];
-  var DFS_CODE=[
-    "void dfs(Graph *g, int v, int *visited) {",
-    "  visited[v] = 1;",
-    "  visit(v);",
-    "  for (int i = 0; i < g->deg[v]; i++) {",
-    "    int nb = g->adj[v][i];",
-    "    if (!visited[nb]) dfs(g, nb, visited);   // recurse into the unvisited neighbor",
-    "  }",
-    "}"
-  ];
+    "}"];
+  var DFS=[
+    "void dfs(Graph *g, int u) {",
+    "  seen[u] = true;             // visit u",
+    "  for (int v : neighbours(u))",
+    "    if (!seen[v])",
+    "      dfs(g, v);              // go deeper",
+    "}"];
+  function edgeKey(a,b){ return a<b?a+"-"+b:b+"-"+a; }
+  function nodesFor(state){ var ns={}; Object.keys(POS).forEach(function(id){ ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:state[id]||""}; }); return ns; }
+  function edgesFor(active){ return EDGES.map(function(e){ var k=edgeKey(e[0],e[1]); return {from:e[0],to:e[1],cls:(active===k?"active":"")}; }); }
+  function clone(o){ var c={}; Object.keys(o).forEach(function(k){c[k]=o[k];}); return c; }
 
-  function findNode(state, val){ return state.nodes.filter(function(n){ return n.val===val; })[0]; }
-  function valOf(state, id){ var n=state.nodes.filter(function(x){return x.id===id;})[0]; return n?n.val:"?"; }
-
-  function buildGraphStruct(state, nodeRoles, edgeActiveSet){
-    return {
-      nodes: state.nodes.map(function(n){ return {id:n.id, val:n.val, role:nodeRoles[n.id]||""}; }),
-      edges: state.edges.map(function(e){
-        var k1=e.from+":"+e.to, k2=e.to+":"+e.from;
-        return {from:e.from, to:e.to, active: !!(edgeActiveSet && (edgeActiveSet[k1]||edgeActiveSet[k2]))};
-      })
-    };
-  }
-  function frame(state, nodeRoles, edgeActiveSet, phase, narr, ops, code, codeLine){
-    return {struct: buildGraphStruct(state, nodeRoles||{}, edgeActiveSet||{}), phase:phase, narr:narr, ops:ops, code:code, codeLine:codeLine};
-  }
-
-  function opAddVertex(state, val){
-    if(!val) return {error:"Enter a label for the new vertex."};
-    if(findNode(state,val)) return {error:"Vertex \""+val+"\" already exists."};
-    var oc=(state.opsCount||0)+1;
-    var id=state.nextId;
-    var newState={nodes:state.nodes.concat([{id:id,val:val}]), edges:state.edges, opsCount:oc, nextId:id+1};
-    var roles={}; roles[id]="left head landed";
-    return {frames:[frame(newState, roles, {}, "added-vertex", "Added vertex \""+val+"\".", oc, ADD_VERTEX_CODE, [1,3])], state:newState};
-  }
-  function opAddEdge(state, fromVal, toVal){
-    var a=findNode(state,fromVal), b=findNode(state,toVal);
-    if(!a || !b) return {error:"Both vertices must already exist."};
-    if(a.id===b.id) return {error:"Can't connect a vertex to itself."};
-    var exists=state.edges.some(function(e){ return (e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id); });
-    if(exists) return {error:"That edge already exists."};
-    var oc=(state.opsCount||0)+1;
-    var newState={nodes:state.nodes, edges:state.edges.concat([{from:a.id,to:b.id}]), opsCount:oc, nextId:state.nextId};
-    var roles={}; roles[a.id]="left head"; roles[b.id]="left head";
-    var eset={}; eset[a.id+":"+b.id]=true;
-    return {frames:[frame(newState, roles, eset, "added-edge", "Connected \""+fromVal+"\" and \""+toVal+"\".", oc, ADD_EDGE_CODE, [1,2])], state:newState};
-  }
-  function opRemoveEdge(state, fromVal, toVal){
-    var a=findNode(state,fromVal), b=findNode(state,toVal);
-    if(!a || !b) return {error:"Both vertices must exist."};
-    var found=state.edges.some(function(e){ return (e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id); });
-    if(!found) return {error:"There's no edge between \""+fromVal+"\" and \""+toVal+"\"."};
-    var oc=(state.opsCount||0)+1;
-    var roles={}; roles[a.id]="left head"; roles[b.id]="left head";
-    var eset={}; eset[a.id+":"+b.id]=true;
-    var frames=[frame(state, roles, eset, "removing", "Removing the edge between \""+fromVal+"\" and \""+toVal+"\".", oc, REMOVE_EDGE_CODE, [1,3])];
-    var edges=state.edges.filter(function(e){ return !((e.from===a.id&&e.to===b.id)||(e.from===b.id&&e.to===a.id)); });
-    var newState={nodes:state.nodes, edges:edges, opsCount:oc, nextId:state.nextId};
-    frames.push(frame(newState, roles, {}, "removed", "Edge removed.", oc, REMOVE_EDGE_CODE, [4,6]));
-    return {frames:frames, state:newState};
-  }
-
-  function buildAdj(state){
-    var adj={}; state.nodes.forEach(function(n){ adj[n.id]=[]; });
-    state.edges.forEach(function(e){ adj[e.from].push(e.to); adj[e.to].push(e.from); });
-    return adj;
-  }
-  function visitedRoles(visited, currentId){
-    var roles={};
-    Object.keys(visited).forEach(function(idStr){
-      var id=Number(idStr);
-      roles[id] = (id===currentId) ? "left head landed" : "sorted";
-    });
-    return roles;
-  }
-
-  function opBFS(state, startVal){
-    var start=findNode(state, startVal);
-    if(!start) return {error:"Vertex \""+startVal+"\" doesn't exist."};
-    var oc=(state.opsCount||0)+1, frames=[];
-    var adj=buildAdj(state), visited={}, order=[];
-    visited[start.id]=true;
-    var queue=[start.id];
-    frames.push(frame(state, visitedRoles(visited,start.id), {}, "bfs-start", "BFS from \""+startVal+"\": enqueue it and mark it visited.", oc, BFS_CODE, [2,3]));
-    while(queue.length){
-      var cur=queue.shift();
-      order.push(valOf(state,cur));
-      frames.push(frame(state, visitedRoles(visited,cur), {}, "visit", "Dequeue \""+valOf(state,cur)+"\" — visit order so far: ["+order.join(", ")+"].", oc, BFS_CODE, [5,6]));
-      adj[cur].forEach(function(nb){
-        if(!visited[nb]){
-          visited[nb]=true; queue.push(nb);
-          var eset={}; eset[cur+":"+nb]=true;
-          frames.push(frame(state, visitedRoles(visited,nb), eset, "discover",
-            "Edge to \""+valOf(state,nb)+"\" — unvisited, so mark it and enqueue it.", oc, BFS_CODE, [9,11]));
-        }
+  function runBFS(start){
+    var frames=[], seen={}, q=[start], state={};
+    function push(line,active,aux,narr){ frames.push({nodes:nodesFor(state), edges:edgesFor(active), code:line, codeLines:BFS, narr:narr, aux:aux}); }
+    seen[start]=true; state[start]="frontier";
+    push([2,3],null,qlabel("queue",q),"Enqueue the start, "+start+", and mark it seen.");
+    while(q.length){
+      var u=q.shift(); state[u]="active";
+      push(5,null,qlabel("queue",q),"Dequeue "+u+" from the front — visit it.");
+      ADJ[u].forEach(function(v){
+        var k=edgeKey(u,v);
+        if(!seen[v]){ seen[v]=true; state[v]="frontier"; q.push(v);
+          push([8,9],k,qlabel("queue",q),"Neighbour "+v+" is new — mark it and enqueue at the back.");
+        } else { push(7,k,qlabel("queue",q),"Neighbour "+v+" is already seen — skip it."); }
       });
+      state[u]="done"; push(4,null,qlabel("queue",q),u+" is done. Back to the loop top.");
     }
-    frames.push(frame(state, visitedRoles(visited), {}, "bfs-done", "BFS complete. Visit order: ["+order.join(", ")+"].", oc, BFS_CODE, 4));
-    return {frames:frames, state:{nodes:state.nodes, edges:state.edges, opsCount:oc, nextId:state.nextId}};
+    push(12,null,qlabel("queue",[]),"Queue empty — every reachable vertex visited.");
+    return {frames:frames, code:BFS};
   }
-
-  function opDFS(state, startVal){
-    var start=findNode(state, startVal);
-    if(!start) return {error:"Vertex \""+startVal+"\" doesn't exist."};
-    var oc=(state.opsCount||0)+1, frames=[];
-    var adj=buildAdj(state), visited={}, order=[];
-    frames.push(frame(state, {}, {}, "dfs-start", "DFS from \""+startVal+"\": explore as deep as possible before backtracking.", oc, DFS_CODE, 0));
-    (function visit(id, parentId){
-      visited[id]=true; order.push(valOf(state,id));
-      var eset={}; if(parentId!==undefined){ eset[parentId+":"+id]=true; }
-      frames.push(frame(state, visitedRoles(visited,id), eset, "visit", "Visit \""+valOf(state,id)+"\" — order so far: ["+order.join(", ")+"].", oc, DFS_CODE, [1,2]));
-      adj[id].forEach(function(nb){ if(!visited[nb]) visit(nb, id); });
-    })(start.id, undefined);
-    frames.push(frame(state, visitedRoles(visited), {}, "dfs-done", "DFS complete. Visit order: ["+order.join(", ")+"].", oc, DFS_CODE, 6));
-    return {frames:frames, state:{nodes:state.nodes, edges:state.edges, opsCount:oc, nextId:state.nextId}};
+  function runDFS(start){
+    var frames=[], seen={}, stack=[], status={};
+    function snap(active,line,active2,narr){
+      var s={}; Object.keys(POS).forEach(function(id){
+        if(status[id]==='done') s[id]='done'; else if(id===active) s[id]='active';
+        else if(status[id]==='stack') s[id]='frontier'; else s[id]=''; });
+      frames.push({nodes:nodesFor(s), edges:edgesFor(active2), code:line, codeLines:DFS, narr:narr, aux:qlabel("call stack",stack,true)});
+    }
+    function visit(u){
+      seen[u]=true; stack.push(u); status[u]='stack';
+      snap(u,1,null,"Enter dfs("+u+"): mark "+u+" seen — it's the top of the call stack.");
+      ADJ[u].forEach(function(v){ var k=edgeKey(u,v);
+        if(!seen[v]){ snap(u,[3,4],k,"Neighbour "+v+" isn't seen — recurse into it."); visit(v); snap(u,2,k,"Back from dfs("+v+"). Continue "+u+"'s neighbours."); }
+        else { snap(u,3,k,"Neighbour "+v+" is already seen — skip it."); }
+      });
+      stack.pop(); status[u]='done';
+      snap(stack.length?stack[stack.length-1]:null,5,null,"dfs("+u+") returns — "+u+" fully explored. Backtrack.");
+    }
+    visit(start);
+    return {frames:frames, code:DFS};
   }
+  function qlabel(name,a,arrow){ var sep=arrow?" ▸ ":", "; return name+": <b>"+(a.length?("[ "+a.join(sep)+" ]"):"[ ]")+"</b>"; }
 
-  function init(){
-    var state={nodes:[], edges:[], opsCount:0, nextId:0};
-    var frames=[frame(state, {}, {}, "start",
-      "Create the graph: no vertices yet. A graph is just vertices connected by edges — BFS and DFS will explore whichever ones exist.", 0, INIT_CODE, 1)];
-    ["A","B","C","D","E"].forEach(function(v){
-      var r=opAddVertex(state, v);
-      frames=frames.concat(r.frames);
-      state=r.state;
-    });
-    [["A","B"],["A","C"],["B","D"],["C","D"],["D","E"]].forEach(function(pair){
-      var r=opAddEdge(state, pair[0], pair[1]);
-      frames=frames.concat(r.frames);
-      state=r.state;
-    });
-    return {state:state, frames:frames};
+  /* ---- page-local player ---- */
+  var host=document.getElementById("gHost"), svg=document.getElementById("gSvg"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount"), auxEl=document.getElementById("auxLine");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    GraphAnim.render(host, svg, f); narrEl.textContent=f.narr||"";
+    auxEl.innerHTML=f.aux||"&nbsp;";
+    GraphAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1600);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function drawIdle(){ P.frames=[{nodes:nodesFor({}), edges:edgesFor(null), narr:"The graph, ready. Pick a traversal and a start vertex.", aux:""}]; P.i=0;
+    GraphAnim.render(host,svg,P.frames[0]); narrEl.textContent=P.frames[0].narr; auxEl.innerHTML="&nbsp;"; GraphAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; }
+
+  var OPS={
+    bfs:{ name:"Breadth-First Search", desc:"Explore ring by ring with a queue: visit the start, add its neighbours to the back, always take the next vertex from the front. Nearest vertices first." },
+    dfs:{ name:"Depth-First Search", desc:"Plunge with recursion (a stack): dive into the first unseen neighbour, go as deep as possible, and backtrack when a vertex has no unseen neighbours left." },
+    reset:{ name:"Reset", desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"), opdescEl=document.getElementById("opdesc");
+  var startF=document.getElementById("startF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ stopP(); drawIdle(); panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Cleared. Pick a traversal to run again."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
+    panel.hidden=false; hint("");
   }
-  function str(id){ return document.getElementById(id).value.trim(); }
+  function runCurrent(){
+    if(!current) return;
+    var s=startF.value, r;
+    if(current==="bfs") r=runBFS(s); else if(current==="dfs") r=runDFS(s);
+    if(!r) return;
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
 
-  VizDS.init({
-    init: init,
-    ops: {
-      addVertex: { btn:"btnAddVertex", enterOn:"vLabel", run: function(state){ return opAddVertex(state, str("vLabel")); } },
-      addEdge: { btn:"btnAddEdge", run: function(state){ return opAddEdge(state, str("eFrom"), str("eTo")); } },
-      removeEdge: { btn:"btnRemoveEdge", run: function(state){ return opRemoveEdge(state, str("eFrom"), str("eTo")); } },
-      bfs: { btn:"btnBFS", enterOn:"startVal", run: function(state){ return opBFS(state, str("startVal")); } },
-      dfs: { btn:"btnDFS", run: function(state){ return opDFS(state, str("startVal")); } }
-    },
-    renderExtra: function(frame){ DSRender.graph(document.getElementById("graphNodes"), document.getElementById("graphLinks"), frame.struct, {}); },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  drawIdle();
 })();
 </script>
 </body>
