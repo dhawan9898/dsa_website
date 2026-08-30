@@ -8,6 +8,26 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+  .arrline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .arrline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
@@ -15,154 +35,133 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Disjoint Sets &middot; Find &middot; Union</p>
+      <p class="eyebrow">Which Group Am I In?</p>
       <h1>Union&#8209;Find</h1>
     </div>
-    <p class="note">Tracks a collection of disjoint sets and answers "are these two elements in the same set?" in almost constant time.</p>
+    <p class="note">A tiny structure that tracks "who is grouped with whom" and merges groups — almost instantly, no matter how many merges you do.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Union-Find pages">
+    <a class="here" href="union-find.html">Overview</a>
+    <a href="union-find-operations.html">Find &amp; Union</a>
+    <a href="union-find-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Union-Find (also called Disjoint Set Union, or DSU) tracks a collection of non-overlapping sets and
-      supports two operations: <code>find(x)</code> — which set is <code>x</code> in? — and <code>union(a,
-      b)</code> — merge <code>a</code>'s set and <code>b</code>'s set into one. Every set is stored as a
-      little tree: each element has a single <code>parent</code> pointer, and the <b>root</b> of a tree (the
-      element that is its own parent) names the whole set. Two elements are in the same set exactly when
-      walking their parent pointers reaches the same root.</p>
+      <p>Picture a bunch of islands. Every so often someone builds a bridge between two of them, and you keep being
+      asked one question: <em>"can I already get from this island to that one?"</em> — that is, are they in the same
+      connected group yet? <b>Union-Find</b> (also called a <b>disjoint-set</b> structure) answers exactly that, and
+      supports exactly two moves:</p>
+      <ul style="line-height:1.7">
+        <li><b>Find(x)</b> — which group is x in? It returns the group's <em>representative</em>: one member chosen
+        to stand for the whole group.</li>
+        <li><b>Union(x, y)</b> — merge x's group and y's group into one.</li>
+      </ul>
+      <p>Two elements are in the same group exactly when <code>Find(x) == Find(y)</code> — they report the same
+      representative.</p>
 
+      <div class="callout">
+        <b>The representation.</b> Each element stores just one thing: a <code>parent</code>. Follow parents upward
+        and you eventually reach an element that is its own parent — that's the <b>root</b>, the group's
+        representative. So each group is an <em>up-tree</em>, and the whole structure is a forest of them. It's all
+        held in one array: <code>parent[i]</code>.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Groups as up-trees</h2><span class="sub">find walks up to the root; union links one root under another</span></div>
+    <div class="panel-body notes">
+      <p>Start with five elements, each alone in its own group (each is its own root). Watch a few unions merge them
+      into bigger trees — and a find walk from a deep node up to its root:</p>
+      <div class="forest-stage"><div id="demoHost"></div><svg class="forest-svg" id="demoSvg"></svg></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--seal);box-shadow:0 0 0 2px rgba(46,107,79,.3)"></i> a root (group representative)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> the element being linked / walked</span>
+      </div>
+      <p class="arrline">an arrow means &ldquo;points to my parent&rdquo;; a ringed node points to itself — it's a root.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn the operations</h2><span class="sub">the thought process, an animation, and the C</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="union-find-operations.html">
+          <span class="num">01</span><h3>Find &amp; Union</h3>
+          <p>Walk to the root to find a group; link one root under another to union. Plus the two tricks that make it near-instant.</p>
+          <span class="go">Open operations &rarr;</span>
+        </a>
+        <a class="dive-card" href="union-find-visualizer.html">
+          <span class="num">02</span><h3>Playground</h3>
+          <p>Union pairs and query "connected?" on a set of elements, and watch the forest merge and flatten.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">the two tricks, and where it's used</span></div>
+    <div class="panel-body notes">
+      <p>Done naively, trees can grow tall and thin — a <code>find</code> then walks a long chain, O(n). Two small
+      optimizations flatten them so both operations become <b>almost O(1)</b>:</p>
       <table class="notes-table">
-        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
-        <tr><td>Find</td><td>Walk parent pointers up to the root</td><td><b>O(&alpha;(n))</b> amortized</td></tr>
-        <tr><td>Union</td><td>Find both roots, attach one under the other</td><td><b>O(&alpha;(n))</b> amortized</td></tr>
+        <tr><th>Trick</th><th>What it does</th></tr>
+        <tr><td><b>Union by size/rank</b></td><td>Always hang the <em>smaller</em> tree under the bigger root, so height barely grows.</td></tr>
+        <tr><td><b>Path compression</b></td><td>After a find, re-point every node on the path straight at the root, so next time is instant.</td></tr>
       </table>
+      <p>With both, <em>m</em> operations on <em>n</em> elements run in <b>O(m · α(n))</b>, where α is the inverse
+      Ackermann function — below 5 for any number of elements you could ever store. Effectively constant time per
+      operation.</p>
 
-      <p><b>Implementation:</b> two optimizations turn a naive O(n)-per-operation structure into one that's
-      effectively O(1). <b>Union by rank</b> always attaches the shallower tree under the deeper one instead
-      of picking arbitrarily, which caps every tree's height at O(log n). <b>Path compression</b> — the
-      recursive line <code>parent[x] = find(parent, parent[x])</code> below — rewires every node visited
-      during a find directly to the root, so the *next* find along that path is a single hop. Together they
-      give the inverse Ackermann bound, &alpha;(n), which never exceeds 4 for any n that fits in memory.</p>
+      <div class="callout">
+        <b>Why not just a "group id" per element?</b> That makes <code>find</code> O(1) but <code>union</code> O(n)
+        — you'd have to relabel every member of one group. Union-Find flips that: it keeps both operations cheap by
+        never relabelling, just re-pointing a single root.
+      </div>
 
-      <p><b>Common mistake:</b> implementing union without ever checking whether <code>a</code> and
-      <code>b</code> are already in the same set — calling <code>union</code> on two elements that already
-      share a root should be a no-op, but skipping that check and blindly attaching <code>find(a)</code>
-      under <code>find(b)</code> anyway creates a self-referencing cycle (a root pointing at itself through
-      another node), corrupting the whole structure.</p>
-
-      <p>This is the standard engine behind cycle detection while building a graph edge by edge (exactly
-      what <a href="../kruskal-mst/kruskal-mst.html">Kruskal's MST</a> uses it for), network connectivity
-      queries, and finding connected components in an image.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; two unions, then a find that compresses</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; find() / unionSets()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Where you'll meet it.</b> <a href="../kruskal-mst/kruskal-mst.html">Kruskal's MST</a> uses it to reject
+      edges that would form a cycle (both endpoints already in one group); network/percolation connectivity; image
+      segmentation (merging pixel regions); detecting cycles in an undirected graph; and "friend circles" or account
+      de-duplication.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="union-find-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="union-find-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — union a long chain of elements without ever calling find in between, then find
-    the very last one and watch every hop on that chain snap directly to the root at once.
+    Union-Find keeps every element pointing at a parent, groups as up-trees, and one root per group. Find walks up;
+    union links two roots; and union-by-size plus path compression keep it flat enough to be effectively instant.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/forest-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "int find(int parent[], int x) {",
-    "  if (parent[x] != x)",
-    "    parent[x] = find(parent, parent[x]);   // path compression",
-    "  return parent[x];",
-    "}",
-    "",
-    "void unionSets(int parent[], int rank[], int a, int b) {",
-    "  int ra = find(parent, a), rb = find(parent, b);",
-    "  if (ra == rb) return;                       // already the same set",
-    "  if (rank[ra] < rank[rb]) { int t = ra; ra = rb; rb = t; }",
-    "  parent[rb] = ra;                             // attach smaller-rank tree under larger",
-    "  if (rank[ra] == rank[rb]) rank[ra]++;",
-    "}"
+  function F(parents,narr,cls){ var nodes={}; for(var i=0;i<5;i++){ nodes[i]={val:i,parent:parents[i],cls:(cls&&cls[i])||""}; } return {nodes:nodes,narr:narr}; }
+  var frames=[
+    F([0,1,2,3,4],"Five elements, five groups — each is its own root (ringed)."),
+    F([0,0,2,3,4],"union(0, 1): hang 1's root under 0. Now {0, 1} are one group.",{1:'active'}),
+    F([0,0,2,2,4],"union(2, 3): hang 3 under 2. Now {2, 3} are a group.",{3:'active'}),
+    F([0,0,0,2,4],"union(1, 3): their roots are 0 and 2 — link root 2 under root 0. The two trees merge.",{2:'active'}),
+    F([0,0,0,2,4],"find(3): walk 3 → 2 → 0. The root is 0, so 3 is in group 0.",{3:'target',2:'target',0:'found'}),
+    F([0,0,0,2,4],"find(1) is also 0 — so find(1) == find(3): 1 and 3 are connected. Element 4 is still alone.",{1:'target',0:'found'})
   ];
-
-  function scriptFrames(){
-    var n=4, parent=[], rank=new Array(n).fill(0), frames=[];
-    for(var i=0;i<n;i++) parent.push(i);
-
-    function cellsFor(activeIdxs, activeRole){
-      var roles={};
-      activeIdxs.forEach(function(idx){ roles[idx]=activeRole; });
-      return parent.map(function(p,i){ return {val:p, role:roles[i]||"", ptr:(p===i?"ROOT":"")}; });
-    }
-    function push(activeIdxs, activeRole, narr, codeLine){
-      frames.push({struct:{cells:cellsFor(activeIdxs, activeRole)}, narr:narr, code:CODE, codeLine:codeLine});
-    }
-    function walk(x){
-      var path=[x];
-      while(parent[path[path.length-1]]!==path[path.length-1]){
-        var cur=path[path.length-1], nxt=parent[cur];
-        push([cur],"left head","parent["+cur+"] = "+nxt+" — step up.",[1,2]);
-        path.push(nxt);
-      }
-      var root=path[path.length-1];
-      push([root],"left head landed","Reached root "+root+".",3);
-      if(path.length>2){
-        var compressed=path.slice(0,path.length-1);
-        compressed.forEach(function(node){ parent[node]=root; });
-        push(compressed,"left head landed","Path compression: "+compressed.join(", ")+" now point directly at "+root+".",2);
-      }
-      return root;
-    }
-    function union(a,b){
-      var ra=walk(a), rb=walk(b);
-      if(ra===rb){ push([ra],"found","Already the same set.",8); return; }
-      push([ra,rb],"right head","Compare rank["+ra+"]="+rank[ra]+" with rank["+rb+"]="+rank[rb]+".",9);
-      if(rank[ra]<rank[rb]){ var t=ra; ra=rb; rb=t; }
-      parent[rb]=ra;
-      push([ra,rb],"left head landed","Attach root "+rb+" under root "+ra+".",10);
-      if(rank[ra]===rank[rb]){ rank[ra]++; push([ra],"left head landed","Bump rank["+ra+"] to "+rank[ra]+".",11); }
-    }
-
-    push([],"","Create "+n+" singleton sets.",1);
-    union(0,1);
-    union(2,3);
-    union(0,2);
-    walk(3);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  ForestAnim.play({ host:document.getElementById("demoHost"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:2000, frames:frames });
 })();
 </script>
 </body>
