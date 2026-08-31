@@ -3,15 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Counting Sort — step by step</title>
+<title>Counting Sort Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
 <style>
-  .subrow-label{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px}
-  .subrow-label:first-child{margin-top:0}
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .ctl-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .cs-block{margin:8px 0}
+  .cs-label{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:var(--ink-soft);margin:8px 0 4px}
+  .cs-row{display:flex;gap:6px;flex-wrap:wrap}
+  .cs-col{display:flex;flex-direction:column;align-items:center}
+  .cs-cell{width:36px;height:36px;border:2px solid var(--ink);border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px;background:#fff;color:var(--ink);
+    transition:border-color .3s var(--ease),background .3s var(--ease),color .3s var(--ease)}
+  .cs-cell.empty{border-style:dashed;color:transparent}
+  .cs-cell.a{border-color:var(--stamp);color:var(--stamp);background:rgba(190,58,29,.08)}
+  .cs-cell.b{border-color:var(--plot);color:var(--plot);background:rgba(31,78,121,.08)}
+  .cs-cell.done{border-color:var(--seal);color:var(--seal);background:rgba(46,107,79,.12)}
+  .cs-idx{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--ink-soft);margin-top:2px}
+  .tri-bar .cs-cell{border-radius:6px}
 </style>
 </head>
 <body>
@@ -19,196 +36,141 @@
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="counting-sort.html">&larr; Counting Sort notes</a>
       <p class="eyebrow">Count &middot; Accumulate &middot; Place</p>
-      <h1>Counting&nbsp;Sort</h1>
+      <h1>Counting&nbsp;Sort&nbsp;Playground</h1>
     </div>
-    <p class="note">No comparisons at all: count how often each value appears, turn those counts into output positions, then place every value directly where it belongs.</p>
+    <p class="note">Enter small numbers (0–9) and watch the tally, the prefix sums, and the stable placement build the sorted output — one C line at a time.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Counting Sort pages">
+    <a href="counting-sort.html">Overview</a>
+    <a class="here" href="counting-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Set the array</h2><span class="sub">2 &ndash; 16 non-negative whole numbers</span></div>
+    <div class="panel-head"><h2>Your array</h2><span class="sub">values 0–9 · up to 10 numbers</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld">
-          <span>Numbers, separated by commas</span>
-          <input type="text" id="input" value="4, 2, 2, 8, 3, 3, 1, 5" autocomplete="off" spellcheck="false">
-        </label>
-        <button id="load">Use this array</button>
-        <button id="rand">Random</button>
+      <div class="ctl-row">
+        <label class="fld"><span>Numbers (comma-separated)</span><input type="text" id="arrF" value="2, 0, 2, 1, 3, 1"></label>
+        <button class="opbtn" id="randBtn" style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;padding:10px 18px;border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer">Random</button>
+        <button class="primary" id="sortBtn">Sort it</button>
       </div>
-      <p class="hint" id="hint">Press Play to watch the sort, or step through one action at a time.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">Enter numbers 0–9 and press <b>Sort it</b>. Then use ◀ Back / Step ▶ to move one line at a time.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Original array</h2><span class="sub">unchanged throughout &mdash; only read from</span></div>
+    <div class="panel-head"><h2>Input, counts, output</h2><span class="sub">count[value] is tallied, prefix-summed into positions, then read out</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> index currently being read</span>
+      <div class="cs-block"><div class="cs-label">input</div><div class="cs-row" id="inHost"></div></div>
+      <div class="cs-block"><div class="cs-label">count[value]  (index = value)</div><div class="cs-row" id="cntHost"></div></div>
+      <div class="cs-block"><div class="cs-label">output</div><div class="cs-row" id="outHost"></div></div>
+      <div class="bars-ctrls" id="playbar" style="display:flex;align-items:center;gap:7px;margin:12px 0 2px;flex-wrap:wrap">
+        <button class="bars-cbtn" id="aBack">◀ Back</button>
+        <button class="bars-cbtn" id="aPlay">Play</button>
+        <button class="bars-cbtn" id="aStep">Step ▶</button>
+        <span class="bars-step" id="aCount">0 / 0</span>
       </div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Counting workspace</h2><span class="sub">buckets indexed by value</span></div>
-    <div class="panel-body">
-      <p class="subrow-label">Buckets — count of each value</p>
-      <div class="scroller"><div class="array-row" id="bucketHost"></div></div>
-      <p class="subrow-label">Output — final sorted order</p>
-      <div class="scroller"><div class="array-row" id="outputHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch right"></i> bucket being updated</span>
-        <span class="key"><i class="swatch sorted"></i> freshly written</span>
+      <p class="narr" id="narr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> being tallied / placed</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> the count slot in use</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> placed in output</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; countingSort()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">line highlighted as it runs</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Load an array to begin.</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Counting sort trades comparisons for memory: it's only linear time when the range of possible values
-    is close to the number of elements. Walking the input backwards during placement is what keeps equal
-    values in their original relative order &mdash; the sort is stable.
+    Three linear passes — tally, prefix-sum, place — and no comparison anywhere. Placing from the right using the
+    prefix sums is what keeps equal values in their original order (stability).
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  function renderRow(host, vals, roles){
-    if(!host) return;
-    host.innerHTML="";
-    for(var i=0;i<vals.length;i++){
-      var item=document.createElement("div"); item.className="array-item";
-      var cell=document.createElement("div"); cell.className="cell"+(roles[i]?" "+roles[i]:"");
-      var v=vals[i];
-      cell.textContent=(v===null||v===undefined)?"·":v;
-      item.appendChild(cell);
-      var idx=document.createElement("div"); idx.className="array-idx"; idx.textContent=i;
-      item.appendChild(idx);
-      host.appendChild(item);
-    }
-  }
-  function renderExtra(frame){
-    renderRow(document.getElementById("bucketHost"), frame.buckets, frame.bucketRoles);
-    renderRow(document.getElementById("outputHost"), frame.output, frame.outputRoles);
-  }
-
+  BarsAnim.injectCSS(); // reuse .bars-cbtn / .code-line styling
   var CODE=[
-    "void countingSort(int arr[], int n, int output[]) {",
-    "  int max = 0;",
-    "  for (int i = 0; i < n; i++) if (arr[i] > max) max = arr[i];",
-    "  int count[MAXV] = {0};",
-    "  for (int i = 0; i < n; i++) count[arr[i]]++;              // count occurrences",
-    "  for (int v = 1; v <= max; v++) count[v] += count[v - 1];  // running total -> positions",
-    "  for (int i = n - 1; i >= 0; i--) {                         // stable: walk backwards",
-    "    int pos = --count[arr[i]];",
-    "    output[pos] = arr[i];",
-    "  }",
-    "}"
-  ];
+    "void countingSort(int a[], int n) {",
+    "  int k = maxValue(a) + 1;",
+    "  int count[k]; for (int v=0; v<k; v++) count[v]=0;",
+    "  for (int i=0; i<n; i++) count[a[i]]++;          // tally",
+    "  for (int v=1; v<k; v++) count[v] += count[v-1]; // prefix sums",
+    "  int out[n];",
+    "  for (int i=n-1; i>=0; i--)                       // place, right to left",
+    "    out[--count[a[i]]] = a[i];",
+    "  for (int i=0; i<n; i++) a[i] = out[i];",
+    "}"];
+  var inHost=document.getElementById("inHost"), cntHost=document.getElementById("cntHost"), outHost=document.getElementById("outHost");
+  function cell(v, cls, idx){
+    var col=document.createElement("div"); col.className="cs-col";
+    var box=document.createElement("div"); box.className="cs-cell"+(v===null?" empty":"")+(cls?(" "+cls):""); box.textContent=(v===null?"":v);
+    col.appendChild(box);
+    if(idx!==undefined){ var l=document.createElement("div"); l.className="cs-idx"; l.textContent=idx; col.appendChild(l); }
+    return col;
+  }
+  function renderRow(host, arr, clsArr, withIdx){ host.innerHTML=""; arr.forEach(function(v,i){ host.appendChild(cell(v,(clsArr&&clsArr[i])||"", withIdx?i:undefined)); }); }
+  function renderCS(f){ renderRow(inHost, f.input, f.inCls); renderRow(cntHost, f.count, f.cntCls, true); renderRow(outHost, f.output, f.outCls); }
 
-  function build(input){
-    var a=input.slice(), n=a.length, frames=[], reads=0, writes=0;
-    var max=0; for(var i=0;i<n;i++) if(a[i]>max) max=a[i];
-    var buckets=new Array(max+1).fill(0);
-    var output=new Array(n).fill(null);
-
-    function blank(len){ return new Array(len).fill(""); }
-    function push(phase,narr,mainR,bR,outR,codeLine){
-      frames.push({array:a.slice(),roles:mainR,buckets:buckets.slice(),bucketRoles:bR,
-        output:output.slice(),outputRoles:outR,phase:phase,narr:narr,reads:reads,writes:writes,code:CODE,codeLine:codeLine});
+  function runCounting(a){
+    var n=a.length, k=Math.max.apply(null,a)+1, frames=[];
+    var count=[]; for(var v=0;v<k;v++) count[v]=0;
+    var out=[]; for(var i=0;i<n;i++) out[i]=null;
+    function snap(line,inCls,cntCls,outCls,narr){ frames.push({input:a.slice(), count:count.slice(), output:out.slice(), inCls:inCls, cntCls:cntCls, outCls:outCls, code:line, narr:narr}); }
+    snap([1,2],{},{},{},"Values 0–"+(k-1)+", so count[] has "+k+" slots, all 0.");
+    for(i=0;i<n;i++){ count[a[i]]++; var ic={}; ic[i]='a'; var cc={}; cc[a[i]]='b'; snap(3,ic,cc,{},"Tally a["+i+"] = "+a[i]+" → count["+a[i]+"] = "+count[a[i]]+"."); }
+    snap(3,{},{},{},"Tally complete: count = ["+count.join(", ")+"].");
+    for(v=1;v<k;v++){ count[v]+=count[v-1]; var cc2={}; cc2[v]='b'; cc2[v-1]='a'; snap(4,{},cc2,{},"Prefix sum: count["+v+"] += count["+(v-1)+"] → "+count[v]+"."); }
+    snap(4,{},{},{},"Prefix sums done: count = ["+count.join(", ")+"]. Each count[v] is the end position for value v.");
+    for(i=n-1;i>=0;i--){
+      var val=a[i]; count[val]--; out[count[val]]=val;
+      var ic2={}; ic2[i]='a'; var cc3={}; cc3[val]='b'; var oc={}; for(var q=0;q<n;q++){ if(out[q]!==null) oc[q]='done'; }
+      snap([6,7],ic2,cc3,oc,"Place a["+i+"] = "+val+" at out[count["+val+"]] = out["+count[val]+"]. Decrement count["+val+"] to "+count[val]+".");
     }
-
-    push("start","Counting sort only works on non-negative integers in a known range. It counts how often each value appears, turns those counts into output positions, then places every value directly into its final slot — no comparisons needed.",
-      blank(n), blank(max+1), blank(n), 0);
-
-    push("count-start","Count the occurrences of every value from 0 to "+max+", the largest value in the array.",
-      blank(n), blank(max+1), blank(n), [1,3]);
-    for(var i=0;i<n;i++){
-      reads++;
-      buckets[a[i]]++;
-      var mr=blank(n); mr[i]="left head";
-      var br=blank(max+1); br[a[i]]="left head landed";
-      push("count","Read "+a[i]+" at index "+i+" and increment bucket "+a[i]+" to "+buckets[a[i]]+".", mr, br, blank(n), 4);
-    }
-    push("count-done","Every value has been counted: bucket v now holds how many times v appears in the array.",
-      blank(n), blank(max+1), blank(n), 4);
-
-    push("cumulative-start","Turn counts into positions with a running total, so bucket v holds how many values are ≤ v.",
-      blank(n), blank(max+1), blank(n), 5);
-    for(var v=1; v<=max; v++){
-      buckets[v]+=buckets[v-1];
-      var cr=blank(max+1); cr[v]="left head landed"; cr[v-1]="right head";
-      push("cumulative","Add bucket "+(v-1)+" into bucket "+v+": bucket "+v+" becomes "+buckets[v]+".", blank(n), cr, blank(n), 5);
-    }
-    push("cumulative-done","Bucket v now gives the output index — one past the last slot — where the final copy of v belongs.",
-      blank(n), blank(max+1), blank(n), 5);
-
-    for(var j=n-1;j>=0;j--){
-      var val=a[j];
-      var mr2=blank(n); mr2[j]="left head";
-      var br2=blank(max+1); br2[val]="right head";
-      push("place-look","Look up "+val+" (index "+j+" in the original array): bucket "+val+" says "+buckets[val]+" value(s) are ≤ "+val+".",
-        mr2, br2, blank(n), 7);
-
-      buckets[val]--;
-      writes++;
-      output[buckets[val]]=val;
-
-      var mr3=blank(n); mr3[j]="left head";
-      var br3=blank(max+1); br3[val]="right head landed";
-      var or3=blank(n); or3[buckets[val]]="sorted landed";
-      push("place","Place "+val+" into output index "+buckets[val]+". Walking the input right to left keeps equal values in their original order.",
-        mr3, br3, or3, 8);
-    }
-
-    push("done","Sorted: ["+output.join(", ")+"]. "+n+" values counted and placed across a range of 0–"+max+".",
-      blank(n), blank(max+1), blank(n), 10);
+    for(i=0;i<n;i++) a[i]=out[i];
+    var oc2={}; for(i=0;i<n;i++) oc2[i]='done';
+    snap(8,{},{},oc2,"Copy output back: sorted ["+out.join(", ")+"] — with no comparisons.");
     return frames;
   }
 
-  Viz.init({
-    defaultInput: "4, 2, 2, 8, 3, 3, 1, 5",
-    minN:2, maxN:16,
-    validateValue: function(x){ return x>=0 && Math.floor(x)===x && x<=99; },
-    valueErrorMsg: "Enter non-negative whole numbers (0–99), separated by commas — counting sort needs a known integer range.",
-    build: build,
-    renderExtra: renderExtra,
-    statLabels: [{key:"reads",label:"Reads"},{key:"writes",label:"Writes"}]
-  });
+  var narrEl=document.getElementById("narr"), codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount"), playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return; renderCS(f); narrEl.textContent=f.narr||"";
+    BarsAnim.renderCode(codeHost, CODE, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1350);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function parseArr(){ return document.getElementById("arrF").value.split(/[,\s]+/).map(function(s){return parseInt(s,10);}).filter(function(x){return !isNaN(x)&&x>=0&&x<=9;}).slice(0,10); }
+  function showArray(a){ renderRow(inHost,a,{}); var mx=a.length?Math.max.apply(null,a):0; var z=[]; for(var v=0;v<=mx;v++)z.push(0); renderRow(cntHost,z,{},true); var o=[]; for(var i=0;i<a.length;i++)o.push(null); renderRow(outHost,o,{});
+    narrEl.textContent=a.length?"Ready to sort ["+a.join(", ")+"].":"Enter numbers 0–9."; BarsAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; P.frames=[]; }
+
+  document.getElementById("sortBtn").onclick=function(){ var a=parseArr(); if(a.length<2){ hint("Enter at least two numbers between 0 and 9."); return; } hint("Use ◀ Back / Step ▶ to walk line by line, or let it play."); loadFrames(runCounting(a)); };
+  document.getElementById("randBtn").onclick=function(){ var n=5+Math.floor(Math.random()*4), a=[]; for(var i=0;i<n;i++) a.push(Math.floor(Math.random()*7)); document.getElementById("arrF").value=a.join(", "); stopP(); showArray(a); hint("Random array loaded. Press Sort it."); };
+  document.getElementById("arrF").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("sortBtn").click(); });
+
+  showArray(parseArr());
 })();
 </script>
 </body>

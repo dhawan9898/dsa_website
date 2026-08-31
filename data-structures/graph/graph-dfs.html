@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graph · Depth-First Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .qline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .qline b{color:var(--plot)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="graph.html">&larr; Graph overview</a>
+      <p class="eyebrow">Plunge, Then Backtrack</p>
+      <h1>Depth-First Search</h1>
+    </div>
+    <p class="note">Follow one path as deep as it goes, then step back and try the next — the shape recursion gives you for free.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Graph pages">
+    <a href="graph.html">Overview</a>
+    <a href="graph-bfs.html">Breadth-First</a>
+    <a class="here" href="graph-dfs.html">Depth-First</a>
+    <a href="graph-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The thought process</h2></div>
+    <div class="panel-body notes">
+      <p>DFS is the opposite instinct to BFS: instead of spreading out evenly, it commits to a direction and goes
+      as <em>deep</em> as possible before it ever looks sideways. When it hits a dead end (a vertex whose
+      neighbours are all already seen), it <b>backtracks</b> to the last place it had another choice and tries that.</p>
+      <p>That plunge-and-backtrack rhythm is exactly what a <a href="../stack/stack.html">stack</a> does — and
+      <b>recursion uses the call stack automatically</b>, which is why DFS is usually written as a tiny recursive
+      function. Each call to <code>dfs(u)</code> is one vertex on the current path; when the call returns, you've
+      backtracked off that vertex.</p>
+      <ol class="steps">
+        <li>Mark the current vertex <b>seen</b> (this counts as visiting it).</li>
+        <li>For each neighbour that isn't seen, <b>recurse into it</b> — dive deeper.</li>
+        <li>When every neighbour is handled, the call returns — that's the backtrack.</li>
+      </ol>
+      <div class="callout">
+        <b>The stack strip below is the call stack.</b> Every time DFS dives into a neighbour, that vertex is
+        pushed; every time a call returns, it's popped. The path from the start down to the red vertex is exactly
+        what's on the stack right now.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it run</h2><span class="sub">recursive DFS from A — one C line at a time</span></div>
+    <div class="panel-body notes">
+      <p>Watch it drive down <b>A&rarr;B&rarr;C&rarr;F</b> before backtracking. The blue vertices are the ancestors
+      still waiting on the call stack; green ones have fully returned:</p>
+      <div class="demo-wrap">
+        <div class="graph-stage"><div id="dfsHost"></div><svg class="graph-svg" id="dfsSvg"></svg></div>
+        <p class="qline" id="dfsQ">call stack: <b>[ ]</b></p>
+        <p class="narr" id="dfsNarr" style="margin-top:6px">&nbsp;</p>
+        <div class="code-panel" id="dfsCode" style="margin-top:12px"></div>
+      </div>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> current call (top of stack)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> ancestor, waiting on the stack</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> returned (fully explored)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Reading the code</h2></div>
+    <div class="panel-body notes">
+      <p>There's no explicit stack in the code — the recursion <em>is</em> the stack. Each <code>dfs(g, v)</code>
+      call pauses the current one mid-loop, runs to completion for <code>v</code>, and then resumes exactly where it
+      left off. Like BFS, the <code>seen</code> array makes each vertex processed once and each edge examined once,
+      so DFS is also <b>O(V + E)</b>.</p>
+      <p><b>BFS vs DFS, same graph, same start A:</b> BFS visits <code>A, B, D, C, E, F</code> (nearest first); DFS
+      visits <code>A, B, C, F, E, D</code> (deepest first). Same vertices, same cost — completely different order,
+      and that order is what makes each one suited to different jobs.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="graph-visualizer.html">Run DFS yourself in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    DFS = recursion + a seen array. Dive into the first unseen neighbour, and only when you can't go deeper do you
+    return and try the next — the call stack remembering the way back.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  var POS={ A:[70,60], B:[230,60], C:[390,60], D:[70,230], E:[230,230], F:[390,230] };
+  var EDGES=[["A","B"],["B","C"],["A","D"],["B","E"],["C","F"],["D","E"],["E","F"]];
+  var ADJ={A:["B","D"],B:["A","C","E"],C:["B","F"],D:["A","E"],E:["B","D","F"],F:["C","E"]};
+  var DFS=[
+    "void dfs(Graph *g, int u) {",
+    "  seen[u] = true;             // visit u",
+    "  for (int v : neighbours(u))",
+    "    if (!seen[v])",
+    "      dfs(g, v);              // go deeper",
+    "}"];
+  function edgeKey(a,b){ return a<b?a+"-"+b:b+"-"+a; }
+  function nodesFor(state){ var ns={}; Object.keys(POS).forEach(function(id){ ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:state[id]||""}; }); return ns; }
+  function edgesFor(active){ return EDGES.map(function(e){ var k=edgeKey(e[0],e[1]); return {from:e[0],to:e[1],cls:(active===k?"active":"")}; }); }
+
+  function runDFS(start){
+    var frames=[], seen={}, stack=[], status={};
+    function snap(active,line,activeEdge,narr){
+      var s={};
+      Object.keys(POS).forEach(function(id){
+        if(status[id]==='done') s[id]='done';
+        else if(id===active) s[id]='active';
+        else if(status[id]==='stack') s[id]='frontier';
+        else s[id]='';
+      });
+      frames.push({nodes:nodesFor(s), edges:edgesFor(activeEdge), code:line, codeLines:DFS, narr:narr, _q:stack.slice()});
+    }
+    function visit(u){
+      seen[u]=true; stack.push(u); status[u]='stack';
+      snap(u,1,null,"Enter dfs("+u+"): mark "+u+" seen. It's now the top of the call stack.");
+      ADJ[u].forEach(function(v){
+        var k=edgeKey(u,v);
+        if(!seen[v]){
+          snap(u,[3,4],k,"Neighbour "+v+" isn't seen — recurse into it (dive deeper).");
+          visit(v);
+          snap(u,2,k,"Back from dfs("+v+"). Resume "+u+"'s neighbours where we left off.");
+        } else {
+          snap(u,3,k,"Neighbour "+v+" is already seen — skip it.");
+        }
+      });
+      stack.pop(); status[u]='done';
+      snap(stack.length?stack[stack.length-1]:null,5,null,"dfs("+u+") returns — "+u+" is fully explored. Backtrack.");
+    }
+    visit(start);
+    return frames;
+  }
+
+  var host=document.getElementById("dfsHost"), qEl=document.getElementById("dfsQ"), nEl=document.getElementById("dfsNarr");
+  var frames=runDFS("A");
+  GraphAnim.play({ host:host, svg:document.getElementById("dfsSvg"), narrEl:nEl, codeHost:document.getElementById("dfsCode"), ms:1750, frames:frames });
+  function sstr(a){ return a.length?("[ "+a.join(" ▸ ")+" ]"):"[ ]"; }
+  var mo=new MutationObserver(function(){ for(var k=0;k<frames.length;k++){ if(frames[k].narr===nEl.textContent){ qEl.innerHTML="call stack: <b>"+sstr(frames[k]._q)+"</b>"; break; } } });
+  mo.observe(nEl,{childList:true,characterData:true,subtree:true});
+})();
+</script>
+</body>
+</html>

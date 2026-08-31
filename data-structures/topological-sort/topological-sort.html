@@ -8,6 +8,26 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+  .orderline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .orderline b{color:var(--seal)}
+</style>
 </head>
 <body>
 
@@ -15,166 +35,147 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">DAG &middot; In-Degree &middot; Kahn's Algorithm</p>
+      <p class="eyebrow">An Order That Respects Every &ldquo;Must Come First&rdquo;</p>
       <h1>Topological&nbsp;Sort</h1>
     </div>
-    <p class="note">Orders the vertices of a directed graph so every edge points from earlier to later in the order.</p>
+    <p class="note">Given tasks with "this before that" dependencies, line them all up so every task comes after the ones it depends on.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Topological Sort pages">
+    <a class="here" href="topological-sort.html">Overview</a>
+    <a href="topological-sort-kahn.html">Kahn's Algorithm</a>
+    <a href="topological-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>A topological sort takes a directed graph and lines up its vertices so that every edge points
-      "forward" — if there's an edge <code>u&rarr;v</code>, then <code>u</code> comes before <code>v</code>
-      in the order. Think of edges as "must happen before": course prerequisites, build-system dependencies,
-      spreadsheet formula recalculation order. A topological order only exists at all when the graph has no
-      cycle — a <b>DAG</b>, directed acyclic graph — since a cycle means each vertex in it depends on another
-      that depends back on it, with no valid "first."</p>
+      <p>To get dressed you put socks on before shoes, and a shirt before a jacket — but socks and shirt have no
+      order between them. Course prerequisites, build steps, spreadsheet cell formulas, package installs: all the
+      same shape — a set of tasks where some <em>must</em> happen before others, and the rest are free.</p>
 
-      <p>Kahn's algorithm (shown here) finds one: track every vertex's <b>in-degree</b> (how many edges
-      point at it — how many prerequisites it has left), start with every vertex that already has zero, and
-      repeatedly peel one off, decrementing its neighbors' in-degrees. A neighbor whose in-degree just hit
-      zero has had its last prerequisite satisfied, so it joins the queue too.</p>
+      <p>A <b>topological sort</b> takes that tangle of "before" arrows and flattens it into a single line where
+      <em>every</em> arrow points forward — no task ever appears before something it depends on. There can be many
+      valid orders (socks-then-shirt or shirt-then-socks both work); topological sort finds one of them.</p>
 
-      <table class="notes-table">
-        <tr><th>Case</th><th>Time</th></tr>
-        <tr><td>Every case</td><td><b>O(V + E)</b> &mdash; each vertex queued once, each edge examined once</td></tr>
-      </table>
-
-      <p><b>Implementation:</b> the code panel below is exactly BFS with a different starting condition —
-      instead of starting from one chosen source, it starts from every vertex that has no prerequisites at
-      all, and "visiting" a vertex means decrementing its neighbors' in-degrees rather than just marking
-      them seen. That structural similarity isn't a coincidence: both are "process ready work, discover more
-      ready work" algorithms.</p>
-
-      <p><b>Common mistake:</b> forgetting to check whether every vertex actually made it into the order.
-      If the graph has a cycle, every vertex in that cycle keeps at least one unsatisfied prerequisite
-      forever, so the queue runs dry with vertices left over — comparing the final order's length against
-      the vertex count is the standard, cheap way to detect that and report "no valid order exists" instead
-      of silently returning a partial, wrong answer.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; a small dependency graph</span></div>
-    <div class="panel-body">
-      <div class="graphwrap" id="demoWrap">
-        <svg class="links" id="demoLinks"></svg>
-        <div id="demoNodes"></div>
+      <div class="callout">
+        <b>It only works on a DAG.</b> The graph must be <b>directed</b> (arrows have a direction: "A before B")
+        and <b>acyclic</b> (no cycles). If A needs B, B needs C, and C needs A, there's no valid order at all —
+        that's a contradiction, and a good topological-sort algorithm <em>detects</em> it rather than looping
+        forever.
       </div>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 4px">Order so far</p>
-      <div class="scroller"><div class="array-row" id="demoOrder"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; topoSort() &mdash; Kahn's algorithm</span></div>
+    <div class="panel-head"><h2>The trick: in-degree</h2><span class="sub">a task is ready when nothing points at it</span></div>
+    <div class="panel-body notes">
+      <p>The cleanest method (<b>Kahn's algorithm</b>) rests on one number per vertex: its <b>in-degree</b> — how
+      many arrows point <em>into</em> it, i.e. how many unfinished prerequisites it still has. A vertex with
+      in-degree <b>0</b> depends on nothing, so it's <em>ready</em> and safe to output next. Output it, then
+      "remove" its outgoing arrows — which lowers its dependents' in-degrees. Some of them now hit 0 and become
+      ready in turn.</p>
+      <p>Watch it below. Each vertex's number is its current in-degree, ticking down to 0 as its prerequisites get
+      placed. Arrows point from a prerequisite to the task that needs it:</p>
+      <div class="graph-stage"><div id="demoHost"></div><svg class="graph-svg" id="demoSvg"></svg></div>
+      <p class="orderline" id="demoOrder">order: <b>—</b></p>
+      <p class="narr" id="demoNarr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> being output now</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> ready (in-degree 0, queued)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> placed in the order</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn the algorithm</h2><span class="sub">the thought process, an animation, and the C</span></div>
     <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <div class="dive-grid">
+        <a class="dive-card" href="topological-sort-kahn.html">
+          <span class="num">01</span><h3>Kahn's Algorithm</h3>
+          <p>Count in-degrees, queue the ready vertices, and peel them off one at a time — line by line, with cycle detection.</p>
+          <span class="go">Open the walkthrough &rarr;</span>
+        </a>
+        <a class="dive-card" href="topological-sort-visualizer.html">
+          <span class="num">02</span><h3>Playground</h3>
+          <p>Run it on a DAG, then add a back-edge and watch the very same algorithm refuse — because a cycle has no valid order.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs, cycles, and where it's used</span></div>
+    <div class="panel-body notes">
+      <table class="notes-table">
+        <tr><th>Step</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Count in-degrees</td><td>Scan every edge once</td><td>O(V + E)</td></tr>
+        <tr><td>Peel ready vertices</td><td>Each vertex out once, each edge relaxed once</td><td>O(V + E)</td></tr>
+        <tr><td>Whole sort</td><td>Kahn's algorithm, start to finish</td><td><b>O(V + E)</b></td></tr>
+      </table>
+      <p><b>Cycle detection comes free.</b> If the graph has a cycle, the vertices in that cycle can never reach
+      in-degree 0 (they forever point at each other), so the queue empties while some vertices are still unplaced.
+      Output fewer than <em>V</em> vertices ⟹ there's a cycle. That's often <em>why</em> you run a topological
+      sort — to check a dependency graph is even satisfiable.</p>
+
+      <p><b>Where you'll meet it.</b> Build systems and <code>make</code> (compile in dependency order), package
+      managers resolving install order, task schedulers, spreadsheet recalculation, course-prerequisite planning,
+      and detecting circular dependencies (the <a href="../graph/graph-dfs.html">DFS</a> version of topo-sort is a
+      cornerstone of that). It's really just a specialized graph traversal — a directed cousin of BFS.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="topological-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="topological-sort-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — add an edge that points back into an earlier vertex, closing a cycle, and watch
-    the algorithm correctly report that no order exists instead of guessing.
+    Topological sort = repeatedly output whatever depends on nothing left. In-degree 0 means "ready"; peel those
+    off, lower everyone else's count, repeat — and if you can't place them all, you've found a cycle.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  var POS={ A:[100,50], B:[320,50], C:[210,155], D:[110,260], E:[320,260], F:[210,360] };
+  var EDGES=[["A","C"],["B","C"],["C","D"],["C","E"],["D","F"],["E","F"]]; // directed u->v: u before v
+  function nodesFor(state,indeg){ var ns={}; Object.keys(POS).forEach(function(id){
+    ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:state[id]||"",label:String(indeg[id])}; }); return ns; }
+  function edgesFor(active){ return EDGES.map(function(e){ var k=e[0]+">"+e[1]; return {from:e[0],to:e[1],cls:(active===k?"active":"")}; }); }
+  function clone(o){ var c={}; Object.keys(o).forEach(function(k){c[k]=o[k];}); return c; }
+  function F(state,indeg,active,order,narr){ var f={nodes:nodesFor(state,clone(indeg)), edges:edgesFor(active), narr:narr, _order:order.slice()}; f.directed=true; return f; }
 
-  var CODE=[
-    "void topoSort(Graph *g, int n, int order[]) {",
-    "  int indeg[MAXV] = {0}, queue[MAXV], head = 0, tail = 0, k = 0;",
-    "  for (int u = 0; u < n; u++)",
-    "    for (int i = 0; i < g->deg[u]; i++) indeg[g->adj[u][i]]++;",
-    "",
-    "  for (int u = 0; u < n; u++)",
-    "    if (indeg[u] == 0) queue[tail++] = u;             // no prerequisites: ready now",
-    "",
-    "  while (head < tail) {",
-    "    int u = queue[head++];",
-    "    order[k++] = u;                                    // u is next in the order",
-    "    for (int i = 0; i < g->deg[u]; i++) {",
-    "      int v = g->adj[u][i];",
-    "      if (--indeg[v] == 0) queue[tail++] = v;           // v's last prerequisite is done",
-    "    }",
-    "  }",
-    "  if (k < n) { /* cycle detected: no valid ordering exists */ }",
-    "}"
-  ];
+  // scripted Kahn on the DAG: order A B C D E F
+  var frames=[], st={}, ind={A:0,B:0,C:2,D:1,E:1,F:2}, order=[];
+  st.A="frontier"; st.B="frontier"; frames.push(F(st,ind,null,order,"In-degrees counted. A and B depend on nothing (0) — they're ready. Queue: [A, B]"));
+  st.A="active"; frames.push(F(st,ind,null,order,"Output A. Now remove its outgoing arrow."));
+  ind.C=1; order.push("A"); st.A="done"; frames.push(F(st,ind,"A>C",order,"A→C removed: C's in-degree drops to 1 (still waiting on B)."));
+  st.B="active"; frames.push(F(st,ind,null,order,"Output B — also in-degree 0."));
+  ind.C=0; order.push("B"); st.B="done"; st.C="frontier"; frames.push(F(st,ind,"B>C",order,"B→C removed: C hits 0 — now ready. Queue: [C]"));
+  st.C="active"; frames.push(F(st,ind,null,order,"Output C, and remove both of its arrows."));
+  ind.D=0; ind.E=0; order.push("C"); st.C="done"; st.D="frontier"; st.E="frontier"; frames.push(F(st,ind,"C>D",order,"C→D and C→E removed: D and E both hit 0. Queue: [D, E]"));
+  st.D="active"; frames.push(F(st,ind,null,order,"Output D."));
+  ind.F=1; order.push("D"); st.D="done"; frames.push(F(st,ind,"D>F",order,"D→F removed: F drops to 1 (still needs E)."));
+  st.E="active"; frames.push(F(st,ind,null,order,"Output E."));
+  ind.F=0; order.push("E"); st.E="done"; st.F="frontier"; frames.push(F(st,ind,"E>F",order,"E→F removed: F hits 0 — ready. Queue: [F]"));
+  st.F="active"; frames.push(F(st,ind,null,order,"Output F, the last one."));
+  order.push("F"); st.F="done"; frames.push(F(st,ind,null,order,"All 6 placed — a valid order: A, B, C, D, E, F. Every arrow points forward."));
 
-  var nodes=[{id:0,val:"Shirt"},{id:1,val:"Jacket"},{id:2,val:"Socks"},{id:3,val:"Shoes"}];
-  var edges=[{from:0,to:1},{from:2,to:3}];
-  var adj={}; nodes.forEach(function(n){adj[n.id]=[];});
-  edges.forEach(function(e){ adj[e.from].push(e.to); });
-  function valOf(id){ return nodes.filter(function(n){return n.id===id;})[0].val; }
-
-  function scriptFrames(){
-    var indeg={}, frames=[];
-    nodes.forEach(function(n){ indeg[n.id]=0; });
-    edges.forEach(function(e){ indeg[e.to]++; });
-
-    function push(curU, edgeKey, orderedIds, narr, codeLine){
-      frames.push({struct:{
-        graph:{
-          nodes: nodes.map(function(n){
-            var role = n.id===curU ? "left head landed" : (orderedIds.indexOf(n.id)>=0 ? "sorted" : "");
-            return {id:n.id, val:n.val, role:role, label:String(indeg[n.id])};
-          }),
-          edges: edges.map(function(e){ return {from:e.from, to:e.to, active: (e.from+":"+e.to)===edgeKey}; })
-        },
-        order: orderedIds.map(function(id){ return {val:valOf(id), role:"sorted"}; })
-      }, narr:narr, code:CODE, codeLine:codeLine});
-    }
-
-    push(undefined, null, [], "Count in-degree: how many prerequisites each item has.", [2,3]);
-    var queue=[], order=[];
-    nodes.forEach(function(n){ if(indeg[n.id]===0) queue.push(n.id); });
-    push(undefined, null, [], "Zero prerequisites: "+queue.map(valOf).join(", ")+" — queue them first.", [5,6]);
-
-    var head=0;
-    while(head<queue.length){
-      var u=queue[head++];
-      order.push(u);
-      push(u, null, order, "Take \""+valOf(u)+"\" — add it to the order.", [9,10]);
-      adj[u].forEach(function(v){
-        indeg[v]--;
-        if(indeg[v]===0){
-          queue.push(v);
-          push(u, u+":"+v, order, "\""+valOf(u)+"\" done — \""+valOf(v)+"\" has no prerequisites left, queue it.", 13);
-        } else {
-          push(u, u+":"+v, order, "\""+valOf(u)+"\" done — \""+valOf(v)+"\" still waiting on "+indeg[v]+" more.", 13);
-        }
-      });
-    }
-    push(undefined, null, order, "Order: "+order.map(valOf).join(" → ")+".", 17);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      DSRender.graph(document.getElementById("demoNodes"), document.getElementById("demoLinks"), frame.struct.graph, {directed:true});
-      DSRender.slots(document.getElementById("demoOrder"), frame.struct.order);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  GraphAnim.play({ host:document.getElementById("demoHost"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:1900, frames:frames });
+  var oEl=document.getElementById("demoOrder"), nEl=document.getElementById("demoNarr");
+  var mo=new MutationObserver(function(){ for(var k=0;k<frames.length;k++){ if(frames[k].narr===nEl.textContent){ oEl.innerHTML="order: <b>"+(frames[k]._order.length?frames[k]._order.join(" → "):"—")+"</b>"; break; } } });
+  mo.observe(nEl,{childList:true,characterData:true,subtree:true});
 })();
 </script>
 </body>

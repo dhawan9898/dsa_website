@@ -3,154 +3,165 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Insertion Sort — step by step</title>
+<title>Insertion Sort Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .ctl-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .statline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .statline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="insertion-sort.html">&larr; Insertion Sort notes</a>
       <p class="eyebrow">Take &middot; Walk Left &middot; Insert</p>
-      <h1>Insertion&nbsp;Sort</h1>
+      <h1>Insertion&nbsp;Sort&nbsp;Playground</h1>
     </div>
-    <p class="note">Builds a sorted prefix one element at a time. Each new value walks left past everything bigger than it until it finds its place.</p>
+    <p class="note">Type your own numbers or randomize, then watch each key lift out, shift bigger values right, and drop into place — one C line at a time.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Insertion Sort pages">
+    <a href="insertion-sort.html">Overview</a>
+    <a class="here" href="insertion-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Set the array</h2><span class="sub">2 &ndash; 16 numbers</span></div>
+    <div class="panel-head"><h2>Your array</h2><span class="sub">up to 9 numbers</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld">
-          <span>Numbers, separated by commas</span>
-          <input type="text" id="input" value="38, 27, 43, 3, 9, 82, 10" autocomplete="off" spellcheck="false">
-        </label>
-        <button id="load">Use this array</button>
-        <button id="rand">Random</button>
+      <div class="ctl-row">
+        <label class="fld"><span>Numbers (comma-separated)</span><input type="text" id="arrF" value="5, 2, 8, 1, 9, 3"></label>
+        <button class="opbtn" id="randBtn" style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;padding:10px 18px;border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer">Random</button>
+        <button class="primary" id="sortBtn">Sort it</button>
       </div>
-      <p class="hint" id="hint">Press Play to watch the sort, or step through one comparison at a time.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">Enter numbers and press <b>Sort it</b>. Then use ◀ Back / Step ▶ to move one line at a time.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Working array</h2><span class="sub">key walks left into the sorted prefix</span></div>
+    <div class="panel-head"><h2>The array</h2><span class="sub">gold = the key being inserted; green bars are sorted</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> the key, moving left</span>
-        <span class="key"><i class="swatch right"></i> value being compared against</span>
-        <span class="key"><i class="swatch sorted"></i> sorted prefix</span>
+      <div class="bars-stage"><div id="barsHost"></div></div>
+      <div class="bars-ctrls" id="playbar">
+        <button class="bars-cbtn" id="aBack">◀ Back</button>
+        <button class="bars-cbtn" id="aPlay">Play</button>
+        <button class="bars-cbtn" id="aStep">Step ▶</button>
+        <span class="bars-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="statline" id="statLine">&nbsp;</p>
+      <p class="narr" id="narr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:#B07A17;border-color:#B07A17"></i> key</span>
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> compared / shifted</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> sorted</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insertionSort()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">line highlighted as it runs</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Load an array to begin.</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Insertion sort shines on data that's already close to sorted &mdash; a nearly-sorted array means each key
-    only has to shift a step or two before it finds its place, which is why it's often used to finish off
-    small partitions inside faster sorts like quicksort.
+    Each pass lifts a key and shifts bigger values right until it finds the key's slot. It stops early the moment it
+    meets a smaller value — which is why nearly-sorted input runs in O(n).
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
   var CODE=[
-    "void insertionSort(int arr[], int n) {",
+    "void insertionSort(int a[], int n) {",
     "  for (int i = 1; i < n; i++) {",
-    "    int key = arr[i];",
+    "    int key = a[i];",
     "    int j = i - 1;",
-    "    while (j >= 0 && arr[j] > key) {",
-    "      arr[j + 1] = arr[j];   // shift right",
+    "    while (j >= 0 && a[j] > key) {",
+    "      a[j+1] = a[j];     // shift right",
     "      j--;",
     "    }",
-    "    arr[j + 1] = key;        // key found its spot",
+    "    a[j+1] = key;        // drop the key in",
     "  }",
-    "}"
-  ];
-
-  function build(input){
-    var a=input.slice(), n=a.length, frames=[], cmp=0, wrt=0;
-    function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr,codeLine,moves){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,wrt:wrt,code:CODE,codeLine:codeLine,moves:moves}); }
-
-    push(roles(),"start","Insertion sort grows a sorted prefix one element at a time: each new element walks left, swapping past every larger value, until it finds its place.",0);
-    var rInit=roles(); rInit[0]="sorted";
-    push(rInit,"init","Index 0 holds "+a[0]+" by itself — a single element is trivially a sorted run.");
-
+    "}"];
+  // d = display array; holePos shows the floating key value in gold
+  function barsFor(d, sortedTo, holePos, key, cmp){
+    return d.map(function(v,i){
+      var c=""; if(i<sortedTo) c="sorted";
+      if(i===holePos){ c="pivot"; v=key; }
+      if(i===cmp) c="a";
+      var ptrs=[]; if(i===holePos) ptrs=['key'];
+      return {val:v, cls:c, ptrs:ptrs};
+    });
+  }
+  function runInsertion(a){
+    a=a.slice(); var n=a.length, frames=[], comps=0, shifts=0;
+    function snap(line,d,sortedTo,holePos,key,cmp,narr){ frames.push({bars:barsFor(d.slice(),sortedTo,holePos,key,cmp), code:line, codeLines:CODE, narr:narr, _c:comps, _s:shifts}); }
+    snap(0,a,1,-1,0,-1,"Start. a[0] is a sorted prefix of length 1.");
     for(var i=1;i<n;i++){
-      var r0=roles();
-      for(var k=0;k<i;k++) r0[k]="sorted";
-      r0[i]="left head";
-      push(r0,"key","Take the next value, "+a[i]+" at index "+i+", as the key to insert into the sorted prefix on its left.",[2,3]);
-
-      var j=i;
-      while(j>0){
-        var r=roles();
-        for(var k2=0;k2<i;k2++) r[k2]="sorted";
-        r[j-1]="right head"; r[j]="left head";
-        cmp++;
-        var willSwap=a[j-1]>a[j];
-        push(r,"compare","Compare the key "+a[j]+" with "+a[j-1]+" to its left. "+
-          (willSwap ? "Larger, so shift it right and keep walking left." : "Not larger — the key has found its spot."),4);
-        if(!willSwap) break;
-        var tmp=a[j-1]; a[j-1]=a[j]; a[j]=tmp; wrt++;
-        var r2=roles();
-        for(var k3=0;k3<i;k3++) r2[k3]="sorted";
-        r2[j-1]="left head landed";
-        push(r2,"shift","Shifted: "+a[j-1]+" moves one step left, past "+a[j]+".",[5,6],
-          [{from:j-1,to:j},{from:j,to:j-1}]);
+      var key=a[i], j=i-1;
+      snap([2,3],a,i,i,key,-1,"Pass "+i+": lift key = a["+i+"] = "+key+". Compare it leftward from index "+j+".");
+      while(j>=0 && a[j]>key){
+        comps++;
+        snap(4,a,i,j+1,key,j,"a["+j+"] = "+a[j]+" > key = "+key+" — shift it right.");
+        a[j+1]=a[j]; shifts++;
+        snap([5,6],a,i,j,key,-1,a[j+1]+" moved to index "+(j+1)+". The gap is now at index "+j+".");
         j--;
       }
-      var rEnd=roles();
-      for(var k4=0;k4<=i;k4++) rEnd[k4]="sorted";
-      push(rEnd,"placed","The key has settled at index "+j+". The sorted prefix now covers indices 0–"+i+".",8);
+      if(j>=0){ comps++; snap(4,a,i,j+1,key,j,"a["+j+"] = "+a[j]+" ≤ key = "+key+" — stop shifting."); }
+      a[j+1]=key;
+      snap(8,a,i+1,-1,0,-1,"Drop key "+key+" into index "+(j+1)+". Sorted prefix is now length "+(i+1)+".");
     }
-    push(new Array(n).fill("sorted"),"done","Sorted: ["+a.join(", ")+"]. "+cmp+" comparisons and "+wrt+" shifts for "+n+" numbers.",10);
+    var frames_final=frames; snap(10,a,n,-1,0,-1,"Sorted: ["+a.join(", ")+"]. "+comps+" comparisons, "+shifts+" shifts.");
     return frames;
   }
 
-  Viz.init({
-    defaultInput: "38, 27, 43, 3, 9, 82, 10",
-    minN:2, maxN:16,
-    build: build,
-    statLabels: [{key:"cmp",label:"Comparisons"},{key:"wrt",label:"Shifts"}]
-  });
+  var host=document.getElementById("barsHost"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount"), statEl=document.getElementById("statLine");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    BarsAnim.render(host, f); narrEl.textContent=f.narr||"";
+    statEl.innerHTML="comparisons: <b>"+(f._c||0)+"</b> &nbsp; shifts: <b>"+(f._s||0)+"</b>";
+    BarsAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1150);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function parseArr(){ return document.getElementById("arrF").value.split(/[,\s]+/).map(function(s){return parseInt(s,10);}).filter(function(x){return !isNaN(x);}).slice(0,9); }
+  function showArray(a){ var f={bars:barsFor(a,0,-1,0,-1), narr:a.length?"Ready to sort ["+a.join(", ")+"].":"Enter some numbers."}; P.frames=[f]; P.i=0; BarsAnim.render(host,f); narrEl.textContent=f.narr; statEl.innerHTML="&nbsp;"; BarsAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; }
+
+  document.getElementById("sortBtn").onclick=function(){ var a=parseArr(); if(a.length<2){ hint("Enter at least two numbers."); return; } hint("Use ◀ Back / Step ▶ to walk line by line, or let it play."); loadFrames(runInsertion(a)); };
+  document.getElementById("randBtn").onclick=function(){ var n=5+Math.floor(Math.random()*4), a=[]; for(var i=0;i<n;i++) a.push(1+Math.floor(Math.random()*20)); document.getElementById("arrF").value=a.join(", "); stopP(); showArray(a); hint("Random array loaded. Press Sort it."); };
+  document.getElementById("arrF").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("sortBtn").click(); });
+
+  showArray(parseArr());
 })();
 </script>
 </body>

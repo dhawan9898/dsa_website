@@ -3,11 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Graph</title>
+<title>Graph (BFS &amp; DFS)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
@@ -15,193 +33,171 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Vertices &middot; Edges &middot; Traversal</p>
-      <h1>Graph</h1>
+      <p class="eyebrow">Dots And The Lines Between Them</p>
+      <h1>Graph&nbsp;<span style="font-weight:500">(BFS &amp; DFS)</span></h1>
     </div>
-    <p class="note">A set of vertices, connected by edges — the shape underneath maps, networks, dependencies, and relationships.</p>
+    <p class="note">The most general structure of all — anything that's a set of things with connections. Two classic ways to explore one: breadth-first and depth-first.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Graph pages">
+    <a class="here" href="graph.html">Overview</a>
+    <a href="graph-bfs.html">Breadth-First</a>
+    <a href="graph-dfs.html">Depth-First</a>
+    <a href="graph-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>A graph is just <b>vertices</b> (the dots) and <b>edges</b> (the connections between them). That's
-      a deliberately loose definition — trees, linked lists, and grids are all special-case graphs. Edges
-      can be <b>directed</b> (one-way, like a "follows" relationship) or <b>undirected</b> (two-way, like a
-      "friends with" relationship, the kind used on this page), and can carry weights (like distance or
-      cost) or not.</p>
-      <p>The two fundamental ways to explore a graph from a starting vertex are <b>breadth-first search
-      (BFS)</b> and <b>depth-first search (DFS)</b>. Both visit every reachable vertex exactly once, in
-      O(V + E) time — the difference is purely the order:</p>
-      <ul>
-        <li><b>BFS</b> uses a queue: visit the start, then all its neighbours, then all of <em>their</em>
-        unvisited neighbours, spreading outward one full "ring" at a time. In an unweighted graph, this is
-        also how you find the shortest path.</li>
-        <li><b>DFS</b> uses a stack (or recursion): commit to one neighbour, then one of <em>its</em>
-        neighbours, as deep as possible, only backtracking when it hits a dead end.</li>
-      </ul>
+      <p>A <b>graph</b> is just <em>things</em> and the <em>connections</em> between them. The things are called
+      <b>vertices</b> (or nodes); the connections are <b>edges</b>. That's the whole definition — and it's so
+      general that almost everything is a graph: cities joined by roads, people joined by friendships, web pages
+      joined by links, tasks joined by "must happen before" arrows.</p>
 
-      <table class="notes-table">
-        <tr><th>Operation</th><th>Time</th></tr>
-        <tr><td>Add vertex</td><td><b>O(1)</b></td></tr>
-        <tr><td>Add / remove edge</td><td><b>O(1)</b></td></tr>
-        <tr><td>BFS / DFS (whole graph)</td><td>O(V + E)</td></tr>
-      </table>
+      <p>A <a href="../binary-search-tree/binary-search-tree.html">tree</a> is actually just a special, tidy graph
+      (one with no cycles and a single root). A graph drops those rules: any vertex can connect to any other, a
+      connection can loop back, and there needn't be a "top".</p>
 
-      <p>This is the model behind road-network routing, social-network "friends of friends," dependency
-      graphs (build systems, package managers), and the web itself — pages as vertices, links as edges.</p>
-
-      <p><b>Implementation:</b> the code panel below stores each vertex's neighbors as its own small array —
-      <code>g->adj[v]</code> — alongside a count, <code>g->deg[v]</code>, of how many it currently has. Adding
-      an edge is just appending to two arrays at once, one per endpoint, which is exactly why it's O(1). BFS
-      and DFS both boil down to "visit a vertex, then walk <code>g->adj[cur]</code> and recurse or enqueue
-      whatever isn't visited yet" — the only real difference between them is <em>which</em> data structure
-      holds the not-yet-visited vertices: BFS uses an explicit queue, DFS uses the call stack (recursion) as
-      an implicit one.</p>
-
-      <p><b>When it breaks:</b> add an edge to only one endpoint's array and forget the other, and the graph
-      quietly becomes directed without anyone deciding that on purpose — traversing from one side finds the
-      neighbor, but traversing from the other side never finds the way back. The other classic bug is the
-      <code>visited</code> check itself: skip it, or set it <em>after</em> the recursive call instead of
-      before, and a single cycle turns BFS or DFS into an infinite loop, since there's nothing left to stop
-      it from walking back around forever.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; BFS, then DFS, from the same vertex</span></div>
-    <div class="panel-body">
-      <div class="graphwrap" id="demoWrap">
-        <svg class="links" id="demoLinks"></svg>
-        <div id="demoHost"></div>
+      <div class="callout">
+        <b>Two flavours of edge.</b> An edge can be <b>undirected</b> (a two-way street: if A connects to B, B
+        connects to A — like a friendship) or <b>directed</b> (a one-way arrow: A&rarr;B doesn't imply B&rarr;A —
+        like "follows" on social media). Edges can also carry a <b>weight</b> — a cost or distance — which is what
+        <a href="../dijkstra/dijkstra.html">Dijkstra's</a> and <a href="../kruskal-mst/kruskal-mst.html">MST</a>
+        algorithms care about. This page uses the simplest kind: undirected, unweighted.
       </div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; bfs() / dfs()</span></div>
+    <div class="panel-head"><h2>How a computer stores one</h2><span class="sub">the adjacency list</span></div>
+    <div class="panel-body notes">
+      <p>There's no "graph" keyword in C — you build one. The most common way is an <b>adjacency list</b>: for each
+      vertex, keep a list of the vertices it's directly connected to. Vertex <code>A</code>'s list is
+      <code>[B, D]</code>, vertex <code>B</code>'s is <code>[A, C, E]</code>, and so on. To ask "who can I reach in
+      one step from here?" you just read that vertex's list. (The other common option is an <b>adjacency matrix</b>
+      — a grid of 0/1 flags — better when the graph is dense.)</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Exploring it: two orders</h2><span class="sub">breadth-first spreads out; depth-first plunges in</span></div>
+    <div class="panel-body notes">
+      <p>Given a graph, the basic question is "starting here, which vertices can I reach, and in what order do I
+      visit them?" There are two famous answers, and they differ only in <em>which vertex you pick next</em>:</p>
+      <ul style="line-height:1.7">
+        <li><b>Breadth-first (BFS)</b> explores in rings: first everything one step away, then everything two steps
+        away, and so on. It uses a <a href="../queue/queue.html">queue</a> (first-in, first-out).</li>
+        <li><b>Depth-first (DFS)</b> plunges down one path as far as it can, then backtracks and tries the next.
+        It uses a <a href="../stack/stack.html">stack</a> (or, equivalently, recursion).</li>
+      </ul>
+      <p>Watch BFS explore this little graph from <b>A</b>, visiting nearest-first. Notice how it fills a whole ring
+      before moving outward:</p>
+      <div class="graph-stage"><div id="demoHost"></div><svg class="graph-svg" id="demoSvg"></svg></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> the vertex being visited now</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> in the queue (seen, waiting)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> done</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn the two traversals</h2><span class="sub">the thought process, an animation, and the C</span></div>
     <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <div class="dive-grid">
+        <a class="dive-card" href="graph-bfs.html">
+          <span class="num">01</span><h3>Breadth-First Search</h3>
+          <p>A queue-driven ring-by-ring sweep. See why "first seen, first visited" gives you the shortest number of hops.</p>
+          <span class="go">Open BFS &rarr;</span>
+        </a>
+        <a class="dive-card" href="graph-dfs.html">
+          <span class="num">02</span><h3>Depth-First Search</h3>
+          <p>A stack-driven plunge down one path until it dead-ends, then backtrack. The natural fit for recursion.</p>
+          <span class="go">Open DFS &rarr;</span>
+        </a>
+        <a class="dive-card" href="graph-visualizer.html">
+          <span class="num">03</span><h3>Playground</h3>
+          <p>Pick a start vertex and run BFS or DFS on a sample graph, one step at a time.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs and where graphs show up</span></div>
+    <div class="panel-body notes">
+      <table class="notes-table">
+        <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>BFS / DFS</td><td>Visit every reachable vertex once</td><td><b>O(V + E)</b></td></tr>
+        <tr><td>Add edge</td><td>Append to a vertex's adjacency list</td><td>O(1)</td></tr>
+        <tr><td>Is A adjacent to B?</td><td>Scan A's list (matrix: O(1))</td><td>O(deg A)</td></tr>
+      </table>
+      <p><em>V</em> is the number of vertices, <em>E</em> the number of edges. Both traversals touch every vertex
+      and every edge once, so both are <b>O(V + E)</b> — you can't do better if you must look at the whole graph.</p>
+
+      <p><b>Why the traversal order matters.</b> On an <em>unweighted</em> graph, BFS finds the path with the
+      <em>fewest edges</em> — the shortest route in "number of hops" — because it reaches every vertex by its
+      nearest ring first. DFS doesn't promise that, but its plunge-and-backtrack shape is exactly what you want for
+      detecting cycles, finding connected pieces, and <a href="../topological-sort/topological-sort.html">ordering
+      tasks by dependency</a>.</p>
+
+      <p><b>Where you'll meet graphs.</b> Maps and GPS routing, social networks, the web's link structure, build
+      systems and package managers (dependency graphs), network packet routing, and state-space search in games and
+      puzzles. Weighted, directed versions power <a href="../dijkstra/dijkstra.html">shortest-path</a> and
+      <a href="../kruskal-mst/kruskal-mst.html">minimum-spanning-tree</a> algorithms.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="graph-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="graph-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — build a small graph, then run BFS and DFS from the same vertex and compare the
-    order in the commentary log.
+    A graph is the most general shape in this whole guide: vertices and edges, nothing more. Master BFS and DFS
+    here and you've got the two moves nearly every other graph algorithm is built on.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var BFS_CODE=[
-    "void bfs(Graph *g, int start) {",
-    "  int visited[MAXV] = {0}, queue[MAXV], head = 0, tail = 0;",
-    "  visited[start] = 1;",
-    "  queue[tail++] = start;                 // enqueue start",
-    "  while (head < tail) {",
-    "    int cur = queue[head++];             // dequeue",
-    "    visit(cur);",
-    "    for (int i = 0; i < g->deg[cur]; i++) {",
-    "      int nb = g->adj[cur][i];",
-    "      if (!visited[nb]) {",
-    "        visited[nb] = 1;",
-    "        queue[tail++] = nb;               // discover + enqueue",
-    "      }",
-    "    }",
-    "  }",
-    "}"
-  ];
-  var DFS_CODE=[
-    "void dfs(Graph *g, int v, int *visited) {",
-    "  visited[v] = 1;",
-    "  visit(v);",
-    "  for (int i = 0; i < g->deg[v]; i++) {",
-    "    int nb = g->adj[v][i];",
-    "    if (!visited[nb]) dfs(g, nb, visited);   // recurse into the unvisited neighbor",
-    "  }",
-    "}"
-  ];
-
-  var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"},{id:4,val:"E"},{id:5,val:"F"}];
-  var edges=[{from:0,to:1},{from:0,to:2},{from:1,to:3},{from:2,to:3},{from:3,to:4},{from:4,to:5},{from:2,to:5}];
-  var adj={}; nodes.forEach(function(n){adj[n.id]=[];});
-  edges.forEach(function(e){ adj[e.from].push(e.to); adj[e.to].push(e.from); });
-  function valOf(id){ return nodes.filter(function(n){return n.id===id;})[0].val; }
-
-  function struct(nodeRoles, edgeActiveSet){
-    return {
-      nodes: nodes.map(function(n){ return {id:n.id, val:n.val, role:nodeRoles[n.id]||""}; }),
-      edges: edges.map(function(e){
-        var k1=e.from+":"+e.to, k2=e.to+":"+e.from;
-        return {from:e.from, to:e.to, active: !!(edgeActiveSet && (edgeActiveSet[k1]||edgeActiveSet[k2]))};
-      })
-    };
+  // fixed 2x3 grid graph, no edge crossings
+  var POS={ A:[70,60], B:[230,60], C:[390,60], D:[70,230], E:[230,230], F:[390,230] };
+  var EDGES=[["A","B"],["B","C"],["A","D"],["B","E"],["C","F"],["D","E"],["E","F"]];
+  var ADJ={A:["B","D"],B:["A","C","E"],C:["B","F"],D:["A","E"],E:["B","D","F"],F:["C","E"]};
+  function baseNodes(state){
+    var ns={}; Object.keys(POS).forEach(function(id){ ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:(state[id]||"")}; }); return ns;
   }
-  function visitedRoles(visited, currentId){
-    var roles={};
-    Object.keys(visited).forEach(function(idStr){ var id=Number(idStr); roles[id]=(id===currentId)?"left head landed":"sorted"; });
-    return roles;
-  }
+  function edgesFor(){ return EDGES.map(function(e){ return {from:e[0],to:e[1]}; }); }
+  function F(state,narr){ return {nodes:baseNodes(state), edges:edgesFor(), narr:narr}; }
 
-  function scriptFrames(){
-    var frames=[];
-    function push(nodeRoles, edgeSet, narr, code, codeLine){ frames.push({struct:struct(nodeRoles,edgeSet), narr:narr, code:code, codeLine:codeLine}); }
-    push({},{}, "A small graph, 6 vertices.");
+  // scripted BFS from A: order A B D C E F
+  var frames=[], st={};
+  st.A="active"; frames.push(F(clone(st),"Start BFS at A. Mark it visiting and put it in the queue. Queue: [A]"));
+  st.A="done"; st.B="frontier"; st.D="frontier"; frames.push(F(clone(st),"Visit A. Add its unseen neighbours B and D to the queue. Queue: [B, D]"));
+  st.B="active"; frames.push(F(clone(st),"Take B from the front of the queue — visit it next. Queue: [D]"));
+  st.B="done"; st.C="frontier"; st.E="frontier"; frames.push(F(clone(st),"B's new neighbours C and E join the queue. Queue: [D, C, E]"));
+  st.D="active"; frames.push(F(clone(st),"Take D. Its neighbours A and E are already seen — nothing new. Queue: [C, E]"));
+  st.D="done"; frames.push(F(clone(st),"D is done. Queue: [C, E]"));
+  st.C="active"; frames.push(F(clone(st),"Take C. Neighbour F is new — it joins the queue. Queue: [E, F]"));
+  st.C="done"; st.F="frontier"; frames.push(F(clone(st),"C done, F now waiting. Queue: [E, F]"));
+  st.E="active"; frames.push(F(clone(st),"Take E — all its neighbours are already seen. Queue: [F]"));
+  st.E="done"; frames.push(F(clone(st),"E done. Queue: [F]"));
+  st.F="active"; frames.push(F(clone(st),"Take F, the last one. Queue empties out."));
+  st.F="done"; frames.push(F(clone(st),"Every vertex reached. BFS visit order from A: A, B, D, C, E, F — nearest ring first."));
+  function clone(o){ var c={}; Object.keys(o).forEach(function(k){c[k]=o[k];}); return c; }
 
-    // BFS from A
-    (function(){
-      var visited={}, order=[], queue=[0];
-      visited[0]=true;
-      push(visitedRoles(visited,0), {}, "BFS from A: enqueue it.", BFS_CODE, [2,3]);
-      while(queue.length){
-        var cur=queue.shift();
-        order.push(valOf(cur));
-        push(visitedRoles(visited,cur), {}, "Dequeue "+valOf(cur)+" — order so far: ["+order.join(", ")+"].", BFS_CODE, [5,6]);
-        adj[cur].forEach(function(nb){
-          if(!visited[nb]){ visited[nb]=true; queue.push(nb); var e={}; e[cur+":"+nb]=true; push(visitedRoles(visited,nb), e, "Discover "+valOf(nb)+", enqueue it.", BFS_CODE, [9,11]); }
-        });
-      }
-      push(visitedRoles(visited), {}, "BFS order: ["+order.join(", ")+"].", BFS_CODE, 4);
-    })();
-
-    // DFS from A
-    (function(){
-      var visited={}, order=[];
-      push({}, {}, "Now DFS from A, for comparison.", DFS_CODE, 0);
-      (function visit(id, parent){
-        visited[id]=true; order.push(valOf(id));
-        var e={}; if(parent!==undefined) e[parent+":"+id]=true;
-        push(visitedRoles(visited,id), e, "Visit "+valOf(id)+" — order so far: ["+order.join(", ")+"].", DFS_CODE, [1,2]);
-        adj[id].forEach(function(nb){ if(!visited[nb]) visit(nb,id); });
-      })(0, undefined);
-      push(visitedRoles(visited), {}, "DFS order: ["+order.join(", ")+"] — same vertices, different order than BFS.", DFS_CODE, 6);
-    })();
-
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 1000,
-    renderExtra: function(frame){
-      DSRender.graph(document.getElementById("demoHost"), document.getElementById("demoLinks"), frame.struct, {});
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  GraphAnim.play({ host:document.getElementById("demoHost"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:1900, frames:frames });
 })();
 </script>
 </body>

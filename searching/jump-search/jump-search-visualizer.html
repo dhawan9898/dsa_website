@@ -3,179 +3,159 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Jump Search — step by step</title>
+<title>Jump Search Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .ctl-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .ctl-row .narrow input{max-width:90px}
+  .statline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .statline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="jump-search.html">&larr; Jump Search notes</a>
       <p class="eyebrow">Jump in Blocks &middot; Scan the Last One</p>
-      <h1>Jump&nbsp;Search</h1>
+      <h1>Jump&nbsp;Search&nbsp;Playground</h1>
     </div>
-    <p class="note">Requires sorted data. Leaps forward in fixed-size blocks to find where the target must live, then falls back to a plain scan inside just that block.</p>
+    <p class="note">Enter numbers (sorted for you) and a target, then watch it leap in √n blocks and scan the final block — one C line at a time.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Jump Search pages">
+    <a href="jump-search.html">Overview</a>
+    <a class="here" href="jump-search-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Set the array &amp; target</h2><span class="sub">2 &ndash; 16 numbers, sorted automatically</span></div>
+    <div class="panel-head"><h2>Your array &amp; target</h2><span class="sub">auto-sorted ascending — up to 12 numbers</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld">
-          <span>Numbers, separated by commas</span>
-          <input type="text" id="input" value="3, 8, 12, 19, 25, 34, 47, 61, 72, 84, 98" autocomplete="off" spellcheck="false">
-        </label>
-        <label class="fld narrow">
-          <span>Target value</span>
-          <input type="number" id="target" value="72">
-        </label>
-        <button id="load">Use these</button>
-        <button id="rand">Random</button>
+      <div class="ctl-row">
+        <label class="fld"><span>Numbers (comma-separated)</span><input type="text" id="arrF" value="15, 1, 13, 5, 3, 11, 7, 9, 17"></label>
+        <label class="fld narrow"><span>Target</span><input type="number" id="tgtF" value="11"></label>
+        <button class="opbtn" id="randBtn" style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;padding:10px 18px;border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer">Random</button>
+        <button class="primary" id="goBtn">Search</button>
       </div>
-      <p class="hint" id="hint">Press Play to watch the search, or step through one action at a time.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">Enter numbers and a target, then press <b>Search</b>. The array is sorted first, then use ◀ Back / Step ▶.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Working array</h2><span class="sub">block-sized jumps, then a short scan</span></div>
+    <div class="panel-head"><h2>The sorted array</h2><span class="sub">the jump phase checks block boundaries; then a linear scan of the final block</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> block-boundary probe</span>
-        <span class="key"><i class="swatch right"></i> linear scan within the block</span>
-        <span class="key"><i class="swatch dim"></i> ruled out</span>
-        <span class="key"><i class="swatch found"></i> match found</span>
+      <div class="bars-stage"><div id="barsHost"></div></div>
+      <div class="bars-ctrls" id="playbar">
+        <button class="bars-cbtn" id="aBack">◀ Back</button>
+        <button class="bars-cbtn" id="aPlay">Play</button>
+        <button class="bars-cbtn" id="aStep">Step ▶</button>
+        <span class="bars-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="statline" id="statLine">&nbsp;</p>
+      <p class="narr" id="narr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> element being checked</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> found</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; jumpSearch()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">line highlighted as it runs</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Load an array to begin.</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    A block size of about √n balances the two phases: jumping costs at most √n probes, and the final scan
-    inside one block costs at most √n more — O(√n) total, worse than binary search's O(log n) but with
-    fewer, cheaper long-range jumps, which mattered more on the tape and disk drives it was designed for.
+    Jumping in √n blocks needs about √n jumps, and scanning one block another √n steps — O(√n) overall, always
+    stepping forward.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
   var CODE=[
-    "int jumpSearch(int arr[], int n, int target) {",
-    "  int blockSize = (int)sqrt(n);",
-    "  int step = blockSize, prev = 0;",
-    "  while (arr[min(step, n) - 1] < target) {   // jump forward a block at a time",
-    "    prev = step;",
-    "    step += blockSize;",
-    "    if (prev >= n) return -1;                 // ran off the end",
-    "  }",
-    "  int hi = min(step, n);",
-    "  for (int i = prev; i < hi; i++) {           // scan inside the block we landed in",
-    "    if (arr[i] == target) return i;           // found it",
-    "  }",
-    "  return -1;                                   // not in this block either",
-    "}"
-  ];
-
-  function build(input, target){
-    var a=input.slice(), n=a.length, frames=[], cmp=0;
-    var blockSize=Math.max(1,Math.floor(Math.sqrt(n)));
-    function roles(){ return new Array(n).fill(""); }
-    function push(r,phase,narr,codeLine){ frames.push({array:a.slice(),roles:r,phase:phase,narr:narr,cmp:cmp,block:blockSize,code:CODE,codeLine:codeLine}); }
-
-    push(roles(),"start","Jump search only works on sorted data. It jumps forward in fixed-size blocks of "+blockSize+" (about √"+n+") to find the block that could contain the target, "+target+", then scans that block one element at a time.",[1,2]);
-
-    var step=blockSize, prev=0;
-    while(true){
-      var probe=Math.min(step,n)-1;
-      var r=roles();
-      for(var k=0;k<prev;k++) r[k]="dim";
-      r[probe]="left head";
-      cmp++;
-      var passedTarget=a[probe]>=target;
-      var reachedEnd=step>=n;
-      push(r,"jump","Jump to index "+probe+" (end of the block starting at "+prev+"): value is "+a[probe]+". "+
-        (passedTarget ? "That's ≥ the target, so the target, if present, is in this block."
-                      : (reachedEnd ? "Reached the end of the array without passing the target." : "Still less than the target — jump forward another block.")),
-        passedTarget?3:(reachedEnd?6:[4,5]));
-      if(passedTarget || reachedEnd) break;
-      prev=step;
-      step+=blockSize;
+    "int jumpSearch(int a[], int n, int target) {",
+    "  int step = (int)sqrt(n);",
+    "  int lo = 0;",
+    "  while (lo < n && a[min(lo+step,n)-1] < target)  // jump a block",
+    "    lo += step;",
+    "  for (int i = lo; i < min(lo+step, n); i++)       // scan the block",
+    "    if (a[i] == target) return i;",
+    "  return -1;",
+    "}"];
+  function barsFor(a, checkIdx, dimTo, dimFrom, found){ return a.map(function(v,i){
+    var c=""; if(found>=0){ c=(i===found)?"found":"dim"; }
+    else { if(i<dimTo || (dimFrom>=0 && i>=dimFrom)) c="dim"; if(i===checkIdx) c="a"; }
+    return {val:v, cls:c, ptrs:(i===checkIdx && found<0)?['cur']:[]}; }); }
+  function runJump(a, target){
+    var frames=[], n=a.length, step=Math.max(1,Math.floor(Math.sqrt(n))), comps=0;
+    function snap(line,ci,dt,df,found,narr){ frames.push({bars:barsFor(a,ci,dt,df,found), code:line, codeLines:CODE, narr:narr, _c:comps}); }
+    snap([1,2],-1,0,-1,-1,"Sorted: ["+a.join(", ")+"]. n = "+n+", block size = ⌊√"+n+"⌋ = "+step+". lo = 0.");
+    var lo=0;
+    while(lo<n){
+      var bEnd=Math.min(lo+step,n)-1; comps++;
+      snap(3,bEnd,0,-1,-1,"Jump: check the block boundary a["+bEnd+"] = "+a[bEnd]+". "+(a[bEnd]<target?(a[bEnd]+" < "+target+" — jump to the next block."):(a[bEnd]+" ≥ "+target+" — the target must be in this block. Scan it.")));
+      if(a[bEnd]<target){ lo+=step; } else break;
     }
-
-    var hi=Math.min(step,n);
-    var r2=roles();
-    for(var k2=0;k2<prev;k2++) r2[k2]="dim";
-    for(var k3=hi;k3<n;k3++) r2[k3]="dim";
-    push(r2,"block-found","Search the block from index "+prev+" to "+(hi-1)+" one element at a time.",8);
-
-    for(var i=prev;i<hi;i++){
-      var r3=roles();
-      for(var k4=0;k4<prev;k4++) r3[k4]="dim";
-      for(var k5=hi;k5<n;k5++) r3[k5]="dim";
-      for(var k6=prev;k6<i;k6++) r3[k6]="dim";
-      r3[i]="right head";
-      cmp++;
-      var match=a[i]===target;
-      push(r3,"compare","Check index "+i+": is "+a[i]+" equal to "+target+"? "+(match ? "Yes — found it." : "No — keep scanning."),10);
-      if(match){
-        var rf=roles();
-        for(var k7=0;k7<n;k7++) if(k7!==i) rf[k7]="dim";
-        rf[i]="found";
-        push(rf,"found","Found "+target+" at index "+i+" after "+cmp+" comparison"+(cmp===1?"":"s")+".",10);
-        return frames;
-      }
+    if(lo>=n){ snap(7,-1,n,-1,-2,target+" is larger than everything — not found. Return −1."); return frames; }
+    var blkEnd=Math.min(lo+step,n);
+    for(var i=lo;i<blkEnd;i++){
+      comps++;
+      snap([5,6],i,lo,blkEnd,-1,"Scan a["+i+"] = "+a[i]+" == "+target+"? "+(a[i]===target?"Yes!":(a[i]>target?"No, and now bigger than "+target+" — it isn't here.":"No.")));
+      if(a[i]===target){ snap(6,i,lo,blkEnd,i,"Found "+target+" at index "+i+" ("+comps+" comparisons)."); return frames; }
+      if(a[i]>target){ snap(7,-1,lo,blkEnd,-2,"Passed where "+target+" would be — it's not in the array. Return −1."); return frames; }
     }
-    var rNo=roles();
-    for(var k8=0;k8<n;k8++) rNo[k8]="dim";
-    push(rNo,"not-found","Scanned the whole block without finding "+target+" — it isn't present. "+cmp+" comparisons made.",12);
+    snap(7,-1,lo,blkEnd,-2,target+" is not in the array — return −1.");
     return frames;
   }
 
-  Viz.init({
-    defaultInput: "3, 8, 12, 19, 25, 34, 47, 61, 72, 84, 98",
-    defaultTarget: 72,
-    minN:2, maxN:16,
-    needsTarget: true,
-    sortRequired: true,
-    build: build,
-    statLabels: [{key:"cmp",label:"Comparisons"},{key:"block",label:"Block size"}]
-  });
+  var host=document.getElementById("barsHost"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount"), statEl=document.getElementById("statLine");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    BarsAnim.render(host, f); narrEl.textContent=f.narr||"";
+    statEl.innerHTML="comparisons: <b>"+(f._c||0)+"</b>";
+    BarsAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1400);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function parseArr(){ return document.getElementById("arrF").value.split(/[,\s]+/).map(function(s){return parseInt(s,10);}).filter(function(x){return !isNaN(x);}).sort(function(x,y){return x-y;}).slice(0,12); }
+  function showArray(a){ var f={bars:barsFor(a,-1,0,-1,-1), narr:a.length?"Sorted and ready: ["+a.join(", ")+"].":"Enter some numbers."}; P.frames=[f]; P.i=0; BarsAnim.render(host,f); narrEl.textContent=f.narr; statEl.innerHTML="&nbsp;"; BarsAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; }
+
+  document.getElementById("goBtn").onclick=function(){ var a=parseArr(), t=parseInt(document.getElementById("tgtF").value,10); if(a.length<1){ hint("Enter some numbers."); return; } if(isNaN(t)){ hint("Enter a target."); return; } document.getElementById("arrF").value=a.join(", "); hint("Use ◀ Back / Step ▶ to walk line by line, or let it play."); loadFrames(runJump(a,t)); };
+  document.getElementById("randBtn").onclick=function(){ var n=7+Math.floor(Math.random()*5), set={}; while(Object.keys(set).length<n){ set[1+Math.floor(Math.random()*40)]=1; } var a=Object.keys(set).map(Number).sort(function(x,y){return x-y;}); document.getElementById("arrF").value=a.join(", "); document.getElementById("tgtF").value=a[Math.floor(Math.random()*a.length)]; stopP(); showArray(a); hint("Random sorted array loaded. Press Search."); };
+  document.getElementById("tgtF").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("goBtn").click(); });
+  document.getElementById("arrF").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("goBtn").click(); });
+
+  showArray(parseArr());
 })();
 </script>
 </body>

@@ -8,6 +8,27 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .opbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .opbtn{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;padding:10px 18px;
+    border:1px solid var(--ink);background:#F4F7EE;color:var(--ink);border-radius:6px;cursor:pointer;
+    transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .opbtn:hover{background:var(--ink);color:var(--paper)}
+  .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
+  .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
+  .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .oprun select{font-family:"IBM Plex Mono",monospace;font-size:15px;padding:7px 10px;border:1px solid var(--ink);border-radius:5px;background:#fff;color:var(--ink)}
+  .arrline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .arrline b{color:var(--ink)}
+</style>
 </head>
 <body>
 
@@ -15,173 +36,202 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="union-find.html">&larr; Union-Find notes</a>
-      <p class="eyebrow">Disjoint Sets &middot; Find &middot; Union</p>
-      <h1>Union&#8209;Find&nbsp;Visualizer</h1>
+      <p class="eyebrow">Merge Groups, Ask &ldquo;Connected?&rdquo;</p>
+      <h1>Union&#8209;Find&nbsp;Playground</h1>
     </div>
-    <p class="note">Every element points at a parent; walk those pointers to find a set's root, and compress the path flat on the way.</p>
+    <p class="note">Six elements. Union pairs to merge their groups, or ask whether two are already connected — and watch the forest merge and flatten with path compression.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Union-Find pages">
+    <a href="union-find.html">Overview</a>
+    <a href="union-find-operations.html">Find &amp; Union</a>
+    <a class="here" href="union-find-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Operate on the sets</h2><span class="sub">8 elements &middot; union by rank + path compression</span></div>
+    <div class="panel-head"><h2>Pick an operation</h2><span class="sub">elements 0–5, union by size + path compression</span></div>
     <div class="panel-body">
-      <div class="row">
-        <label class="fld narrow"><span>Find</span><input type="number" id="findVal" value="3" min="0" max="7"></label>
-        <button id="btnFind" class="primary">Find</button>
+      <div class="opbtns">
+        <button class="opbtn" data-op="union">Union</button>
+        <button class="opbtn" data-op="find">Connected?</button>
+        <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <div class="row" style="margin-top:10px">
-        <label class="fld narrow"><span>Union A</span><input type="number" id="unionA" value="0" min="0" max="7"></label>
-        <label class="fld narrow"><span>Union B</span><input type="number" id="unionB" value="1" min="0" max="7"></label>
-        <button id="btnUnion" class="primary">Union</button>
+      <div class="oppanel" id="oppanel" hidden>
+        <p class="opname" id="opname"></p>
+        <p class="opdesc" id="opdesc"></p>
+        <div class="oprun">
+          <label class="fld narrow"><span id="lblA">a</span>
+            <select id="aF"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+          </label>
+          <label class="fld narrow"><span id="lblB">b</span>
+            <select id="bF"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+          </label>
+          <button class="primary" id="opRun">Run</button>
+        </div>
       </div>
-      <p class="hint" id="hint">Union two elements' sets, then Find a third to watch path compression flatten its walk to the root.</p>
-      <div class="row" style="margin-top:14px">
-        <button id="play" class="primary">Play</button>
-        <button id="back">&#9664; Back</button>
-        <button id="fwd">Step &#9654;</button>
-        <button id="reset">Reset</button>
-        <span class="slider">Speed <input type="range" id="speed" min="120" max="1600" step="20" value="700"></span>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <span class="slider" style="flex:1 1 100%">Step <input type="range" id="scrub" min="0" max="0" value="0"><span id="scrubLbl">0 / 0</span></span>
-      </div>
-      <div class="stats" id="statsHost"></div>
+      <p class="hint" id="hint" style="margin-top:12px">Six singletons. <b>Union</b> a couple of pairs, then ask <b>Connected?</b> — try 1 and 3 after uniting them through a shared element.</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Parent pointers</h2><span class="sub">cell value = parent[i] &middot; index below</span></div>
+    <div class="panel-head"><h2>The forest</h2><span class="sub">an arrow points to a parent; a ringed node is a group's root</span></div>
     <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="arrayHost"></div></div>
-      <div class="legend">
-        <span class="key"><i class="swatch left"></i> element being walked / just found / just rewritten</span>
-        <span class="key"><i class="swatch right"></i> root being compared during union</span>
+      <div class="forest-stage"><div id="gHost"></div><svg class="forest-svg" id="gSvg"></svg></div>
+      <div class="forest-ctrls" id="playbar">
+        <button class="forest-cbtn" id="aBack">◀ Back</button>
+        <button class="forest-cbtn" id="aPlay">Play</button>
+        <button class="forest-cbtn" id="aStep">Step ▶</button>
+        <span class="forest-step" id="aCount">0 / 0</span>
+      </div>
+      <p class="arrline" id="arrLine">&nbsp;</p>
+      <p class="narr" id="narr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--seal);box-shadow:0 0 0 2px rgba(46,107,79,.3)"></i> root</span>
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> walking / linking</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> the other element</span>
       </div>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; find() / unionSets()</span></div>
+    <div class="panel-head"><h2>The Code</h2><span class="sub">line highlighted as it runs</span></div>
     <div class="panel-body">
       <div class="code-panel" id="codeHost"></div>
     </div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Running commentary</h2></div>
-    <div class="panel-body">
-      <p class="narr" id="narr">Loading…</p>
-      <div class="log" id="log"><ul></ul></div>
-    </div>
-  </section>
-
   <footer>
-    Union by rank keeps every tree shallow (never taller than log n), and path compression flattens a tree
-    every time it's walked — together they make find/union run in amortized <b>O(&alpha;(n))</b>, the inverse
-    Ackermann function, which is so slow-growing it's effectively constant for any array size that could
-    exist in memory.
+    Union links two roots (smaller under bigger); Connected? runs find on each and compares roots — compressing the
+    paths it walks. The <code>parent[]</code> array under the forest is the entire structure.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/forest-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  var N=6;
+  var parent=[], size=[];
+  function init(){ parent=[]; size=[]; for(var i=0;i<N;i++){ parent[i]=i; size[i]=1; } }
+  init();
+  var UNI=[
+    "void unite(int a, int b) {",
+    "  int ra = find(a), rb = find(b);",
+    "  if (ra == rb) return;            // already connected",
+    "  if (size[ra] < size[rb])",
+    "    swap(&ra, &rb);               // ra = bigger root",
+    "  parent[rb] = ra;                // smaller under bigger",
+    "  size[ra] += size[rb];",
+    "}"];
+  var FIND=[
+    "int find(int x) {",
+    "  int r = x;",
+    "  while (parent[r] != r) r = parent[r];  // walk up",
+    "  while (parent[x] != r) {               // compress",
+    "    int nx = parent[x];  parent[x] = r;  x = nx;",
+    "  }",
+    "  return r;",
+    "}"];
+  function one(k,v){ var o={}; o[k]=v; return o; }
+  function merge(){ var o={}; for(var i=0;i<arguments.length;i++){ var s=arguments[i]; if(s) Object.keys(s).forEach(function(k){o[k]=s[k];}); } return o; }
+  function nodesFor(cls){ var nodes={}; for(var i=0;i<N;i++){ nodes[i]={val:i,parent:parent[i],cls:(cls&&cls[i])||""}; } return nodes; }
+  function frame(code,line,narr,cls,ptrs,edgeCls){ return {nodes:nodesFor(cls), ptrs:ptrs, edgeCls:edgeCls, code:line, codeLines:code, narr:narr, aux:"parent[]: <b>["+parent.slice().join(", ")+"]</b>"}; }
 
-  var CODE=[
-    "int find(int parent[], int x) {",
-    "  if (parent[x] != x)",
-    "    parent[x] = find(parent, parent[x]);   // path compression",
-    "  return parent[x];",
-    "}",
-    "",
-    "void unionSets(int parent[], int rank[], int a, int b) {",
-    "  int ra = find(parent, a), rb = find(parent, b);",
-    "  if (ra == rb) return;                       // already the same set",
-    "  if (rank[ra] < rank[rb]) { int t = ra; ra = rb; rb = t; }",
-    "  parent[rb] = ra;                             // attach smaller-rank tree under larger",
-    "  if (rank[ra] == rank[rb]) rank[ra]++;",
-    "}"
-  ];
-
-  function cellsFor(parent, activeIdxs, activeRole){
-    var roles={};
-    activeIdxs.forEach(function(idx){ roles[idx]=activeRole; });
-    return parent.map(function(p,i){ return {val:p, role:roles[i]||"", ptr:(p===i?"ROOT":"")}; });
-  }
-  function frame(parent, activeIdxs, activeRole, phase, narr, ops, codeLine){
-    return {struct:{cells:cellsFor(parent, activeIdxs, activeRole)}, phase:phase, narr:narr, ops:ops, code:CODE, codeLine:codeLine};
-  }
-
-  function doWalk(parent, x, frames, oc){
-    var path=[x];
-    while(parent[path[path.length-1]]!==path[path.length-1]){
-      var cur=path[path.length-1], nxt=parent[cur];
-      frames.push(frame(parent, [cur], "left head", "walk", "parent["+cur+"] = "+nxt+" — not a root, step up.", oc, [1,2]));
-      path.push(nxt);
+  // instrumented find: returns {root, frames} and mutates parent (path compression)
+  function findFrames(x, tag){
+    var frames=[], r=x, path=[];
+    frames.push(frame(FIND,[1,2],"find("+x+"): start at "+x+", r = "+x+".",one(x,'active'),one(x,[tag||'x'])));
+    while(parent[r]!==r){ path.push(r); var np=parent[r];
+      frames.push(frame(FIND,2,"parent["+r+"] = "+np+" ≠ "+r+" — walk up to "+np+".",one(r,'active'),one(r,[tag||'x']),one(r+">"+np,'active')));
+      r=np;
     }
-    var root=path[path.length-1];
-    frames.push(frame(parent, [root], "left head landed", "root-found", "Reached "+root+": parent["+root+"] = "+root+" — this is the root.", oc, 3));
-    if(path.length>2){
-      var compressed=path.slice(0,path.length-1);
-      compressed.forEach(function(node){ parent[node]=root; });
-      frames.push(frame(parent, compressed, "left head landed", "compress", "Path compression: "+compressed.join(", ")+" now point directly at root "+root+".", oc, 2));
-    }
-    return root;
+    frames.push(frame(FIND,2,"parent["+r+"] = "+r+" — that's the root. r = "+r+".",one(r,'found'),one(r,['root'])));
+    path.forEach(function(p){ if(parent[p]!==r){ parent[p]=r;
+      frames.push(frame(FIND,[3,4],"Compress: point "+p+" straight at root "+r+".",merge(one(p,'active'),one(r,'found')),{},one(p+">"+r,'formed'))); } });
+    return {root:r, frames:frames};
   }
 
-  function opFind(state, x){
-    if(!isFinite(x) || x<0 || x>=state.n) return {error:"Enter an element between 0 and "+(state.n-1)+"."};
-    var oc=(state.opsCount||0)+1;
-    var parent=state.parent.slice();
+  function opUnion(a,b){
+    if(a===b) return {frames:[frame(UNI,0,"union("+a+", "+a+"): an element is already in its own group — nothing to do.",one(a,'found'),{})]};
     var frames=[];
-    doWalk(parent, x, frames, oc);
-    return {frames:frames, state:{parent:parent, rank:state.rank.slice(), n:state.n, opsCount:oc}};
+    var fa=findFrames(a,'x'); frames=frames.concat(fa.frames);
+    var fb=findFrames(b,'y'); frames=frames.concat(fb.frames);
+    var ra=fa.root, rb=fb.root;
+    frames.push(frame(UNI,1,"Roots: find("+a+") = "+ra+", find("+b+") = "+rb+".",merge(one(ra,'active'),one(rb,ra===rb?'active':'target')),merge(one(ra,['rx']),one(rb,['ry']))));
+    if(ra===rb){ frames.push(frame(UNI,2,ra+" == "+rb+" — "+a+" and "+b+" are already in the same group. Nothing to do.",one(ra,'found'),one(ra,['root']))); return {frames:frames}; }
+    if(size[ra]<size[rb]){ var t=ra; ra=rb; rb=t;
+      frames.push(frame(UNI,[3,4],"size["+fa.root+"] < size["+fb.root+"] — swap so ra = "+ra+" is the bigger root.",merge(one(ra,'active'),one(rb,'target')),merge(one(ra,['rx']),one(rb,['ry'])))); }
+    else frames.push(frame(UNI,[3,4],"size["+ra+"] = "+size[ra]+" ≥ size["+rb+"] = "+size[rb]+" — keep ra = "+ra+".",merge(one(ra,'active'),one(rb,'target')),merge(one(ra,['rx']),one(rb,['ry']))));
+    parent[rb]=ra; frames.push(frame(UNI,5,"parent["+rb+"] = "+ra+": hang the smaller root "+rb+" under "+ra+".",merge(one(rb,'active'),one(ra,'found')),one(ra,['rx']),one(rb+">"+ra,'formed')));
+    size[ra]+=size[rb]; frames.push(frame(UNI,6,"size["+ra+"] += size["+rb+"] → "+size[ra]+". "+a+" and "+b+" are now connected.",one(ra,'found'),{}));
+    return {frames:frames};
   }
-
-  function opUnion(state, a, b){
-    if(!isFinite(a)||a<0||a>=state.n||!isFinite(b)||b<0||b>=state.n) return {error:"Enter two elements between 0 and "+(state.n-1)+"."};
-    var oc=(state.opsCount||0)+1;
-    var parent=state.parent.slice(), rank=state.rank.slice();
+  function opFind(a,b){
     var frames=[];
-    var ra=doWalk(parent, a, frames, oc);
-    var rb=doWalk(parent, b, frames, oc);
-    if(ra===rb){
-      frames.push(frame(parent, [ra], "found", "done", "Elements "+a+" and "+b+" are already in the same set (root "+ra+") — nothing to do.", oc, 8));
-      return {frames:frames, state:{parent:parent, rank:rank, n:state.n, opsCount:oc}};
-    }
-    frames.push(frame(parent, [ra,rb], "right head", "compare-rank", "Compare rank["+ra+"] = "+rank[ra]+" with rank["+rb+"] = "+rank[rb]+" to decide which tree hangs under the other.", oc, 9));
-    if(rank[ra]<rank[rb]){ var t=ra; ra=rb; rb=t; }
-    parent[rb]=ra;
-    frames.push(frame(parent, [ra,rb], "left head landed", "attach", "Attach root "+rb+" under root "+ra+".", oc, 10));
-    if(rank[ra]===rank[rb]){
-      rank[ra]++;
-      frames.push(frame(parent, [ra], "left head landed", "rank-bump", "Equal ranks — bump rank["+ra+"] to "+rank[ra]+".", oc, 11));
-    }
-    return {frames:frames, state:{parent:parent, rank:rank, n:state.n, opsCount:oc}};
+    var fa=findFrames(a,'x'); frames=frames.concat(fa.frames);
+    var fb=findFrames(b,'y'); frames=frames.concat(fb.frames);
+    var same=fa.root===fb.root;
+    frames.push(frame(FIND,6,"find("+a+") = "+fa.root+", find("+b+") = "+fb.root+" — "+(same?("same root, so "+a+" and "+b+" ARE connected."):("different roots, so "+a+" and "+b+" are NOT connected.")),
+      same?merge(one(fa.root,'found')):merge(one(fa.root,'active'),one(fb.root,'target')), same?one(fa.root,['root']):merge(one(fa.root,['rx']),one(fb.root,['ry']))));
+    return {frames:frames};
   }
 
-  function init(){
-    var n=8, parent=[], rank=new Array(n).fill(0);
-    for(var i=0;i<n;i++) parent.push(i);
-    var state={parent:parent, rank:rank, n:n, opsCount:0};
-    return {state:state, frames:[frame(parent, [], "", "start", "Create "+n+" singleton sets: every element starts out as its own root.", 0, 1)]};
-  }
-  function num(id){ var v=Number(document.getElementById(id).value); return isFinite(v)?v:NaN; }
+  /* ---- page-local player ---- */
+  var host=document.getElementById("gHost"), svg=document.getElementById("gSvg"), narrEl=document.getElementById("narr");
+  var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount"), auxEl=document.getElementById("arrLine");
+  var playBtn=document.getElementById("aPlay");
+  var P={frames:[], i:0, timer:null, playing:false};
+  function drawP(){ var f=P.frames[P.i]; if(!f) return;
+    ForestAnim.render(host, svg, f); narrEl.textContent=f.narr||"";
+    auxEl.innerHTML=f.aux||"&nbsp;";
+    ForestAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+  function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
+    if(P.timer) clearInterval(P.timer);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1650);
+    playBtn.textContent="Pause"; }
+  function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
+  document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
+  playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
 
-  VizDS.init({
-    init: init,
-    ops: {
-      find: { btn:"btnFind", enterOn:"findVal", run: function(state){ return opFind(state, num("findVal")); } },
-      union: { btn:"btnUnion", enterOn:"unionB", run: function(state){ return opUnion(state, num("unionA"), num("unionB")); } }
-    },
-    renderExtra: function(frame){ DSRender.slots(document.getElementById("arrayHost"), frame.struct.cells); },
-    statLabels: [{key:"ops",label:"Operations"}]
-  });
+  function hint(m){ document.getElementById("hint").textContent=m; }
+  function drawState(msg){ var f=frame(null,null,msg||"Current forest.",{},{}); P.frames=[f]; P.i=0;
+    ForestAnim.render(host,svg,f); narrEl.textContent=f.narr; auxEl.innerHTML=f.aux; ForestAnim.renderCode(codeHost,null,null); countEl.textContent="0 / 0"; }
+
+  var OPS={
+    union:{ name:"Union(a, b)", two:true, desc:"Merge the groups of a and b: find each root and hang the smaller tree's root under the bigger one. If they already share a root, nothing changes." },
+    find:{ name:"Connected?(a, b)", two:true, desc:"Ask whether a and b are in the same group: run find on each and compare roots. The walk also compresses each path, flattening the trees." },
+    reset:{ name:"Reset", two:false, desc:"" }
+  };
+  var current=null;
+  var panel=document.getElementById("oppanel"), opnameEl=document.getElementById("opname"), opdescEl=document.getElementById("opdesc");
+  var aF=document.getElementById("aF"), bF=document.getElementById("bF");
+  var btns=document.querySelectorAll(".opbtn");
+  function select(op){
+    if(op==="reset"){ init(); stopP(); drawState("Reset — six singletons again."); panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      hint("Cleared. Union some pairs to build groups."); return; }
+    current=op;
+    btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
+    var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc; panel.hidden=false; hint("");
+  }
+  function runCurrent(){
+    if(!current) return;
+    var a=parseInt(aF.value,10), b=parseInt(bF.value,10), r;
+    if(current==="union") r=opUnion(a,b); else if(current==="find") r=opFind(a,b);
+    if(!r) return;
+    hint("Use ◀ Back / Step ▶ to walk it line by line, or let it play.");
+    loadFrames(r.frames);
+  }
+  btns.forEach(function(b){ b.onclick=function(){ select(b.getAttribute("data-op")); }; });
+  document.getElementById("opRun").onclick=runCurrent;
+
+  drawState("Six singletons — each element is its own group. Union pairs to merge them.");
 })();
 </script>
 </body>

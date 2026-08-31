@@ -8,144 +8,147 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Compare &middot; Swap &middot; Repeat</p>
       <h1>Bubble&nbsp;Sort</h1>
     </div>
-    <p class="note">The simplest sort there is: walk the array, swap any neighbours that are out of order, and repeat until a full pass makes no swaps.</p>
+    <p class="note">The simplest sort there is: keep swapping neighbours that are out of order, and the biggest values "bubble" to the end.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Bubble Sort pages">
+    <a class="here" href="bubble-sort.html">Overview</a>
+    <a href="bubble-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Bubble sort makes repeated passes over the array. On each pass it walks left to right, comparing
-      every pair of neighbours and swapping them if they're out of order. One full pass guarantees the
-      largest remaining value has "bubbled" all the way up to its correct resting place at the end — which
-      is why the sorted region grows from the <em>right</em>, one element per pass.</p>
+      <p>Imagine lining up cards and only ever comparing two <em>side-by-side</em> cards at a time. If the left one
+      is bigger than the right, swap them. Sweep left-to-right doing that, and by the end of one sweep the single
+      biggest card has been carried all the way to the right end — it "bubbled" up. Do another sweep and the
+      second-biggest lands in place, and so on.</p>
 
+      <p>That's <b>bubble sort</b>: repeated passes of "compare each neighbour pair, swap if out of order." Each
+      pass locks one more value at the end, so after enough passes the whole array is sorted.</p>
+
+      <div class="callout">
+        <b>The early-exit trick.</b> If a whole pass makes <em>zero</em> swaps, nothing was out of order — the array
+        is already sorted, and you can stop immediately. On an already-sorted array that makes bubble sort O(n):
+        one clean pass and done.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">the biggest value bubbles to the right each pass</span></div>
+    <div class="panel-body notes">
+      <p>Two neighbours are compared (highlighted); if the left is taller it swaps right. Watch the green "locked"
+      region grow from the right as each pass finishes:</p>
+      <div class="bars-stage"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> compared pair</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> locked (sorted)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it &amp; read the code</h2><span class="sub">line-by-line on your own numbers</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="bubble-sort-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Type or randomize an array and watch bubble sort run one C line at a time — every compare, every swap, every pass.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost and character</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Comparisons</th><th>Time</th></tr>
-        <tr><td>Worst / average</td><td>~n&sup2;/2</td><td><b>O(n&sup2;)</b></td></tr>
-        <tr><td>Best (already sorted)</td><td>n&minus;1</td><td><b>O(n)</b></td></tr>
-        <tr><td>Space</td><td colspan="2"><b>O(1)</b> &mdash; sorts in place</td></tr>
+        <tr><th>Case</th><th>When</th><th>Time</th></tr>
+        <tr><td>Best</td><td>Already sorted (early exit)</td><td><b>O(n)</b></td></tr>
+        <tr><td>Average / Worst</td><td>Random or reversed</td><td><b>O(n²)</b></td></tr>
+        <tr><td>Space</td><td>Swaps in place</td><td>O(1)</td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel below carries a <code>swapped</code> flag that's the whole
-      reason the best case is O(n) rather than O(n&sup2;): if an entire pass completes with no swaps, the
-      array was already sorted, and the algorithm exits immediately instead of grinding through the
-      remaining passes anyway. The inner loop's bound, <code>n - 1 - i</code>, also shrinks by one every
-      pass — it never re-compares the suffix that's already provably sorted.</p>
-
-      <p><b>Common mistake:</b> drop the <code>swapped</code> flag (or the shrinking inner bound) and bubble
-      sort still produces a correct answer — it just silently pays the full O(n&sup2;) cost every single
-      time, even on an array that was already sorted. Because the result is still correct, this kind of bug
-      never shows up as a wrong answer, only as a slowdown nobody notices until the input gets large.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; five values, start to finish</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; bubbleSort()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>It's stable and in-place</b> — equal values keep their relative order, and it needs no extra array. But
+      those n² comparisons make it slow on anything large: it's a teaching sort, not a production one. For real work
+      you'd reach for <a href="../quick-sort/quick-sort.html">quick sort</a> or <a href="../merge-sort/merge-sort.html">merge
+      sort</a> (O(n log n)). Bubble sort earns its keep as the clearest possible introduction to "compare and swap,"
+      and its cousin <a href="../insertion-sort/insertion-sort.html">insertion sort</a> is the one simple O(n²)
+      sort that's genuinely useful (fast on nearly-sorted data).</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="bubble-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="bubble-sort-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: load your own array in the visualizer and watch the sorted region grow from the right, one bubbled
-    value per pass.
+    Bubble sort in one line: compare each neighbour pair and swap the out-of-order ones, pass after pass, until a
+    pass makes no swaps. Simple to see, O(n²) to run.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "void bubbleSort(int arr[], int n) {",
-    "  for (int i = 0; i < n - 1; i++) {",
-    "    int swapped = 0;",
-    "    for (int j = 0; j < n - 1 - i; j++) {",
-    "      if (arr[j] > arr[j + 1]) {",
-    "        int tmp = arr[j];",
-    "        arr[j] = arr[j + 1];",
-    "        arr[j + 1] = tmp;",
-    "        swapped = 1;",
-    "      }",
-    "    }",
-    "    if (!swapped) break;",
-    "  }",
-    "}"
-  ];
-
-  function scriptFrames(){
-    var a=[5,3,4,1,2], n=a.length, frames=[];
-    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
-    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
-
-    push(new Array(n).fill(""),"Bubble sort compares neighbours and swaps them if they're out of order, over and over, until a pass makes no swaps.",1);
-
-    for(var i=0;i<n-1;i++){
-      var swapped=false;
-      for(var j=0;j<n-1-i;j++){
-        var r=new Array(n).fill("");
-        r[j]="left head"; r[j+1]="right head";
-        for(var k=n-i;k<n;k++) r[k]="sorted";
-        var willSwap=a[j]>a[j+1];
-        push(r,"Compare "+a[j]+" and "+a[j+1]+". "+(willSwap?"Out of order, so swap them.":"Already in order — leave them."),4);
-        if(willSwap){
-          var tmp=a[j]; a[j]=a[j+1]; a[j+1]=tmp; swapped=true;
-          var r2=new Array(n).fill("");
-          r2[j]="left head landed"; r2[j+1]="right head landed";
-          for(var k2=n-i;k2<n;k2++) r2[k2]="sorted";
-          push(r2,"Swapped: array is now ["+a.join(", ")+"].",[5,8]);
-        }
-      }
-      var rEnd=new Array(n).fill("");
-      for(var k3=n-1-i;k3<n;k3++) rEnd[k3]="sorted";
-      push(rEnd,"Pass "+(i+1)+" complete.",11);
-      if(!swapped){
-        push(new Array(n).fill("sorted"),"No swaps this pass — already sorted.",11);
-        return frames;
-      }
-    }
-    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",12);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  function bars(arr, cls, ptrs){ return arr.map(function(v,i){ return {val:v, cls:(cls&&cls[i])||"", ptrs:(ptrs&&ptrs[i])||[]}; }); }
+  function F(arr,cls,ptrs,narr){ return {bars:bars(arr,cls,ptrs), narr:narr}; }
+  // scripted bubble sort on [5,2,4,1]
+  var frames=[];
+  var a=[5,2,4,1];
+  function snap(arr,cls,ptrs,narr){ frames.push(F(arr.slice(),cls,ptrs,narr)); }
+  snap(a,{},{},"Start: [5, 2, 4, 1]. Compare each neighbour pair, left to right.");
+  // pass 1
+  snap([5,2,4,1],{0:'a',1:'b'},{},"5 > 2 — out of order, swap.");
+  snap([2,5,4,1],{1:'a',2:'b'},{},"Now compare 5 and 4: 5 > 4 — swap.");
+  snap([2,4,5,1],{2:'a',3:'b'},{},"5 > 1 — swap. 5 has bubbled to the end.");
+  snap([2,4,1,5],{3:'sorted'},{},"Pass 1 done: 5 is locked at the right.");
+  // pass 2
+  snap([2,4,1,5],{0:'a',1:'b',3:'sorted'},{},"Pass 2. Compare 2 and 4: in order, no swap.");
+  snap([2,4,1,5],{1:'a',2:'b',3:'sorted'},{},"4 > 1 — swap.");
+  snap([2,1,4,5],{2:'sorted',3:'sorted'},{},"Pass 2 done: 4 is locked too.");
+  // pass 3
+  snap([2,1,4,5],{0:'a',1:'b',2:'sorted',3:'sorted'},{},"Pass 3. 2 > 1 — swap.");
+  snap([1,2,4,5],{1:'sorted',2:'sorted',3:'sorted'},{},"A pass with... one swap. One more check to be sure.");
+  snap([1,2,4,5],{0:'sorted',1:'sorted',2:'sorted',3:'sorted'},{},"No swaps in the final pass — the array is sorted: [1, 2, 4, 5].");
+  BarsAnim.play({ host:document.getElementById("demoHost"), narrEl:document.getElementById("demoNarr"), ms:1500, frames:frames });
 })();
 </script>
 </body>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topological Sort · Kahn's Algorithm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .orderline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .orderline b{color:var(--seal)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="topological-sort.html">&larr; Topological Sort overview</a>
+      <p class="eyebrow">Count, Queue, Peel, Repeat</p>
+      <h1>Kahn's Algorithm</h1>
+    </div>
+    <p class="note">A tidy BFS-shaped sort: keep an in-degree count per vertex, and always output whatever is left with nothing pointing at it.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Topological Sort pages">
+    <a href="topological-sort.html">Overview</a>
+    <a class="here" href="topological-sort-kahn.html">Kahn's Algorithm</a>
+    <a href="topological-sort-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The thought process</h2></div>
+    <div class="panel-body notes">
+      <p>Kahn's algorithm is BFS with a twist: instead of a "seen" flag, each vertex tracks its <b>in-degree</b> —
+      the number of unmet prerequisites. A vertex is allowed into the output only once that count reaches 0.</p>
+      <ol class="steps">
+        <li><b>Count</b> in-degrees: walk every edge and add 1 to the vertex it points at.</li>
+        <li><b>Queue</b> every vertex whose in-degree is already 0 — these depend on nothing.</li>
+        <li><b>Peel:</b> dequeue a vertex, output it, and for each vertex it points at, subtract 1. Any that hit 0
+        are now ready — enqueue them.</li>
+        <li>Repeat until the queue empties. If you output fewer than <em>V</em> vertices, the leftovers form a
+        <b>cycle</b>.</li>
+      </ol>
+      <div class="callout">
+        <b>Why <code>--indeg[v]</code> instead of re-counting?</b> Outputting <em>u</em> "satisfies" exactly one
+        prerequisite for each vertex <em>u</em> points at. Decrementing is that satisfaction in one step — no need
+        to rescan. When a vertex's count reaches 0, every prerequisite is met and it's safe to place.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it run</h2><span class="sub">Kahn's algorithm — one C line at a time</span></div>
+    <div class="panel-body notes">
+      <p>Each vertex's number is its live in-degree. Watch counts tick down as prerequisites are output, and watch a
+      vertex turn blue (ready) the instant its count hits 0:</p>
+      <div class="demo-wrap">
+        <div class="graph-stage"><div id="kHost"></div><svg class="graph-svg" id="kSvg"></svg></div>
+        <p class="orderline" id="kOrder">order: <b>—</b></p>
+        <p class="narr" id="kNarr" style="margin-top:6px">&nbsp;</p>
+        <div class="code-panel" id="kCode" style="margin-top:12px"></div>
+      </div>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> being output</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> ready (in-degree 0, queued)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> placed</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Reading the code</h2></div>
+    <div class="panel-body notes">
+      <p>Counting in-degrees scans every edge once (O(E)); finding the initial ready vertices scans every vertex
+      once (O(V)); then the main loop dequeues each vertex once and decrements along each edge once more. Total:
+      <b>O(V + E)</b> — the same linear cost as BFS, which is exactly what this is.</p>
+      <p>The final <code>if (count &lt; V)</code> is the cycle check. Vertices trapped in a cycle keep pointing at
+      each other, so their in-degrees never reach 0, they never enter the queue, and <code>count</code> falls short.
+      No extra work — the shortfall itself is the proof.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="topological-sort-visualizer.html">Run it — and break it with a cycle — in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Kahn's algorithm is BFS on in-degrees: queue the zero-prerequisite vertices, output them, decrement their
+    dependents, repeat. Place all V and you have an order; fall short and you've proven a cycle.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  var POS={ A:[100,50], B:[320,50], C:[210,155], D:[110,260], E:[320,260], F:[210,360] };
+  var EDGES=[["A","C"],["B","C"],["C","D"],["C","E"],["D","F"],["E","F"]];
+  var IDS=["A","B","C","D","E","F"];
+  var CODE=[
+    "void topoSort(Graph *g) {",
+    "  int indeg[V] = {0};",
+    "  for (edge (u,v) of g) indeg[v]++;   // count arrows in",
+    "  for (int i = 0; i < V; i++)",
+    "    if (indeg[i] == 0) enqueue(&q, i);",
+    "  int count = 0;",
+    "  while (!isEmpty(&q)) {",
+    "    int u = dequeue(&q);  output(u);  count++;",
+    "    for (int v : out_neighbours(u))",
+    "      if (--indeg[v] == 0) enqueue(&q, v);",
+    "  }",
+    "  if (count < V) error(\"cycle: no valid order\");",
+    "}"];
+  function clone(o){ var c={}; Object.keys(o).forEach(function(k){c[k]=o[k];}); return c; }
+  function nodesFor(state,indeg){ var ns={}; IDS.forEach(function(id){ ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:state[id]||"",label:String(indeg[id])}; }); return ns; }
+  function edgesFor(active){ return EDGES.map(function(e){ var k=e[0]+">"+e[1]; return {from:e[0],to:e[1],cls:(active===k?"active":"")}; }); }
+
+  function runKahn(){
+    var indeg={}, adj={}, frames=[], state={}, order=[], count=0, q=[];
+    IDS.forEach(function(id){ indeg[id]=0; adj[id]=[]; });
+    EDGES.forEach(function(e){ indeg[e[1]]++; adj[e[0]].push(e[1]); });
+    IDS.forEach(function(id){ adj[id].sort(); });
+    function snap(line,active,activeEdge,narr){ frames.push({nodes:nodesFor(state,indeg), edges:edgesFor(activeEdge), directed:true, code:line, codeLines:CODE, narr:narr, _order:order.slice()}); }
+    snap([1,2],null,null,"Count in-degrees: how many arrows point into each vertex. Now C=2, D=1, E=1, F=2; A and B are 0.");
+    IDS.forEach(function(id){ if(indeg[id]===0){ q.push(id); state[id]="frontier"; } });
+    snap([3,4],null,null,"Queue every in-degree-0 vertex (nothing depends on): ["+q.join(", ")+"].");
+    while(q.length){
+      var u=q.shift(); state[u]="active"; order.push(u); count++;
+      snap(7,u,null,"Dequeue "+u+" and output it (count = "+count+"). Order: "+order.join(" → ")+".");
+      adj[u].forEach(function(v){
+        indeg[v]--; var k=u+">"+v;
+        if(indeg[v]===0){ q.push(v); state[v]="frontier"; snap(9,u,k,"Remove "+u+"→"+v+": indeg["+v+"] hits 0 — enqueue "+v+"."); }
+        else snap([8,9],u,k,"Remove "+u+"→"+v+": indeg["+v+"] drops to "+indeg[v]+" (still waiting).");
+      });
+      state[u]="done"; snap(6,null,null,u+" is placed. Back to the top of the loop.");
+    }
+    if(count<IDS.length) snap(11,null,null,"Queue empty but only "+count+" of "+IDS.length+" output — the rest sit in a cycle. No valid order.");
+    else snap([11,12],null,null,"All "+IDS.length+" placed — a valid topological order: "+order.join(" → ")+".");
+    return frames;
+  }
+
+  var host=document.getElementById("kHost"), nEl=document.getElementById("kNarr"), oEl=document.getElementById("kOrder");
+  var frames=runKahn();
+  GraphAnim.play({ host:host, svg:document.getElementById("kSvg"), narrEl:nEl, codeHost:document.getElementById("kCode"), ms:1800, frames:frames });
+  var mo=new MutationObserver(function(){ for(var k=0;k<frames.length;k++){ if(frames[k].narr===nEl.textContent){ oEl.innerHTML="order: <b>"+(frames[k]._order.length?frames[k]._order.join(" → "):"—")+"</b>"; break; } } });
+  mo.observe(nEl,{childList:true,characterData:true,subtree:true});
+})();
+</script>
+</body>
+</html>

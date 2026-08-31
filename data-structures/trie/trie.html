@@ -3,11 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Trie</title>
+<title>Trie (Prefix Tree)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+  /* trie renderer */
+  .trie-stage{position:relative;overflow:auto}
+  .trie-stage .trie-svg{position:absolute;left:0;top:0;pointer-events:none;z-index:1}
+  .trie-node{position:absolute;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px;background:#fff;border:2px solid var(--ink);color:var(--ink);z-index:2;
+    transition:left .4s var(--ease),top .4s var(--ease),opacity .35s var(--ease),transform .35s var(--ease),border-color .3s var(--ease)}
+  .trie-node.root{border-style:dashed;font-size:10px;color:var(--ink-soft)}
+  .trie-node.active{border-color:var(--stamp);color:var(--stamp)}
+  .trie-node.wordend{box-shadow:0 0 0 3px rgba(46,107,79,.28);border-color:var(--seal)}
+  .trie-node.pop{animation:trpop .38s var(--ease)}
+  .trie-node.gone{opacity:0;transform:scale(.7)}
+  .trie-edge{stroke:var(--ink-soft);stroke-width:2;fill:none}
+  .trie-edge.active{stroke:var(--stamp);stroke-width:2.6}
+  .trie-elabel{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700;fill:var(--ink)}
+  @keyframes trpop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:none}}
+</style>
 </head>
 <body>
 
@@ -15,224 +48,204 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Prefix Tree &middot; One Node Per Shared Letter</p>
-      <h1>Trie</h1>
+      <p class="eyebrow">Words That Share A Start, Share A Path</p>
+      <h1>Trie&nbsp;<span style="font-weight:500">(Prefix Tree)</span></h1>
     </div>
-    <p class="note">A tree built for storing words, where words that share a prefix share the same path from the root.</p>
+    <p class="note">A tree where every edge is a letter, so following a path spells a word — the structure behind autocomplete and spell-check.</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
-    <div class="panel-body notes">
-      <p>A trie (from re<b>trie</b>val, usually pronounced "try") stores a set of strings as a tree where
-      each edge is one character. Start at the root and follow the path spelled by a word's letters, one
-      node per letter; a special flag on a node marks "a word ends here." Because every word that shares a
-      prefix walks the exact same nodes for that prefix, storing <code>car</code>, <code>care</code>, and
-      <code>cart</code> together needs only one path for <code>c-a-r</code>, branching into three separate
-      tails right where the words actually differ.</p>
+  <nav class="subnav" aria-label="Trie pages">
+    <a class="here" href="trie.html">Overview</a>
+    <a href="trie-visualizer.html">Playground</a>
+  </nav>
 
+  <section class="panel">
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
+    <div class="panel-body notes">
+      <p>Think of an index at the back of a book, but nested. To find every word starting with <b>ca</b>, you'd
+      flip to the <b>c</b> section, then the <b>ca</b> sub-section, and there they all are — <em>cat</em>,
+      <em>car</em>, <em>can</em> — grouped together because they share a beginning. A <b>trie</b> (say "try",
+      from re<em>trie</em>val) is exactly that idea as a tree.</p>
+
+      <p>Each <b>edge</b> is labelled with a single letter, and each <b>node</b> is the prefix you've spelled by
+      walking down from the root. So the root is the empty string; step down a <code>c</code> edge and you're at
+      "c"; step down an <code>a</code> and you're at "ca". Words that begin the same way <em>walk the same path</em>
+      until they differ — that shared path is the whole trick.</p>
+
+      <div class="callout">
+        <b>Two rules.</b> (1) A word is stored by the <em>path of its letters</em> from the root, not by any value
+        inside a node. (2) Because "ca" is a prefix of "cat" but not a word by itself, each node carries a small
+        <b>end-of-word</b> flag — drawn here as a green ring — that says "a real word ends right here."
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it grow</h2><span class="sub">inserting cat, car, can — three words, one shared "ca" path</span></div>
+    <div class="panel-body notes">
+      <p>Watch three words go in. The first, <em>cat</em>, lays down a fresh <code>c&rarr;a&rarr;t</code> path. The
+      next two don't start over — they <em>reuse</em> the <code>c</code> and <code>a</code> already there and only
+      branch where they first differ. Three words, but the letters <code>c</code> and <code>a</code> are stored
+      once:</p>
+      <div class="trie-stage"><div id="demoHost"></div><svg class="trie-svg" id="demoSvg"></svg></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> the node we just reached</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal);box-shadow:0 0 0 2px rgba(46,107,79,.3)"></i> end-of-word marker</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Why it's fast</h2><span class="sub">lookup depends on the word, not the dictionary</span></div>
+    <div class="panel-body notes">
+      <p>To check whether a word of length <b>L</b> is in the trie, you walk <b>L</b> edges — one per letter — and
+      then look at the end-of-word flag. That's it. It does <b>not</b> matter whether the trie holds ten words or
+      ten million: the work is <b>O(L)</b>, set only by the length of the word you're looking up. A
+      <a href="../hash-table/hash-table.html">hash table</a> can match that on a full-word lookup, but a trie also
+      answers something a hash can't cheaply: <em>"give me every word starting with</em> ca<em>."</em> — just walk
+      to the "ca" node and read everything below it.</p>
+
+      <div class="callout">
+        <b>The catch is memory.</b> Every distinct prefix character is its own node. A trie trades space for speed:
+        many pointers (one slot per possible next letter at each node), most of them empty. That's why real
+        implementations use compressed or map-backed nodes — but the shape you see here is the honest mental model.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it yourself</h2><span class="sub">the operations, line by line, and a playground</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="trie-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Insert words and watch shared prefixes merge into one path, then search a prefix versus a full word and see why the end-of-word ring matters.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">costs and where tries show up</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
         <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
-        <tr><td>Insert</td><td>Walk/create one node per character</td><td><b>O(L)</b></td></tr>
-        <tr><td>Search</td><td>Walk one node per character, check <code>isEnd</code></td><td><b>O(L)</b></td></tr>
-        <tr><td>Starts With</td><td>Same walk, skip the <code>isEnd</code> check</td><td><b>O(L)</b></td></tr>
-        <tr><td>Delete</td><td>Walk down, unmark, walk back up pruning dead ends</td><td><b>O(L)</b></td></tr>
+        <tr><td>Insert</td><td>Walk/create one node per letter, mark the end</td><td><b>O(L)</b></td></tr>
+        <tr><td>Search</td><td>Walk the letters, check end-of-word</td><td><b>O(L)</b></td></tr>
+        <tr><td>Starts-with (prefix)</td><td>Walk to the prefix node; a match means it exists</td><td><b>O(L)</b></td></tr>
+        <tr><td>Delete</td><td>Unmark end-of-word; prune now-unused nodes</td><td><b>O(L)</b></td></tr>
       </table>
-      <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);margin-top:-6px">L = length of the word — never depends on how many other words are stored.</p>
+      <p><em>L</em> is the length of the word — never the number of words stored. That independence from dictionary
+      size is the trie's signature.</p>
 
-      <p><b>Implementation:</b> the code panel below gives every node an array of child pointers indexed by
-      letter (<code>children['a'..'z']</code>) plus an <code>isEnd</code> flag. <code>search</code> and
-      <code>startsWith</code> are almost the same function — the only difference is what they check once the
-      walk finishes: a search demands <code>isEnd</code>, a prefix check is satisfied just by the path
-      existing at all. That distinction matters: after inserting only <code>"car"</code>, searching for
-      <code>"ca"</code> correctly fails (it's a prefix, not a stored word) while <code>startsWith("ca")</code>
-      correctly succeeds.</p>
-
-      <p><b>Common mistake:</b> deleting a word by just unmarking its final node's <code>isEnd</code> flag
-      and stopping there leaves every node on its path allocated forever, even ones no other word needs —
-      a slow memory leak. The fix is walking back up from the deleted word's end, freeing each node whose
-      subtree is now completely empty, but stopping the moment a node is either the end of a <em>different</em>
-      word or still has another child — deleting <code>"care"</code> after also inserting <code>"car"</code>
-      must stop pruning at the shared <code>r</code>, not remove it.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; insert three words, search, then delete</span></div>
-    <div class="panel-body">
-      <div class="scroller">
-        <div class="treewrap" id="demoWrap">
-          <svg class="links" id="demoLinks"></svg>
-          <div id="demoNodes"></div>
-        </div>
-      </div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; insert() / search()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Where you'll meet tries.</b> Autocomplete and search suggestions (walk to what's typed, list the
+      subtree); spell-checkers and word games (is this a valid word? is it a prefix of one?); IP routing tables and
+      phone-number prefix matching; and any "type-ahead" that has to answer <em>prefix</em> questions faster than
+      scanning a list.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="trie-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="trie-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — insert a handful of words sharing a prefix, then delete all but one and watch
-    the trie prune itself back down, one dead branch at a time.
+    A trie turns a dictionary into shared paths of letters: words that start the same share a road, lookups cost
+    only the length of the word, and prefix questions become a single walk to a node.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/tree-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var INSERT_CODE=[
-    "void insert(Trie *t, const char *word) {",
-    "  Node *cur = t->root;",
-    "  for (int i = 0; word[i]; i++) {",
-    "    int idx = word[i] - 'a';",
-    "    if (!cur->children[idx]) {",
-    "      cur->children[idx] = makeNode();            // create the missing branch",
-    "      cur->childCount++;",
-    "    }",
-    "    cur = cur->children[idx];",
-    "  }",
-    "  cur->isEnd = 1;                                   // mark the last node as a complete word",
-    "}"
-  ];
-  var SEARCH_CODE=[
-    "int search(Trie *t, const char *word) {",
-    "  Node *cur = t->root;",
-    "  for (int i = 0; word[i]; i++) {",
-    "    int idx = word[i] - 'a';",
-    "    if (!cur->children[idx]) return 0;              // branch doesn't exist",
-    "    cur = cur->children[idx];",
-    "  }",
-    "  return cur->isEnd;                                 // a full word, not just a prefix",
-    "}"
-  ];
-
-  function makeNode(ch){ return {ch:ch, isEnd:false, isRoot:false, children:{}}; }
-  function makeRoot(){ return {ch:"", isEnd:false, isRoot:true, children:{}}; }
-
-  var Tree={boxEls:{}, links:[]};
-  function div(c){ var d=document.createElement("div"); d.className=c; return d; }
-
-  function renderTrieTree(root, activePath, activeRole){
-    var nodesHost=document.getElementById("demoNodes");
-    nodesHost.innerHTML="";
-    Tree.boxEls={}; Tree.links=[];
-    var counter=0;
-    var activeSet={}; if(activePath!==undefined) activeSet[activePath]=true;
-
-    function place(node, path, parentEl){
-      var id=counter++;
-      var wrap=div("tnode");
-      var box=div("tbox");
-      var role=activeSet[path]?activeRole:"";
-      var cell=div("cell"+(role?" "+role:""));
-      cell.textContent=node.isRoot?"•":node.ch;
-      box.appendChild(cell);
-      wrap.appendChild(box);
-      if(node.isEnd){ var lab=div("tlabel"); lab.textContent="word"; wrap.appendChild(lab); }
-      Tree.boxEls[id]=box;
-      var childKeys=Object.keys(node.children).sort();
-      if(childKeys.length){
-        var kidsWrap=div("tkids");
-        childKeys.forEach(function(k){
-          var childId=place(node.children[k], path+k, kidsWrap);
-          Tree.links.push({p:id, c:childId});
-        });
-        wrap.appendChild(kidsWrap);
-      }
-      parentEl.appendChild(wrap);
-      return id;
+  TreeAnim.injectCSS();
+  var NS="http://www.w3.org/2000/svg";
+  // page-local multi-way trie renderer (code-free looping demo)
+  var HGAP=64, VGAP=74, PADX=30, PADY=30, NW=38;
+  var host=document.getElementById("demoHost"), svg=document.getElementById("demoSvg"), narrEl=document.getElementById("demoNarr");
+  var elNodes={};
+  function layout(nodes){
+    var pos={}, x={v:0};
+    function rec(id, depth){
+      var kids=Object.keys(nodes[id].children).sort().map(function(c){return nodes[id].children[c];});
+      if(kids.length===0){ pos[id]={col:x.v++, depth:depth}; return; }
+      kids.forEach(function(k){ rec(k,depth+1); });
+      var s=0; kids.forEach(function(k){ s+=pos[k].col; }); pos[id]={col:s/kids.length, depth:depth};
     }
-    place(root, "", nodesHost);
-    drawLinks();
+    rec('r',0); return pos;
   }
-  function drawLinks(){
-    var svg=document.getElementById("demoLinks"), wrapEl=document.getElementById("demoWrap");
-    if(!wrapEl) return;
-    if(!Tree.links.length){ svg.innerHTML=""; return; }
-    var base=wrapEl.getBoundingClientRect();
-    svg.setAttribute("viewBox","0 0 "+wrapEl.offsetWidth+" "+wrapEl.offsetHeight);
-    svg.setAttribute("width",wrapEl.offsetWidth);
-    svg.setAttribute("height",wrapEl.offsetHeight);
-    var out="";
-    Tree.links.forEach(function(L){
-      var pb=Tree.boxEls[L.p], cb=Tree.boxEls[L.c];
-      if(!pb||!cb) return;
-      var pr=pb.getBoundingClientRect(), cr=cb.getBoundingClientRect();
-      var x1=pr.left+pr.width/2-base.left, y1=pr.bottom-base.top;
-      var x2=cr.left+cr.width/2-base.left, y2=cr.top-base.top;
-      var my=y1+(y2-y1)/2;
-      out+='<path d="M'+x1+' '+y1+' V'+my+' H'+x2+' V'+y2+'"></path>';
+  function render(frame){
+    var nodes=frame.nodes, pos=layout(nodes);
+    var maxCol=0,maxD=0; Object.keys(pos).forEach(function(id){ if(pos[id].col>maxCol)maxCol=pos[id].col; if(pos[id].depth>maxD)maxD=pos[id].depth; });
+    var W=PADX*2+(maxCol+1)*HGAP, H=PADY*2+(maxD+1)*VGAP; if(W<240)W=240; if(H<110)H=110;
+    host.style.position="relative"; host.style.minWidth=W+"px"; host.style.height=H+"px";
+    svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.style.width=W+"px"; svg.style.height=H+"px";
+    function nx(id){ return PADX+pos[id].col*HGAP; } function ny(id){ return PADY+pos[id].depth*VGAP; }
+    var seen={}, cls=frame.cls||{};
+    Object.keys(nodes).forEach(function(id){
+      if(!pos[id]) return; seen[id]=true;
+      var box=elNodes[id];
+      if(!box){ box=document.createElement("div"); box.className="trie-node"; box.textContent=(id==='r')?"root":nodes[id].ch; host.appendChild(box); box._pop=true; elNodes[id]=box; }
+      box.style.left=nx(id)+"px"; box.style.top=ny(id)+"px";
+      var c="trie-node"+(id==='r'?" root":"")+(nodes[id].end?" wordend":"")+(cls[id]?(" "+cls[id]):"");
+      if(box._pop){ c+=" pop"; box._pop=false; } box.className=c;
     });
-    svg.innerHTML=out;
-  }
-  var rt;
-  window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(drawLinks,120); });
-
-  function scriptFrames(){
-    var root=makeRoot(), frames=[];
-    function push(activePath, activeRole, narr, code, codeLine){
-      frames.push({struct:{root:root, path:activePath, role:activeRole}, narr:narr, code:code, codeLine:codeLine});
+    Object.keys(elNodes).forEach(function(id){ if(!seen[id]){ var b=elNodes[id]; if(b.parentNode)b.parentNode.removeChild(b); delete elNodes[id]; }});
+    var token=(host._tok=(host._tok||0)+1), start=performance.now();
+    function draw(){
+      while(svg.firstChild) svg.removeChild(svg.firstChild);
+      var hr=host.getBoundingClientRect();
+      Object.keys(nodes).forEach(function(id){
+        if(!elNodes[id])return;
+        Object.keys(nodes[id].children).forEach(function(ch){
+          var cId=nodes[id].children[ch]; if(!elNodes[cId])return;
+          var pr=elNodes[id].getBoundingClientRect(), cr=elNodes[cId].getBoundingClientRect();
+          var x1=pr.left-hr.left+pr.width/2, y1=pr.top-hr.top+pr.height, x2=cr.left-hr.left+cr.width/2, y2=cr.top-hr.top;
+          var ln=document.createElementNS(NS,"line"); ln.setAttribute("x1",x1);ln.setAttribute("y1",y1);ln.setAttribute("x2",x2);ln.setAttribute("y2",y2);
+          ln.setAttribute("class","trie-edge"+((frame.activeEdge&&frame.activeEdge===id+">"+cId)?" active":"")); svg.appendChild(ln);
+          var tx=document.createElementNS(NS,"text"); tx.setAttribute("x",(x1+x2)/2+6); tx.setAttribute("y",(y1+y2)/2); tx.setAttribute("class","trie-elabel"); tx.textContent=ch; svg.appendChild(tx);
+        });
+      });
     }
-    function insert(word){
-      var cur=root, path="";
-      for(var i=0;i<word.length;i++){
-        var ch=word[i];
-        if(!cur.children[ch]){
-          cur.children[ch]=makeNode(ch);
-          push(path+ch, "left head landed", "Create node \""+(path+ch)+"\".", INSERT_CODE, [4,7]);
-        } else {
-          push(path+ch, "left head", "Follow existing branch to \""+(path+ch)+"\".", INSERT_CODE, 8);
-        }
-        cur=cur.children[ch]; path+=ch;
-      }
-      cur.isEnd=true;
-      push(path, "left head landed", "\""+word+"\" is now a complete word.", INSERT_CODE, 10);
-    }
-    function search(word){
-      var cur=root, path="";
-      for(var i=0;i<word.length;i++){
-        var ch=word[i];
-        if(!cur.children[ch]){ push(path, "", "No branch for \""+ch+"\" — \""+word+"\" isn't in the trie.", SEARCH_CODE, 4); return; }
-        cur=cur.children[ch]; path+=ch;
-        push(path, "left head", "Follow \""+ch+"\" to \""+path+"\".", SEARCH_CODE, [4,5]);
-      }
-      push(path, "found", cur.isEnd ? "\""+word+"\" is a complete word." : "\""+word+"\" is only a prefix, not a stored word.", SEARCH_CODE, 7);
-    }
-
-    push("", "", "An empty trie: just the root.", INSERT_CODE, 1);
-    insert("car"); insert("care"); insert("cat");
-    search("care");
-    search("ca");
-    return frames;
+    function follow(){ if(host._tok!==token)return; draw(); if(performance.now()-start<520) requestAnimationFrame(follow); }
+    draw(); requestAnimationFrame(follow);
   }
 
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 950,
-    renderExtra: function(frame){
-      renderTrieTree(frame.struct.root, frame.struct.path, frame.struct.role);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  // build the scripted frames for inserting cat, car, can
+  var nodes={ r:{ch:null,children:{},end:false} }, nid=0;
+  function mk(ch){ var id="n"+(nid++); nodes[id]={ch:ch,children:{},end:false}; return id; }
+  function snap(){ var s={}; Object.keys(nodes).forEach(function(id){ s[id]={ch:nodes[id].ch,end:nodes[id].end,children:{}}; Object.keys(nodes[id].children).forEach(function(c){ s[id].children[c]=nodes[id].children[c]; }); }); return s; }
+  function one(k,v){ var o={}; o[k]=v; return o; }
+  var frames=[];
+  function F(narr,o){ o=o||{}; frames.push({nodes:snap(), narr:narr, cls:o.cls, activeEdge:o.activeEdge}); }
+
+  F("Empty trie — just the root.");
+  // insert cat
+  var cur='r';
+  ["c","a","t"].forEach(function(ch){ var id=mk(ch); nodes[cur].children[ch]=id; F("Insert \"cat\": add the '"+ch+"' edge.", {activeEdge:cur+">"+id, cls:one(id,'active')}); cur=id; });
+  nodes[cur].end=true; F("Mark the end — \"cat\" is stored.", {cls:one(cur,'active')});
+  // insert car — reuse c, a
+  cur='r'; cur=nodes[cur].children['c']; F("Insert \"car\": 'c' already exists — reuse it.", {cls:one(cur,'active')});
+  cur=nodes[cur].children['a']; F("'a' exists too — reuse it. \"car\" and \"cat\" share the \"ca\" path.", {cls:one(cur,'active')});
+  (function(){ var id=mk('r'); nodes[cur].children['r']=id; F("They differ at the third letter — branch a new 'r' edge.", {activeEdge:cur+">"+id, cls:one(id,'active')}); cur=id; })();
+  nodes[cur].end=true; F("Mark the end — \"car\" is stored.", {cls:one(cur,'active')});
+  // insert can — reuse c, a
+  cur='r'; cur=nodes[cur].children['c']; cur=nodes[cur].children['a']; F("Insert \"can\": walk the shared \"ca\" path again.", {cls:one(cur,'active')});
+  (function(){ var id=mk('n'); nodes[cur].children['n']=id; F("Branch a new 'n' edge for the third letter.", {activeEdge:cur+">"+id, cls:one(id,'active')}); cur=id; })();
+  nodes[cur].end=true; F("Mark the end — \"can\" is stored. Three words, one shared \"ca\" stem.", {cls:one(cur,'active')});
+
+  var i=0;
+  function tick(){ render(frames[i]); narrEl.textContent=frames[i].narr; i=(i+1)%frames.length; }
+  tick(); setInterval(tick, 1700);
 })();
 </script>
 </body>

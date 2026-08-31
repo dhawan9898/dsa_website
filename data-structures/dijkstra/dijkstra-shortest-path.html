@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dijkstra · Shortest Path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps li{position:relative;padding:6px 0 6px 40px;font-size:14.5px;line-height:1.6}
+  .steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:5px;
+    width:26px;height:26px;border-radius:50%;background:var(--stamp);color:#fff;
+    font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .demo-wrap{margin:18px 0 6px;padding:16px;border:1px dashed var(--rule);border-radius:8px;background:rgba(0,0,0,.012)}
+  .dline{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .dline b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <a class="masthead-nav" href="dijkstra.html">&larr; Dijkstra overview</a>
+      <p class="eyebrow">Extract-Min, Relax, Repeat</p>
+      <h1>Shortest Path</h1>
+    </div>
+    <p class="note">The whole algorithm is a loop: take the cheapest un-finalized vertex, use it to relax its edges, and repeat until the heap is empty.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="subnav" aria-label="Dijkstra pages">
+    <a href="dijkstra.html">Overview</a>
+    <a class="here" href="dijkstra-shortest-path.html">Shortest Path</a>
+    <a href="dijkstra-visualizer.html">Playground</a>
+  </nav>
+
+  <section class="panel">
+    <div class="panel-head"><h2>The thought process</h2></div>
+    <div class="panel-body notes">
+      <p>Keep a <code>dist[]</code> table — the best cost found <em>so far</em> to each vertex — and a
+      <a href="../priority-queue/priority-queue.html">min-heap</a> of vertices keyed by that cost. Start with
+      <code>dist[source] = 0</code> and everything else ∞. Then repeat one confident move:</p>
+      <ol class="steps">
+        <li><b>Extract-min:</b> pull the vertex with the smallest <code>dist</code> out of the heap — its cost is
+        now final (nothing can beat it).</li>
+        <li><b>Relax</b> each of its edges: if reaching a neighbour <em>through</em> this vertex is cheaper than the
+        neighbour's current <code>dist</code>, lower it and push the neighbour back on the heap.</li>
+        <li>Repeat until the heap is empty. Every vertex gets finalized exactly once.</li>
+      </ol>
+      <div class="callout">
+        <b>Why <code>if (done[u]) continue;</code>?</b> Relaxing can push the same vertex onto the heap several times
+        at different costs. When you extract it, the first (cheapest) copy is the real one; any later, staler copies
+        are skipped with this check. It's simpler than deleting old heap entries and just as correct.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it run</h2><span class="sub">Dijkstra from A — one C line at a time</span></div>
+    <div class="panel-body notes">
+      <p>The <code>dist</code> table is printed below the graph; watch entries drop from ∞ as edges relax, and
+      watch B's cost improve from 4 to 3 when the cheaper route through C appears:</p>
+      <div class="demo-wrap">
+        <div class="graph-stage"><div id="dHost"></div><svg class="graph-svg" id="dSvg"></svg></div>
+        <p class="dline" id="dTable">dist: <b></b></p>
+        <p class="narr" id="dNarr" style="margin-top:6px">&nbsp;</p>
+        <div class="code-panel" id="dCode" style="margin-top:12px"></div>
+      </div>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> being finalized / relaxing from</span>
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> reached, tentative</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> finalized</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Reading the code</h2></div>
+    <div class="panel-body notes">
+      <p>Every vertex is extracted from the heap once (O(V) extractions, each O(log V)), and every edge triggers at
+      most one relaxation that pushes to the heap (O(E) pushes, each O(log V)). Together that's
+      <b>O((V + E) log V)</b> — near-linear, and the reason Dijkstra scales to real road networks.</p>
+      <p>To recover the actual <em>path</em> (not just its cost), store a <code>prev[v]</code> each time you relax:
+      "the best way into v currently comes from u." When you're done, follow <code>prev</code> back from any vertex
+      to the source.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-body" style="text-align:center;padding:26px 14px">
+      <a class="cta" href="dijkstra-visualizer.html">Run it from any start vertex in the playground &rarr;</a>
+    </div>
+  </section>
+
+  <footer>
+    Extract the cheapest, finalize it, relax its edges, repeat. A min-heap keeps "cheapest next" fast, and the
+    non-negative-weight guarantee means each finalized cost is the real shortest distance.
+  </footer>
+</div>
+
+<script src="../../shared/motion.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
+<script>
+(function(){
+  "use strict";
+  var POS={ A:[70,150], B:[220,60], C:[220,240], D:[370,150], E:[500,150] };
+  var EDGES=[["A","B"],["A","C"],["B","C"],["B","D"],["C","D"],["D","E"]];
+  var W={ "A-B":4, "A-C":1, "B-C":2, "B-D":1, "C-D":5, "D-E":3 };
+  var ADJ={ A:[["B",4],["C",1]], B:[["A",4],["C",2],["D",1]], C:[["A",1],["B",2],["D",5]], D:[["B",1],["C",5],["E",3]], E:[["D",3]] };
+  var CODE=[
+    "void dijkstra(Graph *g, int s) {",
+    "  for (int i=0;i<V;i++) dist[i] = INF;",
+    "  dist[s] = 0;   push(&h, s, 0);",
+    "  while (!empty(&h)) {",
+    "    int u = extractMin(&h);     // cheapest tentative",
+    "    if (done[u]) continue;",
+    "    done[u] = true;             // finalize u",
+    "    for (edge (u,v,w) of u)",
+    "      if (dist[u] + w < dist[v]) {",
+    "        dist[v] = dist[u] + w;  // relax",
+    "        push(&h, v, dist[v]);",
+    "      }",
+    "  }",
+    "}"];
+  function ek(a,b){ return a<b?a+"-"+b:b+"-"+a; }
+  function clone(o){ var c={}; Object.keys(o).forEach(function(k){c[k]=o[k];}); return c; }
+  function nodesFor(active,dist,done){ var ns={}; Object.keys(POS).forEach(function(id){
+    var d=dist[id], cls = done[id]?"done":(id===active?"active":(d!==Infinity?"frontier":""));
+    ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:cls,label:(d===Infinity?"∞":String(d))}; }); return ns; }
+  function edgesFor(active){ return EDGES.map(function(e){ var k=ek(e[0],e[1]); return {from:e[0],to:e[1],weight:W[k],cls:(active===k?"active":"")}; }); }
+
+  function runDijkstra(start){
+    var dist={}, done={}, frames=[];
+    Object.keys(POS).forEach(function(id){ dist[id]=Infinity; });
+    dist[start]=0;
+    function snap(line,active,activeEdge,narr){ frames.push({nodes:nodesFor(active,dist,done), edges:edgesFor(activeEdge), code:line, codeLines:CODE, narr:narr, _dist:clone(dist)}); }
+    snap([1,2],null,null,"Initialize: dist["+start+"] = 0, all others ∞. Push "+start+" onto the heap.");
+    while(true){
+      var u=null, best=Infinity;
+      Object.keys(POS).forEach(function(id){ if(!done[id] && dist[id]<best){ best=dist[id]; u=id; } });
+      if(u===null) break;
+      snap([4,6],u,null,"Extract-min: smallest tentative cost is "+u+" ("+dist[u]+"). Finalize it.");
+      done[u]=true;
+      ADJ[u].forEach(function(pair){
+        var v=pair[0], w=pair[1], k=ek(u,v);
+        if(done[v]) return; // skip already-finalized for a cleaner walk
+        if(dist[u]+w < dist[v]){
+          var old=dist[v]; dist[v]=dist[u]+w;
+          snap([9,10],u,k,"Relax "+u+"→"+v+": "+dist[u]+" + "+w+" = "+dist[v]+" < "+(old===Infinity?"∞":old)+". Update dist["+v+"] = "+dist[v]+".");
+        } else {
+          snap(8,u,k,"Relax "+u+"→"+v+": "+dist[u]+" + "+w+" = "+(dist[u]+w)+" ≥ "+dist[v]+". No improvement.");
+        }
+      });
+      snap(3,null,null,u+" is finalized (dist = "+dist[u]+"). Back to the heap.");
+    }
+    snap(13,null,null,"Heap empty — every shortest distance from "+start+" is final.");
+    return frames;
+  }
+
+  var host=document.getElementById("dHost"), nEl=document.getElementById("dNarr"), tEl=document.getElementById("dTable");
+  var frames=runDijkstra("A");
+  GraphAnim.play({ host:host, svg:document.getElementById("dSvg"), narrEl:nEl, codeHost:document.getElementById("dCode"), ms:1900, frames:frames });
+  function tstr(d){ return Object.keys(d).sort().map(function(k){ return k+":"+(d[k]===Infinity?"∞":d[k]); }).join("  "); }
+  var mo=new MutationObserver(function(){ for(var k=0;k<frames.length;k++){ if(frames[k].narr===nEl.textContent){ tEl.innerHTML="dist: <b>"+tstr(frames[k]._dist)+"</b>"; break; } } });
+  mo.observe(nEl,{childList:true,characterData:true,subtree:true});
+})();
+</script>
+</body>
+</html>

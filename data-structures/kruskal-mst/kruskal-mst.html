@@ -8,6 +8,26 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+  .edgeline{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-soft);margin-top:8px}
+  .edgeline b{color:var(--seal)}
+</style>
 </head>
 <body>
 
@@ -15,151 +35,157 @@
   <div class="masthead-inner">
     <div>
       <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
-      <p class="eyebrow">Minimum Spanning Tree &middot; Cheapest Edges First</p>
+      <p class="eyebrow">Connect Everything For The Least Total Cost</p>
       <h1>Kruskal&#8217;s&nbsp;MST</h1>
     </div>
-    <p class="note">Finds the cheapest possible set of edges that connects every vertex in a weighted graph, with no cycles.</p>
+    <p class="note">Pick the cheapest edges that connect every vertex without ever forming a loop — the minimum spanning tree.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Kruskal pages">
+    <a class="here" href="kruskal-mst.html">Overview</a>
+    <a href="kruskal-mst-build.html">Building the MST</a>
+    <a href="kruskal-mst-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>A <b>minimum spanning tree</b> (MST) is the cheapest possible subset of a connected, undirected,
-      weighted graph's edges that still connects every vertex — always exactly <code>V&minus;1</code> edges for
-      <code>V</code> vertices, and no cycles (a cycle would mean some edge in it could be removed for free).
-      Kruskal's algorithm builds one greedily: sort every edge by weight, then walk the sorted list accepting
-      an edge whenever its two endpoints aren't already connected, and skipping it when they are — accepting
-      it would only close a cycle, never help connect anything new.</p>
+      <p>You have towns and the costs to lay cable between some of them. You want every town connected — power can
+      flow from any town to any other — for the <em>least total cable</em>. You'd never pay for a loop (if a town is
+      already reachable, a second path is wasted money), and you need exactly enough links to tie everyone together.
+      That cheapest loop-free connector is a <b>minimum spanning tree (MST)</b>.</p>
 
-      <p>"Are these two vertices already connected?" is exactly the question
-      <a href="../union-find/union-find.html">Union-Find</a> answers in almost constant time: two vertices
-      are connected exactly when <code>find</code> returns the same root for both. That's why Kruskal's and
-      Union-Find are taught together — the graph algorithm's core decision <em>is</em> a disjoint-set query.</p>
+      <p>A <b>spanning tree</b> of a graph is a subset of edges that touches every vertex (spans them) and has no
+      cycle — which for <em>V</em> vertices means exactly <em>V−1</em> edges. The <b>minimum</b> spanning tree is
+      the spanning tree whose edge weights add up to the smallest total.</p>
 
-      <table class="notes-table">
-        <tr><th>Step</th><th>Cost</th></tr>
-        <tr><td>Sort E edges</td><td><b>O(E log E)</b></td></tr>
-        <tr><td>E finds + up to V&minus;1 unions</td><td><b>O(E &middot; &alpha;(V))</b>, effectively O(E)</td></tr>
-        <tr><td>Total</td><td><b>O(E log E)</b> &mdash; dominated by the sort</td></tr>
-      </table>
-
-      <p><b>Implementation:</b> the code panel below stops the loop the instant <code>count</code> reaches
-      <code>n - 1</code> — a spanning tree on <code>n</code> vertices needs exactly that many edges and never
-      more, so once it's found there's no reason to keep scanning the (possibly much longer) sorted list.</p>
-
-      <p><b>Common mistake:</b> checking whether an edge's endpoints are equal by comparing the vertices
-      themselves instead of their <em>roots</em> — <code>edges[i].from == edges[i].to</code> only catches a
-      self-loop, not the far more common case of two different vertices that are already connected through
-      some other path. Cycle detection has to go through <code>find</code>, not a direct comparison.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; accept, accept, reject a cycle, accept</span></div>
-    <div class="panel-body">
-      <div class="graphwrap" id="demoWrap">
-        <svg class="links" id="demoLinks"></svg>
-        <div id="demoNodes"></div>
+      <div class="callout">
+        <b>Kruskal's greedy rule.</b> Sort every edge cheapest-first, then walk the list once: <b>take</b> an edge
+        if it joins two so-far-separate pieces, and <b>skip</b> it if both its endpoints are already connected
+        (taking it would make a cycle). Stop once you've taken <em>V−1</em> edges. That's the whole algorithm.
       </div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; kruskalMST()</span></div>
+    <div class="panel-head"><h2>The engine underneath: Union-Find</h2><span class="sub">how "are these already connected?" stays cheap</span></div>
+    <div class="panel-body notes">
+      <p>The one hard part is the test "are these two endpoints already connected?" Checking by searching the graph
+      each time would be slow. Instead Kruskal leans on <a href="../union-find/union-find.html">Union-Find</a>: each
+      vertex starts in its own group, <code>find</code> tells you an edge's two endpoints' groups, and if they
+      differ you <code>union</code> them as you take the edge. Same group ⟹ taking the edge would close a loop ⟹
+      skip it.</p>
+      <p>Watch it build the MST below. Green edges are chosen; a red edge is under consideration; a faded edge was
+      rejected because its endpoints were already in one group:</p>
+      <div class="graph-stage"><div id="demoHost"></div><svg class="graph-svg" id="demoSvg"></svg></div>
+      <p class="edgeline" id="demoEdges">chosen: <b>—</b></p>
+      <p class="narr" id="demoNarr" style="margin-top:6px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> edge under consideration</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> chosen (in the MST)</span>
+        <span class="key"><i class="swatch" style="border-color:var(--rule)"></i> rejected (would make a cycle)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Learn the algorithm</h2><span class="sub">the thought process, an animation, and the C</span></div>
     <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <div class="dive-grid">
+        <a class="dive-card" href="kruskal-mst-build.html">
+          <span class="num">01</span><h3>Building the MST</h3>
+          <p>Sort the edges, then take-or-skip each one with a union-find cycle test — line by line, edge by edge.</p>
+          <span class="go">Open the walkthrough &rarr;</span>
+        </a>
+        <a class="dive-card" href="kruskal-mst-visualizer.html">
+          <span class="num">02</span><h3>Playground</h3>
+          <p>Run Kruskal on a weighted graph and watch the cheapest loop-free edges get chosen, one at a time.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost, correctness, and where it's used</span></div>
+    <div class="panel-body notes">
+      <table class="notes-table">
+        <tr><th>Step</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Sort edges</td><td>Order all E edges by weight</td><td>O(E log E)</td></tr>
+        <tr><td>Take-or-skip each</td><td>Two finds + maybe a union per edge</td><td>O(E · α(V))</td></tr>
+        <tr><td>Whole algorithm</td><td>Dominated by the sort</td><td><b>O(E log E)</b></td></tr>
+      </table>
+      <p><b>Why greedy works here.</b> The cheapest edge crossing between any two groups is always safe to include
+      in <em>some</em> MST (the "cut property"). Kruskal takes edges in global cheapest-first order, and each one it
+      keeps is exactly such a safe edge — so the greedy choice never has to be undone.</p>
+
+      <div class="callout">
+        <b>Kruskal vs Prim.</b> Both build an MST greedily. Kruskal sorts <em>all</em> edges and grows a forest that
+        merges into one tree (great when edges are few, or already sorted). Prim grows <em>one</em> tree outward
+        from a start vertex using a <a href="../priority-queue/priority-queue.html">heap</a>, like
+        <a href="../dijkstra/dijkstra.html">Dijkstra</a> (great when edges are dense).
+      </div>
+
+      <p><b>Where you'll meet it.</b> Network and utility layout (cable, pipes, roads for least cost), clustering
+      (cut the most expensive MST edges to split data into groups), and approximate solutions to harder routing
+      problems.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="kruskal-mst-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="kruskal-mst-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: try it yourself — build a graph with one very expensive edge that's the <em>only</em> connection to
-    an isolated vertex, and watch Kruskal's accept it anyway once every cheaper edge has been considered.
+    Kruskal's MST = sort edges cheapest-first, then take each one unless it closes a loop (a union-find test), until
+    V−1 edges tie every vertex together for the least possible total weight.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/graph-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  var POS={ A:[60,70], B:[320,70], C:[190,175], D:[60,290], E:[320,290] };
+  // weights chosen so A-B (cheap) is rejected as a cycle before the MST completes
+  var EDG=[["A","C",1],["B","C",2],["A","B",3],["D","E",4],["A","D",5],["C","E",6],["B","E",7]];
+  function ek(a,b){ return a<b?a+"-"+b:b+"-"+a; }
+  function nodesFor(inMst,active){ var ns={}; Object.keys(POS).forEach(function(id){
+    ns[id]={x:POS[id][0],y:POS[id][1],val:id,cls:(active&&active[id])?"active":(inMst[id]?"done":"")}; }); return ns; }
+  function edgesFor(state){ return EDG.map(function(e){ var k=ek(e[0],e[1]); return {from:e[0],to:e[1],weight:e[2],cls:state[k]||""}; }); }
+  function F(estate,inMst,active,chosen,narr){ return {nodes:nodesFor(inMst,active), edges:edgesFor(estate), narr:narr, _chosen:chosen.slice()}; }
 
-  var CODE=[
-    "int cmpEdges(const void *a, const void *b) {",
-    "  return ((Edge*)a)->weight - ((Edge*)b)->weight;",
-    "}",
-    "",
-    "int kruskalMST(Edge edges[], int m, int n, Edge mst[]) {",
-    "  qsort(edges, m, sizeof(Edge), cmpEdges);              // cheapest edges first",
-    "  int parent[MAXV]; for (int i = 0; i < n; i++) parent[i] = i;",
-    "  int count = 0, total = 0;",
-    "",
-    "  for (int i = 0; i < m && count < n - 1; i++) {",
-    "    int a = find(parent, edges[i].from), b = find(parent, edges[i].to);",
-    "    if (a != b) {                                         // endpoints in different sets: no cycle",
-    "      parent[a] = b;                                       // union them",
-    "      mst[count++] = edges[i];",
-    "      total += edges[i].weight;",
-    "    }",
-    "  }",
-    "  return total;",
-    "}"
-  ];
+  // scripted Kruskal (sorted: A-C1,B-C2,A-B3,D-E4,A-D5,...)
+  var frames=[], estate={}, inMst={}, chosen=[];
+  frames.push(F(estate,inMst,null,chosen,"Sort edges cheapest-first: A-C(1), B-C(2), A-B(3), D-E(4), A-D(5), C-E(6), B-E(7). Each vertex is its own group."));
+  // A-C 1
+  estate[ek("A","C")]="active"; frames.push(F(estate,inMst,{A:1,C:1},chosen,"A-C (1): A and C are in different groups — take it."));
+  estate[ek("A","C")]="tree"; inMst.A=inMst.C=1; chosen.push("A-C"); frames.push(F(estate,inMst,null,chosen,"Chosen. Union A and C. (1 of 4 edges.)"));
+  // B-C 2
+  estate[ek("B","C")]="active"; frames.push(F(estate,inMst,{B:1,C:1},chosen,"B-C (2): B and {A,C} differ — take it."));
+  estate[ek("B","C")]="tree"; inMst.B=1; chosen.push("B-C"); frames.push(F(estate,inMst,null,chosen,"Chosen. Now {A, B, C} are one group. (2 of 4.)"));
+  // A-B 3 reject
+  estate[ek("A","B")]="active"; frames.push(F(estate,inMst,{A:1,B:1},chosen,"A-B (3): but A and B are ALREADY in the same group — taking it would form a cycle."));
+  estate[ek("A","B")]="dim"; frames.push(F(estate,inMst,null,chosen,"Skip A-B. This is the union-find cycle test doing its job."));
+  // D-E 4
+  estate[ek("D","E")]="active"; frames.push(F(estate,inMst,{D:1,E:1},chosen,"D-E (4): D and E are separate — take it."));
+  estate[ek("D","E")]="tree"; inMst.D=inMst.E=1; chosen.push("D-E"); frames.push(F(estate,inMst,null,chosen,"Chosen. {D, E} form a second piece. (3 of 4.)"));
+  // A-D 5
+  estate[ek("A","D")]="active"; frames.push(F(estate,inMst,{A:1,D:1},chosen,"A-D (5): joins {A,B,C} with {D,E} — different groups, take it."));
+  estate[ek("A","D")]="tree"; chosen.push("A-D"); frames.push(F(estate,inMst,null,chosen,"Chosen — that's 4 edges = V−1. Every vertex is connected."));
+  frames.push(F(estate,inMst,null,chosen,"Done. MST = A-C, B-C, D-E, A-D, total weight 1+2+4+5 = 12. The remaining edges are never needed."));
 
-  var nodes=[{id:0,val:"A"},{id:1,val:"B"},{id:2,val:"C"},{id:3,val:"D"}];
-  var edges=[{from:0,to:1,weight:1},{from:1,to:2,weight:2},{from:0,to:2,weight:3},{from:2,to:3,weight:4}];
-  function valOf(id){ return nodes.filter(function(n){return n.id===id;})[0].val; }
-  function findRoot(parent,x){ while(parent[x]!==x) x=parent[x]; return x; }
-
-  function scriptFrames(){
-    var frames=[];
-    function push(inMst, curKey, narr, codeLine){
-      frames.push({struct:{
-        nodes: nodes.map(function(n){ return {id:n.id, val:n.val, role:""}; }),
-        edges: edges.map(function(e){
-          var key=e.from+":"+e.to;
-          return {from:e.from, to:e.to, weight:e.weight, active: key===curKey, settled: !!inMst[key]};
-        })
-      }, narr:narr, code:CODE, codeLine:codeLine});
-    }
-
-    var sorted=edges.slice().sort(function(x,y){ return x.weight-y.weight; });
-    push({}, null, "Sort edges by weight: "+sorted.map(function(e){return valOf(e.from)+"-"+valOf(e.to)+"("+e.weight+")";}).join(", ")+".", 5);
-
-    var parent={}; nodes.forEach(function(n){ parent[n.id]=n.id; });
-    var inMst={}, count=0, total=0, n=nodes.length;
-    for(var i=0;i<sorted.length && count<n-1;i++){
-      var e=sorted[i], key=e.from+":"+e.to;
-      var ra=findRoot(parent,e.from), rb=findRoot(parent,e.to);
-      if(ra!==rb){
-        parent[ra]=rb; inMst[key]=true; count++; total+=e.weight;
-        push(inMst, key, valOf(e.from)+"-"+valOf(e.to)+" ("+e.weight+"): accept, total now "+total+".", [12,14]);
-      } else {
-        push(inMst, key, valOf(e.from)+"-"+valOf(e.to)+" ("+e.weight+"): already connected — would close a cycle. Skip.", 11);
-      }
-    }
-    push(inMst, null, "MST complete: "+count+" edges, total weight "+total+".", 17);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 1000,
-    renderExtra: function(frame){
-      DSRender.graph(document.getElementById("demoNodes"), document.getElementById("demoLinks"), frame.struct, {});
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  GraphAnim.play({ host:document.getElementById("demoHost"), svg:document.getElementById("demoSvg"),
+    narrEl:document.getElementById("demoNarr"), ms:2000, frames:frames });
+  var eEl=document.getElementById("demoEdges"), nEl=document.getElementById("demoNarr");
+  var mo=new MutationObserver(function(){ for(var k=0;k<frames.length;k++){ if(frames[k].narr===nEl.textContent){ eEl.innerHTML="chosen: <b>"+(frames[k]._chosen.length?frames[k]._chosen.join(", "):"—")+"</b>"; break; } } });
+  mo.observe(nEl,{childList:true,characterData:true,subtree:true});
 })();
 </script>
 </body>

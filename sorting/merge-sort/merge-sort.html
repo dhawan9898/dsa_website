@@ -8,176 +8,159 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+  .cs-block{margin:6px 0}
+  .cs-label{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:var(--ink-soft);margin:8px 0 4px}
+  .cs-row{display:flex;gap:6px;flex-wrap:wrap;min-height:38px}
+  .cs-cell{width:36px;height:36px;border:2px solid var(--ink);border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px;background:#fff;color:var(--ink);
+    transition:border-color .3s var(--ease),background .3s var(--ease),color .3s var(--ease),opacity .3s var(--ease)}
+  .cs-cell.empty{border-style:dashed;color:transparent}
+  .cs-cell.spent{opacity:.25}
+  .cs-cell.left{border-color:var(--plot);color:var(--plot)}
+  .cs-cell.right{border-color:var(--stamp);color:var(--stamp)}
+  .cs-cell.pick{box-shadow:0 0 0 3px rgba(46,107,79,.25);border-color:var(--seal);color:var(--seal)}
+  .cs-cell.done{border-color:var(--seal);color:var(--seal);background:rgba(46,107,79,.12)}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Divide &middot; Compare &middot; Merge</p>
       <h1>Merge&nbsp;Sort</h1>
     </div>
-    <p class="note">Splits the array in half recursively down to single elements, then zips each pair of already-sorted halves back together in order.</p>
+    <p class="note">Split the array in half, sort each half, then merge the two sorted halves together — guaranteed O(n log n), every time.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Merge Sort pages">
+    <a class="here" href="merge-sort.html">Overview</a>
+    <a href="merge-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Merge sort is a classic <b>divide and conquer</b> algorithm. Going down, it only cuts: split the
-      range in half, recursively sort each half, and repeat until a range is down to a single element (which
-      is trivially sorted already). No comparisons happen on the way down at all — the actual work is all on
-      the way <em>back up</em>, where two already-sorted halves are merged into one sorted run by repeatedly
-      taking whichever half's front value is smaller.</p>
+      <p>Merge sort is the purest <b>divide and conquer</b>. Splitting an array in half is trivial. Sorting a
+      one-element piece is free — it's already sorted. The clever part is <b>merging</b>: given two <em>already
+      sorted</em> halves, you can zip them into one sorted whole in a single linear pass — just keep taking the
+      smaller of the two front elements.</p>
 
+      <p>So the whole algorithm is: split until pieces are size 1, then merge pairs of pieces back up, doubling the
+      sorted size each level, until the whole array is one sorted run.</p>
+
+      <div class="callout">
+        <b>The merge is the engine.</b> Two sorted lists merge in O(n) because each list only moves forward — a
+        pointer at the front of each, take the smaller, advance it. No value is ever compared twice. That linear
+        merge, done at every level of the split, is what gives merge sort its speed.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch the merge</h2><span class="sub">two sorted halves zip into one — take the smaller front each time</span></div>
+    <div class="panel-body notes">
+      <p>Here are two already-sorted halves. A pointer sits at the front of each; the smaller one is picked into the
+      output and its pointer advances:</p>
+      <div class="cs-block"><div class="cs-label">left half (sorted)</div><div class="cs-row" id="leftHost"></div></div>
+      <div class="cs-block"><div class="cs-label">right half (sorted)</div><div class="cs-row" id="rightHost"></div></div>
+      <div class="cs-block"><div class="cs-label">merged output</div><div class="cs-row" id="outHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> left front</span>
+        <span class="key"><i class="swatch" style="border-color:var(--stamp)"></i> right front</span>
+        <span class="key"><i class="swatch" style="border-color:var(--seal)"></i> picked into output</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>See the full recursion</h2><span class="sub">every split going down and every merge coming back up</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="merge-sort-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Watch the whole recursion tree: the array splitting down to single elements, then merging back up level by level.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost and character</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Time</th></tr>
-        <tr><td>Every case</td><td><b>O(n log n)</b> &mdash; log n levels of splitting, O(n) work merging each level</td></tr>
-        <tr><td>Space</td><td><b>O(n)</b> &mdash; needs a temporary array for the merge step</td></tr>
+        <tr><th>Case</th><th>When</th><th>Time</th></tr>
+        <tr><td>Every case</td><td>log n levels × O(n) merge each</td><td><b>O(n log n)</b></td></tr>
+        <tr><td>Space</td><td>Needs a temp array to merge</td><td>O(n)</td></tr>
+        <tr><td>Stable?</td><td>Ties keep input order</td><td>Yes</td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel below copies each half into its own temporary array,
-      <code>L</code> and <code>R</code>, before merging — writing the merged result back into the original
-      array while still reading from it would overwrite values the merge hasn't consumed yet. That temporary
-      space is the one thing merge sort gives up to guarantee O(n log n) in <em>every</em> case, unlike quick
-      sort, which is usually faster in practice but can degrade to O(n&sup2;) on unlucky input.</p>
-
-      <p><b>Common mistake:</b> on a tie, always take from the <b>left</b> half first. Taking from the right
-      on a tie still produces a correctly sorted array, but it silently breaks <b>stability</b> — two equal
-      elements can end up swapped relative to their original order, which matters whenever you're sorting
-      records by one field while relying on a previous sort's order for a tiebreaker.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; six values, start to finish</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; mergeSort() / merge()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Guaranteed and stable.</b> Unlike <a href="../quick-sort/quick-sort.html">quick sort</a>, merge sort is
+      O(n log n) in <em>every</em> case — there's no bad pivot to trip it up — and it's stable, which matters when
+      you sort records by one field and want ties to keep their previous order. Its cost is the O(n) extra array the
+      merge needs. It's the go-to for sorting linked lists (where splitting and merging is natural and needs no
+      extra array) and for external sorts of data too big for memory. Its two-halves-then-merge shape is a cousin of
+      <a href="../heap-sort/heap-sort.html">heap sort</a>'s guarantee and <a href="../quick-sort/quick-sort.html">quick
+      sort</a>'s divide-and-conquer.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="merge-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="merge-sort-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: open the visualizer to see the full recursion tree — every split going down and every merge coming
-    back up, at once.
+    Merge sort splits down to single elements and merges sorted halves back up, taking the smaller front each time.
+    O(n log n) guaranteed, stable — at the cost of an O(n) temporary array.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "void mergeSort(int arr[], int lo, int hi) {",
-    "  if (lo == hi) return;              // one element is already sorted",
-    "  int mid = (lo + hi) / 2;",
-    "  mergeSort(arr, lo, mid);",
-    "  mergeSort(arr, mid + 1, hi);",
-    "  merge(arr, lo, mid, hi);",
-    "}",
-    "",
-    "void merge(int arr[], int lo, int mid, int hi) {",
-    "  int L[MAXN], R[MAXN];",
-    "  int nl = mid - lo + 1, nr = hi - mid;",
-    "  for (int x = 0; x < nl; x++) L[x] = arr[lo + x];",
-    "  for (int x = 0; x < nr; x++) R[x] = arr[mid + 1 + x];",
-    "",
-    "  int i = 0, j = 0, k = lo;",
-    "  while (i < nl && j < nr) {",
-    "    if (L[i] <= R[j]) arr[k++] = L[i++];   // tie goes left: keeps it stable",
-    "    else arr[k++] = R[j++];",
-    "  }",
-    "  while (i < nl) arr[k++] = L[i++];        // copy whatever remains",
-    "  while (j < nr) arr[k++] = R[j++];",
-    "}"
+  var leftHost=document.getElementById("leftHost"), rightHost=document.getElementById("rightHost"), outHost=document.getElementById("outHost"), narrEl=document.getElementById("demoNarr");
+  function renderRow(host, arr, clsArr){ host.innerHTML=""; arr.forEach(function(v,i){ var b=document.createElement("div"); b.className="cs-cell"+(v===null?" empty":"")+((clsArr&&clsArr[i])?(" "+clsArr[i]):""); b.textContent=(v===null?"":v); host.appendChild(b); }); }
+  function render(f){ renderRow(leftHost, L, f.lCls); renderRow(rightHost, R, f.rCls); renderRow(outHost, f.out, f.oCls); narrEl.textContent=f.narr||""; }
+  var L=[2,5,9], R=[1,3,8];
+  // scripted merge
+  function lc(i,spent){ var o={}; for(var k=0;k<spent;k++)o[k]='spent'; if(i>=0)o[i]='left'; return o; }
+  function rc(j,spent){ var o={}; for(var k=0;k<spent;k++)o[k]='spent'; if(j>=0)o[j]='right'; return o; }
+  function oc(n){ var o={}; for(var k=0;k<n;k++)o[k]='done'; return o; }
+  var frames=[
+    {out:[null,null,null,null,null,null], lCls:lc(0,0), rCls:rc(0,0), oCls:{}, narr:"Two sorted halves. Compare the fronts: left 2 vs right 1."},
+    {out:[1,null,null,null,null,null], lCls:lc(0,0), rCls:rc(1,1), oCls:oc(1), narr:"1 < 2 — take 1 from the right. Advance the right pointer."},
+    {out:[1,2,null,null,null,null], lCls:lc(1,1), rCls:rc(1,1), oCls:oc(2), narr:"Now left 2 vs right 3: 2 < 3 — take 2 from the left."},
+    {out:[1,2,3,null,null,null], lCls:lc(1,1), rCls:rc(2,2), oCls:oc(3), narr:"Left 5 vs right 3: 3 < 5 — take 3 from the right."},
+    {out:[1,2,3,5,null,null], lCls:lc(2,2), rCls:rc(2,2), oCls:oc(4), narr:"Left 5 vs right 8: 5 < 8 — take 5 from the left."},
+    {out:[1,2,3,5,8,null], lCls:lc(2,2), rCls:rc(-1,3), oCls:oc(5), narr:"Left 9 vs right 8: 8 < 9 — take 8. The right half is empty now."},
+    {out:[1,2,3,5,8,9], lCls:lc(-1,3), rCls:rc(-1,3), oCls:oc(6), narr:"Only 9 left — append it. Merged: [1, 2, 3, 5, 8, 9], in one linear pass."}
   ];
-
-  function scriptFrames(){
-    var a=[6,3,8,1,9,2], n=a.length, frames=[];
-    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
-    function push(roles,narr,codeLine){ frames.push({struct:{cells:cells(roles)}, narr:narr, code:CODE, codeLine:codeLine}); }
-
-    push(new Array(n).fill(""),"The whole array is one unsorted run. Merge sort cuts it in half, recursively, down to single elements.",0);
-
-    function msort(lo,hi){
-      if(lo===hi){
-        var rl=new Array(n).fill(""); rl[lo]="sorted";
-        push(rl,"Index "+lo+" holds "+a[lo]+" alone — already a sorted run.",1);
-        return;
-      }
-      var mid=Math.floor((lo+hi)/2);
-      var rd=new Array(n).fill("");
-      for(var q=lo;q<=hi;q++) rd[q]= q<=mid?"left":"right";
-      push(rd,"Split "+lo+"–"+hi+" at "+mid+".",[2,4]);
-      msort(lo,mid);
-      msort(mid+1,hi);
-
-      var L=a.slice(lo,mid+1), R=a.slice(mid+1,hi+1);
-      var i=0,j=0,k=lo;
-      var rm=new Array(n).fill("");
-      for(var q2=lo;q2<=hi;q2++) rm[q2]="dim";
-      push(rm,"Both halves of "+lo+"–"+hi+" are sorted: ["+L.join(", ")+"] and ["+R.join(", ")+"]. Merge them.",[9,14]);
-      while(i<L.length && j<R.length){
-        var takeL=L[i]<=R[j];
-        var v = takeL ? L[i++] : R[j++];
-        a[k]=v; k++;
-        var rt=new Array(n).fill("");
-        for(var q3=lo;q3<k;q3++) rt[q3]="sorted landed";
-        for(var q4=k;q4<=hi;q4++) rt[q4]="dim";
-        push(rt,"Take "+v+" from the "+(takeL?"left":"right")+" half.",takeL?16:17);
-      }
-      while(i<L.length){
-        a[k]=L[i++]; k++;
-        var r5=new Array(n).fill("");
-        for(var q5=lo;q5<k;q5++) r5[q5]="sorted landed";
-        for(var q6=k;q6<=hi;q6++) r5[q6]="dim";
-        push(r5,"Copy the rest of the left half straight down.",19);
-      }
-      while(j<R.length){
-        a[k]=R[j++]; k++;
-        var r7=new Array(n).fill("");
-        for(var q7=lo;q7<k;q7++) r7[q7]="sorted landed";
-        for(var q8=k;q8<=hi;q8++) r7[q8]="dim";
-        push(r7,"Copy the rest of the right half straight down.",20);
-      }
-
-      var rDone=new Array(n).fill("");
-      for(var q9=lo;q9<=hi;q9++) rDone[q9]="sorted";
-      push(rDone,"Indices "+lo+"–"+hi+" are now a single sorted run: ["+a.slice(lo,hi+1).join(", ")+"].",6);
-    }
-
-    msort(0,n-1);
-    push(new Array(n).fill("sorted"),"Sorted: ["+a.join(", ")+"].",6);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  var i=0; function tick(){ render(frames[i]); i=(i+1)%frames.length; } tick(); setInterval(tick, 1800);
 })();
 </script>
 </body>

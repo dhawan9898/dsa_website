@@ -8,159 +8,144 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
+    border:1px solid var(--rule);border-radius:999px;padding:6px 13px;color:var(--ink-soft);background:#fff;
+    transition:border-color .2s var(--ease),color .2s var(--ease)}
+  .subnav a:hover{border-color:var(--stamp);color:var(--stamp)}
+  .subnav a.here{background:var(--stamp);border-color:var(--stamp);color:#fff}
+  .callout{border-left:4px solid var(--stamp);background:rgba(190,58,29,.05);padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14.5px;line-height:1.6}
+  .callout b{color:var(--stamp)}
+  .dive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .dive-card{display:block;border:1px solid var(--rule);background:#fff;padding:15px 16px;border-radius:8px;
+    text-decoration:none;transition:border-color .2s var(--ease),transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .dive-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+  .dive-card .num{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;color:var(--stamp)}
+  .dive-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;font-size:20px;margin:4px 0 6px;color:var(--ink)}
+  .dive-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);margin:0}
+  .dive-card .go{font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;color:var(--stamp);margin-top:10px;display:inline-block}
+</style>
 </head>
 <body>
 
 <header class="masthead">
   <div class="masthead-inner">
     <div>
-      <a class="masthead-nav" href="../../index.html">&larr; All algorithms</a>
+      <a class="masthead-nav" href="../../index.html">&larr; All topics</a>
       <p class="eyebrow">Heapify &middot; Extract Max &middot; Sift Down</p>
       <h1>Heap&nbsp;Sort</h1>
     </div>
-    <p class="note">Arranges the array into a max-heap, then repeatedly pulls the largest value from the root and re-heapifies what's left.</p>
+    <p class="note">Turn the array into a max-heap, then repeatedly pull the biggest value off the top and drop it at the end.</p>
   </div>
 </header>
 
 <div class="wrap">
 
+  <nav class="subnav" aria-label="Heap Sort pages">
+    <a class="here" href="heap-sort.html">Overview</a>
+    <a href="heap-sort-visualizer.html">Playground</a>
+  </nav>
+
   <section class="panel">
-    <div class="panel-head"><h2>Notes</h2></div>
+    <div class="panel-head"><h2>The idea, in one picture</h2></div>
     <div class="panel-body notes">
-      <p>Heap sort borrows the <a href="../../data-structures/priority-queue/priority-queue.html">binary
-      heap</a>'s core operation, sift-down, and applies it twice over. First, <b>build a max-heap</b> out of
-      the whole array in place: work backwards from the last non-leaf node to the root, sifting each one
-      down so every parent ends up &ge; its children. Second, <b>repeatedly extract</b>: the root is always
-      the largest remaining value, so swap it to the end of the unsorted region, shrink that region by one,
-      and sift the new root down to restore the heap property — over and over until one element is left.</p>
+      <p>Heap sort is <a href="../selection-sort/selection-sort.html">selection sort</a> with a better engine.
+      Selection sort scans O(n) to find each maximum; heap sort keeps the values in a <b>max-heap</b> — a
+      <a href="../../data-structures/priority-queue/priority-queue.html">binary heap</a> where every parent is
+      larger than its children — so the maximum is always sitting at the root, free to grab in O(1). Pull it out,
+      restore the heap in O(log n), and repeat.</p>
 
+      <p>It works in two phases, both in place: <b>build</b> the array into a max-heap, then <b>extract</b> — swap
+      the root (the max) with the last heap slot, shrink the heap by one, and <b>sift</b> the new root down until
+      the heap property holds again. Each extracted max lands just past the shrinking heap, so the sorted region
+      grows from the right.</p>
+
+      <div class="callout">
+        <b>The heap lives in the array.</b> No pointers, no second structure: the node at index <code>i</code> has
+        children at <code>2i+1</code> and <code>2i+2</code>. "Sift down" walks a value from a node toward the
+        leaves, swapping it with its larger child until it's bigger than both.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Watch it work</h2><span class="sub">build the heap, then extract the max again and again</span></div>
+    <div class="panel-body notes">
+      <p>First the array becomes a max-heap; then each pass swaps the root max to the end (locking it green) and
+      sifts the new root down:</p>
+      <div class="bars-stage"><div id="demoHost"></div></div>
+      <p class="narr" id="demoNarr" style="margin-top:10px">&nbsp;</p>
+      <div class="legend" style="margin-top:6px">
+        <span class="key"><i class="swatch" style="background:var(--stamp);border-color:var(--stamp)"></i> node / child being sifted</span>
+        <span class="key"><i class="swatch" style="background:var(--seal);border-color:var(--seal)"></i> extracted (sorted)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Try it &amp; read the code</h2><span class="sub">line-by-line on your own numbers</span></div>
+    <div class="panel-body">
+      <div class="dive-grid">
+        <a class="dive-card" href="heap-sort-visualizer.html">
+          <span class="num">01</span><h3>Playground</h3>
+          <p>Type or randomize an array and watch it heapify, then extract each max to the end with a sift-down.</p>
+          <span class="go">Open playground &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Going deeper</h2><span class="sub">cost and character</span></div>
+    <div class="panel-body notes">
       <table class="notes-table">
-        <tr><th>Case</th><th>Time</th></tr>
-        <tr><td>Every case</td><td><b>O(n log n)</b> &mdash; n extractions, each an O(log n) sift-down</td></tr>
-        <tr><td>Space</td><td><b>O(1)</b> &mdash; the heap lives in the same array being sorted</td></tr>
+        <tr><th>Phase</th><th>What it does</th><th>Time</th></tr>
+        <tr><td>Build heap</td><td>Sift down from the last parent up</td><td>O(n)</td></tr>
+        <tr><td>Extract all</td><td>n swaps, each with an O(log n) sift</td><td>O(n log n)</td></tr>
+        <tr><td>Whole sort</td><td>Guaranteed, in place</td><td><b>O(n log n)</b></td></tr>
       </table>
-
-      <p><b>Implementation:</b> the code panel below stores the heap the same way the
-      <a href="../../data-structures/priority-queue/priority-queue.html">priority queue</a> does — no
-      pointers, just index arithmetic: node <code>i</code>'s children live at <code>2i+1</code> and
-      <code>2i+2</code>. That's what makes heap sort's O(1) space possible where merge sort needs O(n): the
-      sorted output grows at the <em>end</em> of the very array the heap is stored in, one extraction at a
-      time, with nothing copied out.</p>
-
-      <p><b>Common mistake:</b> sifting down from the root without first fixing up its <em>children's</em>
-      subtrees. Sift-down only assumes the two child subtrees are already valid heaps — which is exactly why
-      the build phase works backwards from the bottom up. Sifting forwards from the root on an unheapified
-      array simply produces the wrong heap.</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Watch it work</h2><span class="sub">looping demo &mdash; five values, start to finish</span></div>
-    <div class="panel-body">
-      <div class="scroller"><div class="array-row" id="demoHost"></div></div>
-      <p class="narr" id="demoNarr" style="margin-top:14px">&nbsp;</p>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>The Code</h2><span class="sub">C &middot; siftDown() / heapSort()</span></div>
-    <div class="panel-body">
-      <div class="code-panel" id="codeHost"></div>
+      <p><b>Guaranteed O(n log n) and in place</b> — heap sort never degrades to O(n²) like
+      <a href="../quick-sort/quick-sort.html">quick sort</a> can, and needs no extra array like
+      <a href="../merge-sort/merge-sort.html">merge sort</a> does. Its trade-offs: it's <em>not stable</em>, and its
+      jumping around the array (parent to child to grandchild) has worse cache behaviour than quick sort, so it's
+      often a touch slower in practice despite the same big-O. It shines when worst-case guarantees and O(1) extra
+      space both matter.</p>
     </div>
   </section>
 
   <section class="panel">
     <div class="panel-body" style="text-align:center;padding:26px 14px">
-      <a class="cta" href="heap-sort-visualizer.html">Open the interactive visualizer &rarr;</a>
+      <a class="cta" href="heap-sort-visualizer.html">Open the interactive playground &rarr;</a>
     </div>
   </section>
 
   <footer>
-    Next: open the visualizer to see the same array as a tree — index arithmetic on the array below is
-    exactly the tree shown there, just flattened.
+    Heap sort: build a max-heap, then repeatedly swap the root max to the end and sift the new root down. Always
+    O(n log n), in place — the worst-case-proof sort.
   </footer>
 </div>
 
 <script src="../../shared/motion.js"></script>
-<script src="../../shared/ds-render.js"></script>
-<script src="../../shared/ds-engine.js"></script>
+<script src="../../shared/bars-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
-
-  var CODE=[
-    "void siftDown(int arr[], int root, int size) {",
-    "  int largest = root, left = 2*root+1, right = 2*root+2;",
-    "  if (left < size && arr[left] > arr[largest]) largest = left;",
-    "  if (right < size && arr[right] > arr[largest]) largest = right;",
-    "  if (largest != root) {",
-    "    swap(&arr[root], &arr[largest]);",
-    "    siftDown(arr, largest, size);",
-    "  }",
-    "}",
-    "",
-    "void heapSort(int arr[], int n) {",
-    "  for (int i = n / 2 - 1; i >= 0; i--) siftDown(arr, i, n);   // build max-heap",
-    "  for (int end = n - 1; end > 0; end--) {",
-    "    swap(&arr[0], &arr[end]);       // move max to the end",
-    "    siftDown(arr, 0, end);          // re-heapify what's left",
-    "  }",
-    "}"
-  ];
-
-  function scriptFrames(){
-    var a=[4,10,3,5,1], n=a.length, frames=[], finalized=new Array(n).fill(false);
-    function cells(roles){ return a.map(function(v,i){ return {val:v, role:roles[i]||""}; }); }
-    function roles(){ var r=new Array(n).fill(""); for(var i=0;i<n;i++) if(finalized[i]) r[i]="sorted"; return r; }
-    function push(r,narr,codeLine){ frames.push({struct:{cells:cells(r)}, narr:narr, code:CODE, codeLine:codeLine}); }
-
-    push(roles(),"Build a max-heap first: work from the last parent node up to the root.",10);
-
-    function siftDown(root,size){
-      var largest=root, left=2*root+1, right=2*root+2;
-      if(left<size){
-        var r1=roles(); r1[largest]="left head"; r1[left]="right head";
-        var leftBigger=a[left]>a[largest];
-        push(r1,"Compare parent "+a[largest]+" with left child "+a[left]+". "+(leftBigger?"Child is larger.":"Parent stays largest."),2);
-        if(leftBigger) largest=left;
-      }
-      if(right<size){
-        var r2=roles(); r2[largest]="left head"; r2[right]="right head";
-        var rightBigger=a[right]>a[largest];
-        push(r2,"Compare current largest "+a[largest]+" with right child "+a[right]+". "+(rightBigger?"Child is larger.":"Stays largest."),3);
-        if(rightBigger) largest=right;
-      }
-      if(largest!==root){
-        var tmp=a[root]; a[root]=a[largest]; a[largest]=tmp;
-        var r3=roles(); r3[root]="right head landed"; r3[largest]="left head landed";
-        push(r3,"Swap "+a[root]+" and "+a[largest]+": the larger child rises.",[5,6]);
-        siftDown(largest,size);
-      }
-    }
-
-    for(var i=Math.floor(n/2)-1;i>=0;i--) siftDown(i,n);
-    push(roles(),"The array is now a max-heap: index 0 holds the largest value, "+a[0]+".",11);
-
-    for(var end=n-1; end>0; end--){
-      var tmp2=a[0]; a[0]=a[end]; a[end]=tmp2;
-      finalized[end]=true;
-      var r4=roles(); r4[end]="sorted landed"; r4[0]="left head landed";
-      push(r4,"Move the largest value, "+a[end]+", to index "+end+" — its final sorted position.",13);
-      siftDown(0,end);
-    }
-    finalized[0]=true;
-    push(roles(),"Sorted: ["+a.join(", ")+"].",16);
-    return frames;
-  }
-
-  VizDS.loopDemo({
-    frames: scriptFrames(),
-    intervalMs: 900,
-    renderExtra: function(frame){
-      DSRender.slots(document.getElementById("demoHost"), frame.struct.cells);
-      document.getElementById("demoNarr").textContent = frame.narr;
-    }
-  });
+  function barsFor(a, heapN, i, c){ return a.map(function(v,k){
+    var cls=""; if(k>=heapN) cls="sorted"; else if(k===i) cls="a"; else if(k===c) cls="b";
+    var p=[]; if(k===i)p.push('i'); if(k===c)p.push('c'); return {val:v, cls:cls, ptrs:p}; }); }
+  function F(a,heapN,i,c,narr){ return {bars:barsFor(a.slice(),heapN,i,c), narr:narr}; }
+  var frames=[];
+  frames.push(F([3,9,2,7],4,-1,-1,"[3, 9, 2, 7]. Phase 1: build a max-heap (biggest on top)."));
+  frames.push(F([3,9,2,7],4,1,3,"Node a[1] = 9 vs child a[3] = 7. 9 ≥ 7 — fine."));
+  frames.push(F([9,3,2,7],4,0,1,"Node a[0] = 3 vs bigger child a[1] = 9. 3 < 9 — swap, sink."));
+  frames.push(F([9,7,2,3],4,1,3,"Continue sifting: a[1] = 3 vs child a[3] = 7 — swap. Max-heap built: 9 on top."));
+  frames.push(F([3,7,2,9],3,-1,-1,"Phase 2: swap root max 9 to the end (locked). Heap shrinks to size 3."));
+  frames.push(F([7,3,2,9],3,0,1,"Sift the new root down: 3 vs bigger child 7 — swap."));
+  frames.push(F([2,3,7,9],2,-1,-1,"Swap max 7 to the end (locked). Heap size 2."));
+  frames.push(F([3,2,7,9],2,0,1,"Sift: 2 vs 3 — swap. Then extract 3 and 2. Sorted: [2, 3, 7, 9]."));
+  frames.push(F([2,3,7,9],0,-1,-1,"All extracted. Sorted: [2, 3, 7, 9]."));
+  BarsAnim.play({ host:document.getElementById("demoHost"), narrEl:document.getElementById("demoNarr"), ms:1650, frames:frames });
 })();
 </script>
 </body>
