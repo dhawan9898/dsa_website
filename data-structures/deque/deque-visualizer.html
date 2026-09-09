@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<link rel="stylesheet" href="../../shared/playbar-footer.css">
 <style>
   .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
@@ -75,12 +76,6 @@
     <div class="panel-head"><h2>The deque</h2><span class="sub">indices wrap with % MAX, both directions</span></div>
     <div class="panel-body">
       <div class="arr-stage"><div id="dqStage"></div></div>
-      <div class="arr-ctrls" id="playbar">
-        <button class="arr-cbtn" id="aBack">◀ Back</button>
-        <button class="arr-cbtn" id="aPlay">Play</button>
-        <button class="arr-cbtn" id="aStep">Step ▶</button>
-        <span class="arr-step" id="aCount">0 / 0</span>
-      </div>
       <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
       <div class="legend" style="margin-top:6px">
         <span class="key"><i class="swatch right"></i> the item being added / removed</span>
@@ -104,11 +99,31 @@
   </footer>
 </div>
 
+<div class="playbar-footer" id="playbar">
+  <div class="playbar-controls">
+    <button class="playbar-btn" id="aReset" title="Reset (R)">⏮</button>
+    <button class="playbar-btn" id="aBack" title="Back (←)">◀</button>
+    <button class="playbar-btn" id="aPlay" title="Play/Pause (Space)">⏯</button>
+    <button class="playbar-btn" id="aStep" title="Step (→)">▶</button>
+  </div>
+  <div class="playbar-speed">
+    <span class="playbar-label">Speed</span>
+    <input type="range" id="aSpeed" min="0.25" max="2" step="0.25" value="1">
+  </div>
+  <div class="playbar-scrub">
+    <input type="range" id="aScrub" min="0" max="100" value="0">
+  </div>
+  <div class="playbar-stats">
+    <span id="aCount">0 / 0</span>
+  </div>
+</div>
+
 <script src="../../shared/motion.js"></script>
 <script src="../../shared/arr-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  document.body.classList.add("has-playbar");
   var CAP=6;
   var D={arr:[], front:0, size:0};
 
@@ -197,21 +212,37 @@
   /* ---- page-local player ---- */
   var stage=document.getElementById("dqStage"), narrEl=document.getElementById("narr");
   var codeHost=document.getElementById("codeHost"), countEl=document.getElementById("aCount");
-  var playBtn=document.getElementById("aPlay");
-  var P={frames:[], i:0, timer:null, playing:false};
+  var playBtn=document.getElementById("aPlay"), resetBtn=document.getElementById("aReset");
+  var speedSlider=document.getElementById("aSpeed"), scrubSlider=document.getElementById("aScrub");
+  var P={frames:[], i:0, timer:null, playing:false, speed:1};
   function drawP(){ var f=P.frames[P.i]; if(!f) return;
     ArrAnim.render(stage, f); narrEl.textContent=f.narr||"";
-    ArrAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+    ArrAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length;
+    if(P.frames.length>0) scrubSlider.value=(P.i/(P.frames.length-1))*100; }
   function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
-  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="⏯"; }
   function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
     if(P.timer) clearInterval(P.timer);
-    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1500);
-    playBtn.textContent="Pause"; }
+    var dur=Math.round(1500/P.speed);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, dur);
+    playBtn.textContent="⏸"; }
+  function resetP(){ P.frames=[]; P.i=0; stopP(); D={arr:[],front:0,size:0}; drawEmpty(); ArrAnim.renderCode(codeHost,null,null); }
   function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  resetBtn.onclick=resetP;
   document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
   document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
   playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+  speedSlider.onchange=function(){ P.speed=Number(this.value); };
+  scrubSlider.oninput=function(){ stopP(); if(P.frames.length>0) goP(Math.round((this.value/100)*(P.frames.length-1))); };
+  document.addEventListener("keydown", function(e){
+    if(e.target.tagName==="INPUT") return;
+    if(e.code==="Space" || e.code==="Enter"){ e.preventDefault(); if(P.playing) stopP(); else startP(); }
+    else if(e.code==="ArrowRight"){ e.preventDefault(); stopP(); goP(P.i+1); }
+    else if(e.code==="ArrowLeft"){ e.preventDefault(); stopP(); goP(P.i-1); }
+    else if(e.code==="KeyR" && !e.ctrlKey && !e.metaKey && !e.altKey){ e.preventDefault(); resetP(); }
+    else if(e.code==="Home"){ e.preventDefault(); stopP(); goP(0); }
+    else if(e.code==="End"){ e.preventDefault(); stopP(); goP(P.frames.length-1); }
+  });
 
   function hint(m){ document.getElementById("hint").textContent=m; }
   function drawEmpty(){ P.frames=[F(D.arr.slice(),D.front,D.size,-1,null,null,null, D.size===0?"The deque is empty.":"Current deque.")]; P.i=0; drawP(); }
