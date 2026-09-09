@@ -22,7 +22,9 @@
     transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
   .opbtn:hover{background:var(--ink);color:var(--paper)}
   .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
-  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel{margin-top:16px;padding:0;border:1px solid var(--rule);border-radius:8px;background:#fff;
+    max-height:0;overflow:hidden;opacity:0;transition:max-height .3s var(--ease),opacity .3s var(--ease),padding .3s var(--ease)}
+  .oppanel[aria-hidden="false"]{max-height:500px;opacity:1;padding:14px 16px}
   .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
   .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
   .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
@@ -59,7 +61,7 @@
         <button class="opbtn" data-op="del">Delete</button>
         <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <div class="oppanel" id="oppanel" hidden>
+      <div class="oppanel" id="oppanel" aria-hidden="true">
         <p class="opname" id="opname"></p>
         <p class="opdesc" id="opdesc"></p>
         <div class="oprun">
@@ -282,12 +284,12 @@
   var btns=document.querySelectorAll(".opbtn");
   function select(op){
     if(op==="reset"){ buckets=[[],[],[],[],[]]; nextId=0; stopP(); drawEmpty(); LLAnim.renderCode(codeHost,null,null);
-      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      panel.setAttribute("aria-hidden","true"); current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
       hint("Table cleared — all buckets empty."); return; }
     current=op;
     btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
     var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
-    valWrap.hidden=!meta.val; panel.hidden=false; hint("");
+    valWrap.hidden=!meta.val; panel.setAttribute("aria-hidden","false"); hint("");
     if(meta.val){ valF.focus(); valF.select(); }
   }
   function runCurrent(){
