@@ -9,22 +9,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/theme.css">
 <style>
-  .algo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-  .algo-card{display:block;border:1px solid var(--rule);background:#fff;padding:14px 15px;
+  .algo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-md)}
+  .algo-card{display:block;border:none;background:#FFFFFF;padding:var(--space-lg);border-radius:8px;
+    box-shadow:var(--shadow-sm);
     text-decoration:none;color:var(--ink);opacity:1;
-    transition:border-color .15s var(--ease),transform .15s var(--ease),
-      box-shadow .15s var(--ease),opacity .5s var(--ease)}
-  .algo-card:hover{border-color:var(--stamp);transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(28,43,36,.4)}
+    transition:box-shadow .2s var(--ease),transform .2s var(--ease),opacity .5s var(--ease)}
+  .algo-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
   .js-reveal .algo-card:not(.in){opacity:0}
-  .algo-card h3{font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:700;
-    font-size:22px;letter-spacing:.02em;text-transform:uppercase;margin:0 0 6px}
+  .algo-card h3{font-family:system-ui,-apple-system,"Segoe UI","IBM Plex Sans",sans-serif;font-weight:700;
+    font-size:18px;letter-spacing:.02em;text-transform:none;margin:0 0 var(--space-sm)}
   .algo-card p{font-family:"IBM Plex Sans",sans-serif;font-size:13px;line-height:1.5;
-    color:var(--ink-soft);margin:0 0 10px}
-  .badges{display:flex;flex-wrap:wrap;gap:6px 12px;font-family:"IBM Plex Mono",monospace;
+    color:var(--ink-soft);margin:0 0 var(--space-md)}
+  .badges{display:flex;flex-wrap:wrap;gap:var(--space-sm) var(--space-md);font-family:"IBM Plex Mono",monospace;
     font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
   .badges b{color:var(--ink);font-weight:600}
   .algo-card.built h3::after{content:" ●";color:var(--seal);font-size:12px;vertical-align:super}
-  .intro{font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;color:var(--ink-soft);margin:0 0 18px;max-width:70ch}
+  .intro{font-family:"IBM Plex Sans",sans-serif;font-size:14px;line-height:1.7;color:var(--ink-soft);margin:0 0 var(--space-lg);max-width:70ch}
 </style>
 </head>
 <body>
