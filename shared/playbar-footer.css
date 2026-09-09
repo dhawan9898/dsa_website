@@ -1,0 +1,205 @@
+/* ==========================================================================
+   Playbar Footer — sticky playback controls for visualizers
+
+   Replaces inline controls with a fixed footer bar at bottom of viewport.
+   Keeps visualization area clean and focuses learner attention on the algorithm.
+   ========================================================================== */
+
+.playbar-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 40;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.playbar-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.playbar-btn {
+  background: transparent;
+  border: none;
+  color: var(--paper);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.15s var(--ease), opacity 0.15s var(--ease);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playbar-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.playbar-btn:active {
+  opacity: 0.85;
+}
+
+.playbar-btn:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 1px;
+}
+
+/* Speed slider section */
+.playbar-speed {
+  flex: 0 1 200px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.playbar-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.playbar-speed input[type="range"] {
+  flex: 1;
+  min-width: 100px;
+  accent-color: var(--seal);
+  cursor: pointer;
+}
+
+/* Scrub slider section */
+.playbar-scrub {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.playbar-scrub input[type="range"] {
+  flex: 1;
+  cursor: pointer;
+  accent-color: var(--seal);
+}
+
+/* Stats display */
+.playbar-stats {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: right;
+}
+
+/* Keyboard hint (optional, shown on hover or focus) */
+.playbar-hint {
+  position: absolute;
+  bottom: 100%;
+  right: 20px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease);
+  margin-bottom: 8px;
+}
+
+.playbar-footer:hover .playbar-hint {
+  opacity: 0.7;
+}
+
+/* Body padding adjustment for fixed footer */
+body.has-playbar {
+  padding-bottom: 56px; /* height of playbar + padding */
+}
+
+/* Mobile adaptations */
+@media (max-width: 768px) {
+  .playbar-footer {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .playbar-label {
+    display: none;
+  }
+
+  .playbar-speed,
+  .playbar-scrub {
+    flex: 0 1 100px;
+  }
+
+  .playbar-stats {
+    font-size: 11px;
+    min-width: 50px;
+  }
+
+  body.has-playbar {
+    padding-bottom: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .playbar-footer {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .playbar-btn {
+    font-size: 16px;
+    padding: 4px 6px;
+  }
+
+  .playbar-speed,
+  .playbar-scrub {
+    flex: 0 1 80px;
+  }
+
+  .playbar-stats {
+    font-size: 10px;
+  }
+
+  body.has-playbar {
+    padding-bottom: 44px;
+  }
+}
+
+/* Landscape tablet mode */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .playbar-footer {
+    padding: 10px 16px;
+  }
+
+  .playbar-speed,
+  .playbar-scrub {
+    flex: 0 1 150px;
+  }
+}
+
+/* Keyboard-only focus mode (accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  .playbar-btn,
+  .playbar-speed input[type="range"],
+  .playbar-scrub input[type="range"] {
+    transition: none;
+  }
+}
