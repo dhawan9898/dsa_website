@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
+<link rel="stylesheet" href="../../shared/playbar-footer.css">
 <style>
   .subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .subnav a{font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-decoration:none;
@@ -21,7 +22,9 @@
     transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
   .opbtn:hover{background:var(--ink);color:var(--paper)}
   .opbtn.sel{background:var(--stamp);border-color:var(--stamp);color:#fff}
-  .oppanel{margin-top:16px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .oppanel{margin-top:16px;padding:0;border:1px solid var(--rule);border-radius:8px;background:#fff;
+    max-height:0;overflow:hidden;opacity:0;transition:max-height .3s var(--ease),opacity .3s var(--ease),padding .3s var(--ease)}
+  .oppanel[aria-hidden="false"]{max-height:500px;opacity:1;padding:14px 16px}
   .oppanel .opname{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:20px;color:var(--stamp);margin:0 0 6px}
   .oppanel .opdesc{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 12px}
   .oprun{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
@@ -58,7 +61,7 @@
         <button class="opbtn" data-op="del">Delete</button>
         <button class="opbtn" data-op="reset">Reset</button>
       </div>
-      <div class="oppanel" id="oppanel" hidden>
+      <div class="oppanel" id="oppanel" aria-hidden="true">
         <p class="opname" id="opname"></p>
         <p class="opdesc" id="opdesc"></p>
         <div class="oprun">
@@ -74,12 +77,6 @@
     <div class="panel-head"><h2>The tree</h2><span class="sub">root at the top; left child smaller, right child bigger</span></div>
     <div class="panel-body">
       <div class="tree-stage"><div id="treeHost"></div><svg class="tree-svg" id="treeSvg"></svg></div>
-      <div class="tree-ctrls" id="playbar">
-        <button class="tree-cbtn" id="aBack">◀ Back</button>
-        <button class="tree-cbtn" id="aPlay">Play</button>
-        <button class="tree-cbtn" id="aStep">Step ▶</button>
-        <span class="tree-step" id="aCount">0 / 0</span>
-      </div>
       <p class="narr" id="narr" style="margin-top:12px">&nbsp;</p>
       <div class="legend" style="margin-top:6px">
         <span class="key"><i class="swatch" style="border-color:var(--plot)"></i> the walker, cur</span>
@@ -103,11 +100,31 @@
   </footer>
 </div>
 
+<div class="playbar-footer" id="playbar">
+  <div class="playbar-controls">
+    <button class="playbar-btn" id="aReset" title="Reset (R)">⏮</button>
+    <button class="playbar-btn" id="aBack" title="Back (←)">◀</button>
+    <button class="playbar-btn" id="aPlay" title="Play/Pause (Space)">⏯</button>
+    <button class="playbar-btn" id="aStep" title="Step (→)">▶</button>
+  </div>
+  <div class="playbar-speed">
+    <span class="playbar-label">Speed</span>
+    <input type="range" id="aSpeed" min="0.25" max="2" step="0.25" value="1">
+  </div>
+  <div class="playbar-scrub">
+    <input type="range" id="aScrub" min="0" max="100" value="0">
+  </div>
+  <div class="playbar-stats">
+    <span id="aCount">0 / 0</span>
+  </div>
+</div>
+
 <script src="../../shared/motion.js"></script>
 <script src="../../shared/tree-anim.js?v=1"></script>
 <script>
 (function(){
   "use strict";
+  document.body.classList.add("has-playbar");
   var nodes={}, root=null, nextId=0;
   function mk(val){ var id="t"+(nextId++); nodes[id]={val:val,left:null,right:null}; return id; }
   function one(k,v){ var o={}; o[k]=v; return o; }
@@ -246,21 +263,37 @@
   /* ---- page-local player ---- */
   var host=document.getElementById("treeHost"), svg=document.getElementById("treeSvg");
   var narrEl=document.getElementById("narr"), codeHost=document.getElementById("codeHost");
-  var countEl=document.getElementById("aCount"), playBtn=document.getElementById("aPlay");
-  var P={frames:[], i:0, timer:null, playing:false};
+  var countEl=document.getElementById("aCount"), playBtn=document.getElementById("aPlay"), resetBtn=document.getElementById("aReset");
+  var speedSlider=document.getElementById("aSpeed"), scrubSlider=document.getElementById("aScrub");
+  var P={frames:[], i:0, timer:null, playing:false, speed:1};
   function drawP(){ var f=P.frames[P.i]; if(!f) return;
     TreeAnim.render(host, svg, f); narrEl.textContent=f.narr||"";
-    TreeAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length; }
+    TreeAnim.renderCode(codeHost, f.codeLines, f.code); countEl.textContent=(P.i+1)+" / "+P.frames.length;
+    if(P.frames.length>0) scrubSlider.value=(P.i/(P.frames.length-1))*100; }
   function goP(n){ if(!P.frames.length) return; P.i=Math.max(0,Math.min(P.frames.length-1,n)); drawP(); }
-  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="Play"; }
+  function stopP(){ P.playing=false; if(P.timer){ clearInterval(P.timer); P.timer=null; } playBtn.textContent="⏯"; }
   function startP(){ if(P.frames.length<2) return; if(P.i>=P.frames.length-1) P.i=0; P.playing=true;
     if(P.timer) clearInterval(P.timer);
-    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, 1600);
-    playBtn.textContent="Pause"; }
+    var dur=Math.round(1600/P.speed);
+    P.timer=setInterval(function(){ if(P.i>=P.frames.length-1){ stopP(); return; } goP(P.i+1); }, dur);
+    playBtn.textContent="⏸"; }
+  function resetP(){ P.frames=[]; P.i=0; stopP(); nodes={}; root=null; nextId=0; drawEmpty(); TreeAnim.renderCode(codeHost,null,null); }
   function loadFrames(fr){ P.frames=fr; P.i=0; drawP(); startP(); }
+  resetBtn.onclick=resetP;
   document.getElementById("aBack").onclick=function(){ stopP(); goP(P.i-1); };
   document.getElementById("aStep").onclick=function(){ stopP(); goP(P.i+1); };
   playBtn.onclick=function(){ if(P.playing) stopP(); else startP(); };
+  speedSlider.onchange=function(){ P.speed=Number(this.value); };
+  scrubSlider.oninput=function(){ stopP(); if(P.frames.length>0) goP(Math.round((this.value/100)*(P.frames.length-1))); };
+  document.addEventListener("keydown", function(e){
+    if(e.target.tagName==="INPUT") return;
+    if(e.code==="Space" || e.code==="Enter"){ e.preventDefault(); if(P.playing) stopP(); else startP(); }
+    else if(e.code==="ArrowRight"){ e.preventDefault(); stopP(); goP(P.i+1); }
+    else if(e.code==="ArrowLeft"){ e.preventDefault(); stopP(); goP(P.i-1); }
+    else if(e.code==="KeyR" && !e.ctrlKey && !e.metaKey && !e.altKey){ e.preventDefault(); resetP(); }
+    else if(e.code==="Home"){ e.preventDefault(); stopP(); goP(0); }
+    else if(e.code==="End"){ e.preventDefault(); stopP(); goP(P.frames.length-1); }
+  });
 
   function hint(m){ document.getElementById("hint").textContent=m; }
   function drawEmpty(){ P.frames=[F(snap({}),null,null, root==null?"The tree is empty. Insert a key to make the root.":"Current tree.")]; P.i=0; drawP(); }
@@ -277,12 +310,12 @@
   var btns=document.querySelectorAll(".opbtn");
   function select(op){
     if(op==="reset"){ nodes={}; root=null; nextId=0; stopP(); drawEmpty(); TreeAnim.renderCode(codeHost,null,null);
-      panel.hidden=true; current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
+      panel.setAttribute("aria-hidden","true"); current=null; btns.forEach(function(b){ b.classList.remove("sel"); });
       hint("Tree cleared. Insert a key to start."); return; }
     current=op;
     btns.forEach(function(b){ b.classList.toggle("sel", b.getAttribute("data-op")===op); });
     var meta=OPS[op]; opnameEl.textContent=meta.name; opdescEl.textContent=meta.desc;
-    valWrap.hidden=false; panel.hidden=false; hint("");
+    valWrap.hidden=false; panel.setAttribute("aria-hidden","false"); hint("");
     valF.focus(); valF.select();
   }
   function runCurrent(){
